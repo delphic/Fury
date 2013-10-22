@@ -31,7 +31,7 @@ var Camera = module.exports = function() {
 		if(camera.type == Type.Perspective) {
 			camera.fov = parameters.fov;
 		} else if (camera.type == Type.Orthonormal) {
-			camera.height = paramters.height;
+			camera.height = parameters.height;
 
 		} else {
 			throw new Error("Unrecognised Camera Type '"+camera.type+"'");

@@ -1,6 +1,8 @@
 // This is to test the basic rendering functions of Fury
 // without any extra stuff (e.g. loading shaders and images from URIs, using an explicit scene, etc)
 
+// This is an attempt to recreate http://webglplayground.net/?template=webgl1 but with Fury instead
+
 // Shader Source
 var vsSource = [ "attribute vec3 aVertexPosition;"
 + "attribute vec2 aTextureCoordinates;"
@@ -37,7 +39,8 @@ var fsSource = [ "precision highp float;"	// Investigate Shader Compile Errors w
 Fury.init('fury');
 var r = Fury.Renderer;
 
-// Create Texture (image on page with id texture)
+// Create Texture (image on page with id texture) : NOTE this is only working because the image is cached 
+// TODO: async up here proper like
 var texture = r.createTexture(document.getElementById('texture'), "medium"); // Investigate the errors recieved with "high"
 var vs = r.createShader("vertex", vsSource);
 var fs = r.createShader("fragment", fsSource);
@@ -51,11 +54,61 @@ r.initUniform(shaderProgram, "projectionMatrix"); //mat4
 r.initUniform(shaderProgram, "time"); // float
 r.initUniform(shaderProgram, "mouse"); // vec2
 r.initUniform(shaderProgram, "mouseLeft"); // int
-//r.initUniform(shaderProgram, "tex0"); // sampler2D	TODO: Check this..
+r.initUniform(shaderProgram, "tex0"); // sampler2D
 
-// Create Geometry
+// Create Buffers
+var quadBuffer = r.createBuffer([
+		1.0,	1.0,	0.0,
+		-1.0,	1.0,	0.0,
+		1.0,	-1.0,	0.0,
+		-1.0,	-1.0,	0.0
+	], 3);
+var textureBuffer = r.createBuffer([
+		1.0,	1.0,
+		0.0,	1.0,
+		1.0,	0.0,
+		0.0,	0.0
+	], 2);
 
+// Camera
+var camera = Fury.Camera.create({ 
+	type: "Orthonormal",
+	near: 0.1,
+	far: 100.0,
+	height: 2.0
+});
+
+var projectionMatrix = mat4.create(), modelViewMatrix = mat4.create();
+camera.getProjectionMatrix(projectionMatrix, 1.0);
+mat4.identity(modelViewMatrix);
+mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -2.0]);
+
+r.useShaderProgram(shaderProgram); 
 
 // Loop
+var time = Date.now(), delta = 0;
+var loop = function(){
+	delta = Date.now() - time; 
+	time += delta;
 	// Bind Shader
+	// TODO: Move out un-necessary rebinds & event drive where possible
+	r.setUniformFloat("time", time);
+	r.setUniformFloat("mouseLeft", 0);
+	r.setUniformFloat2("mouse", 0, 0);
+	r.setUniformMatrix4("modelViewMatrix", modelViewMatrix);
+	r.setUniformMatrix4("projectionMatrix", projectionMatrix);
+	r.enableAttribute("aVertexPosition");
+	r.enableAttribute("aTextureCoordinates");
+	r.setAttribute("aVertexPosition", quadBuffer);
+	r.setAttribute("aTextureCoordinates", textureBuffer);
+	r.setTexture("tex0", texture); // Q: is binding tex0 presumably necessary
 	// Draw
+	r.clear();
+	r.drawTriangleStrip(2);	// TODO: This seems a bit stupid, that is passing the count, it should know surely
+	//setTimeout(loop, 1); // TODO: Use Request Animation Frame
+
+	// try using gl.getShaderInfoLog(...) and gl.getProgramInfoLog(...)
+};
+
+loop();
+

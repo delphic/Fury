@@ -62,7 +62,7 @@ exports.createBuffer = function(data, itemSize) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
 	buffer.itemSize = itemSize;
-	buffer.length = data.length / itemSize; // TODO: Check that using length is okay
+	buffer.numItems = data.length / itemSize;
 	return buffer;
 };
 
@@ -96,7 +96,8 @@ exports.createTexture = function(source, quality) {
 	return texture;
 };
 
-exports.setTexture = function(texture) {
+exports.setTexture = function(name, texture) {
+	gl.uniform1i(currentShaderProgram.uniformLocations[name], 0);
 	gl.activeTexture(gl.TEXTURE0);		// TODO: Use multi textures and expose management of this
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 };
@@ -124,12 +125,12 @@ exports.disableAttribute = function(name) {
 };
 exports.setAttribute = function(name, buffer) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.length, gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.numItems, gl.FLOAT, false, 0, 0);
 };
 
 exports.setIndexedAttribute = function(name, buffer) {
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.length, gl.FLOAT, false, 0, 0);	
+	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.numItems, gl.FLOAT, false, 0, 0);	
 };
 
 exports.setUniformBoolean = function(name, value) {
@@ -138,12 +139,18 @@ exports.setUniformBoolean = function(name, value) {
 exports.setUniformFloat = function(name, value) {
 	gl.uniform1f(currentShaderProgram.uniformLocations[name], value);
 };
+exports.setUniformFloat2 = function(name, value1, value2) {
+	gl.uniform2f(currentShaderProgram.uniformLocations[name], value1, value2);
+};
 exports.setUniformFloat3 = function(name, value1, value2, value3) {
 	gl.uniform3f(currentShaderProgram.uniformLocations[name], value);
 };
 exports.setUniformInteger = function(name, value) {
 	gl.uniform1i(currentShaderProgram.uniformLocations[name], value);	
 };
+exports.setUniformVector2 = function(name, value) {
+	gl.uniform2fv(currentShaderProgram.uniformLocations[name], value);
+}
 exports.setUniformVector3 = function(name, value) {
 	gl.uniform3fv(currentShaderProgram.uniformLocations[name], value);
 };
@@ -161,6 +168,9 @@ exports.setUniformMatrix4 = function(name, value) {
 
 exports.drawTriangles = function(count) {
 	gl.drawArrays(gl.TRIANGLES, 0, count);
+};
+exports.drawTriangleStrip = function(count) {
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
 };
 exports.drawLines = function(count) {
 	gl.drawArrays(gl.LINES, 0, count);
