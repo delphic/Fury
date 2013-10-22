@@ -8,7 +8,13 @@ exports.init = function(canvas) {
 	gl = canvas.getContext('webgl');
 	gl.viewportWidth = canvas.width;
 	gl.viewportHeight = canvas.height;
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
 };
+
+exports.clearColor = function(r,g,b,a) {
+	gl.clearColor(r, g, b, a);
+}
 
 exports.clear = function() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight); // TODO: this isn't necessary every frame
@@ -125,12 +131,12 @@ exports.disableAttribute = function(name) {
 };
 exports.setAttribute = function(name, buffer) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.numItems, gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);
 };
 
 exports.setIndexedAttribute = function(name, buffer) {
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.numItems, gl.FLOAT, false, 0, 0);	
+	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);	
 };
 
 exports.setUniformBoolean = function(name, value) {

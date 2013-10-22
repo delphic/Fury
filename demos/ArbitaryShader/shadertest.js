@@ -39,23 +39,6 @@ var fsSource = [ "precision highp float;"	// Investigate Shader Compile Errors w
 Fury.init('fury');
 var r = Fury.Renderer;
 
-// Create Texture (image on page with id texture) : NOTE this is only working because the image is cached 
-// TODO: async up here proper like
-var texture = r.createTexture(document.getElementById('texture'), "medium"); // Investigate the errors recieved with "high"
-var vs = r.createShader("vertex", vsSource);
-var fs = r.createShader("fragment", fsSource);
-var shaderProgram = r.createShaderProgram(vs, fs);	// Couldn't this be one lined pretty simply? pass vsSource and fsSource into createShaderProgram... are we ever going to need vs or fs? We can always attach it to the shaderProgram anyway
-
-// Setup Shader
-r.initAttribute(shaderProgram, "aVertexPosition");
-r.initAttribute(shaderProgram, "aTextureCoordinates");
-r.initUniform(shaderProgram, "modelViewMatrix"); // mat4
-r.initUniform(shaderProgram, "projectionMatrix"); //mat4
-r.initUniform(shaderProgram, "time"); // float
-r.initUniform(shaderProgram, "mouse"); // vec2
-r.initUniform(shaderProgram, "mouseLeft"); // int
-r.initUniform(shaderProgram, "tex0"); // sampler2D
-
 // Create Buffers
 var quadBuffer = r.createBuffer([
 		1.0,	1.0,	0.0,
@@ -70,6 +53,22 @@ var textureBuffer = r.createBuffer([
 		0.0,	0.0
 	], 2);
 
+// Setup Shader
+var vs = r.createShader("vertex", vsSource);
+var fs = r.createShader("fragment", fsSource);
+var shaderProgram = r.createShaderProgram(vs, fs);	// Couldn't this be one lined pretty simply? pass vsSource and fsSource into createShaderProgram... are we ever going to need vs or fs? We can always attach it to the shaderProgram anyway
+
+r.initAttribute(shaderProgram, "aVertexPosition");
+r.initAttribute(shaderProgram, "aTextureCoordinates");
+r.initUniform(shaderProgram, "modelViewMatrix"); // mat4
+r.initUniform(shaderProgram, "projectionMatrix"); //mat4
+r.initUniform(shaderProgram, "time"); // float
+r.initUniform(shaderProgram, "mouse"); // vec2
+r.initUniform(shaderProgram, "mouseLeft"); // bool
+r.initUniform(shaderProgram, "tex0"); // sampler2D
+
+r.useShaderProgram(shaderProgram); 
+
 // Camera
 var camera = Fury.Camera.create({ 
 	type: "Orthonormal",
@@ -83,32 +82,74 @@ camera.getProjectionMatrix(projectionMatrix, 1.0);
 mat4.identity(modelViewMatrix);
 mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -2.0]);
 
-r.useShaderProgram(shaderProgram); 
+// Events!
+$(document).keydown( function(event) {
+  event.preventDefault();
+  var key = event.which;
+});
+
+$(document).mousemove( function(event) {
+  event.preventDefault();
+  // transforming cursor coordinates to [-1.0, 1.0] range
+  // [0,0] being in the left bottom corner to match the vertex coordinates
+  var x = (event.pageX / 512)*2.0 - 1.0;
+  var y = 0.0 - ((event.pageY / 512)*2.0 - 1.0);
+  r.setUniformFloat2("mouse", x, y);
+});
+
+$(document).mousedown( function(event) {
+  event.preventDefault();
+  var key = event.which;
+  var x = event.pageX;
+  var y = event.pageY;
+  if (key==1) {
+	r.setUniformBoolean("mouseLeft", 1);
+  }
+});
+
+$(document).mouseup( function(event) {
+  event.preventDefault();
+  var key = event.which;
+  if (key==1) {
+	r.setUniformBoolean("mouseLeft", 0);
+  }
+});
+
+$(document).mouseleave( function(event) {
+  event.preventDefault();
+  r.setUniformFloat2("mouse", 0, 0);
+});
 
 // Loop
-var time = Date.now(), delta = 0;
+var time = Date.now(), runningTime = 0, delta = 0;
+
+r.enableAttribute("aVertexPosition");
+r.enableAttribute("aTextureCoordinates");
+
 var loop = function(){
 	delta = Date.now() - time; 
 	time += delta;
+	runningTime += delta;
 	// Bind Shader
 	// TODO: Move out un-necessary rebinds & event drive where possible
-	r.setUniformFloat("time", time);
-	r.setUniformFloat("mouseLeft", 0);
-	r.setUniformFloat2("mouse", 0, 0);
+	r.setUniformFloat("time", runningTime/1000);
 	r.setUniformMatrix4("modelViewMatrix", modelViewMatrix);
-	r.setUniformMatrix4("projectionMatrix", projectionMatrix);
-	r.enableAttribute("aVertexPosition");
-	r.enableAttribute("aTextureCoordinates");
+	r.setUniformMatrix4("projectionMatrix", projectionMatrix);	
 	r.setAttribute("aVertexPosition", quadBuffer);
 	r.setAttribute("aTextureCoordinates", textureBuffer);
 	r.setTexture("tex0", texture); // Q: is binding tex0 presumably necessary
 	// Draw
 	r.clear();
-	r.drawTriangleStrip(2);	// TODO: This seems a bit stupid, that is passing the count, it should know surely
-	//setTimeout(loop, 1); // TODO: Use Request Animation Frame
-
-	// try using gl.getShaderInfoLog(...) and gl.getProgramInfoLog(...)
+	r.drawTriangleStrip(quadBuffer.numItems);	// TODO: This seems a bit stupid, that is passing the count, it should know surely
+	setTimeout(loop, 1); // TODO: Use Request Animation Frame
 };
 
-loop();
+// Create Texture 
+// This is a bit syntaxically messy
+var texture, image = new Image();
+image.onload = function() {
+	texture = r.createTexture(image, "low"); // Investigate the errors recieved with "high"
+	loop();
+};
+image.src = "concrete1.jpg";
 

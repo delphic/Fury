@@ -11,7 +11,7 @@ var Camera = module.exports = function() {
 			} else {
 				var left = - (this.height * ratio) / 2;
 				var right = - left;
-				var top = - this.height / 2;
+				var top = this.height / 2;
 				var bottom = -top;
 				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
 			}
