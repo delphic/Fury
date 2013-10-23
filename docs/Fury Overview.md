@@ -2,6 +2,8 @@
 
 Fury (as in the mythical creature) is a second attempt at a WebGL based game engine / framework.
 
+The ideal being to allow easier low level access to WebGL, whilst not to forcing any abstractions upon the user.
+
 A focus on procedural content, no 'artists' required. (e.g. Voxels for terrian).
 
 Open Source - we're doing this for the lulz. This means git hub.
@@ -51,7 +53,7 @@ _Initial focus will be on the renderer_.
 To be defined...
 
 ## Input
-To be defined...
+To be defined... (Use of frameworks is acceptable if they don't violate the guiding principles of this project, [GamePad.js](https://github.com/sgraham/gamepad.js/), also see [W3C Gamepad Working Draft](http://www.w3.org/TR/gamepad/))
 
 ## Sound
 To be defined... ([Web Audio API](http://www.html5rocks.com/en/tutorials/webaudio/intro/))

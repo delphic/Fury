@@ -19,52 +19,7 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./renderer":2,"./camera":3}],3:[function(require,module,exports){
-// glMatrix assumed Global
-var Camera = module.exports = function() {
-	var exports = {};
-	var prototype = {
-		// Set Rotation from Euler
-		// Set Position x, y, z
-		// Note do not have enforced copy setters, the user is responsible for this
-		getProjectionMatrix: function(out, ratio) {
-			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, ratio, this.near, this.far);
-			} else {
-				var left = - (this.height * ratio) / 2;
-				var right = - left;
-				var top = this.height / 2;
-				var bottom = -top;
-				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
-			}
-			return out;
-		}
-	};
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
-	};
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
-		if(camera.type == Type.Perspective) {
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
-
-		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
-		}
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
-		return camera;
-	};
-	return exports;
-}();
-},{}],2:[function(require,module,exports){
+},{"./renderer":2,"./camera":3}],2:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -73,6 +28,9 @@ var gl, currentShaderProgram;
 
 exports.init = function(canvas) {
 	gl = canvas.getContext('webgl');
+	if(!gl) {
+		gl = canvas.getContext('experimental-webgl');
+	}
 	gl.viewportWidth = canvas.width;
 	gl.viewportHeight = canvas.height;
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -169,8 +127,7 @@ exports.createTexture = function(source, quality) {
 	return texture;
 };
 
-exports.setTexture = function(name, texture) {
-	gl.uniform1i(currentShaderProgram.uniformLocations[name], 0);
+exports.setTexture = function(texture) {
 	gl.activeTexture(gl.TEXTURE0);		// TODO: Use multi textures and expose management of this
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 };
@@ -261,5 +218,50 @@ exports.drawIndexedPoints = function(count, offset) {
 	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
 };
 
+},{}],3:[function(require,module,exports){
+// glMatrix assumed Global
+var Camera = module.exports = function() {
+	var exports = {};
+	var prototype = {
+		// Set Rotation from Euler
+		// Set Position x, y, z
+		// Note do not have enforced copy setters, the user is responsible for this
+		getProjectionMatrix: function(out, ratio) {
+			if(this.type == Camera.Type.Perspective) {
+				mat4.perspective(out, this.fov, ratio, this.near, this.far);
+			} else {
+				var left = - (this.height * ratio) / 2;
+				var right = - left;
+				var top = this.height / 2;
+				var bottom = -top;
+				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
+			}
+			return out;
+		}
+	};
+	var Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
+	var create = exports.create = function(parameters) {
+		var camera = Object.create(prototype);
+		// TODO: Arguement Checking
+		camera.type = parameters.type ? parameters.type : Type.Perspective;
+		camera.near = parameters.near;
+		camera.far = parameters.far;
+		if(camera.type == Type.Perspective) {
+			camera.fov = parameters.fov;
+		} else if (camera.type == Type.Orthonormal) {
+			camera.height = parameters.height;
+
+		} else {
+			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+		}
+		camera.position = parameters.position ? parameters.position : vec3.create();
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+		return camera;
+	};
+	return exports;
+}();
 },{}]},{},[1])
 ;

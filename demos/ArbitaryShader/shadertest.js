@@ -56,7 +56,7 @@ var textureBuffer = r.createBuffer([
 // Setup Shader
 var vs = r.createShader("vertex", vsSource);
 var fs = r.createShader("fragment", fsSource);
-var shaderProgram = r.createShaderProgram(vs, fs);	// Couldn't this be one lined pretty simply? pass vsSource and fsSource into createShaderProgram... are we ever going to need vs or fs? We can always attach it to the shaderProgram anyway
+var shaderProgram = r.createShaderProgram(vs, fs);
 
 r.initAttribute(shaderProgram, "aVertexPosition");
 r.initAttribute(shaderProgram, "aTextureCoordinates");
@@ -65,7 +65,6 @@ r.initUniform(shaderProgram, "projectionMatrix"); //mat4
 r.initUniform(shaderProgram, "time"); // float
 r.initUniform(shaderProgram, "mouse"); // vec2
 r.initUniform(shaderProgram, "mouseLeft"); // bool
-r.initUniform(shaderProgram, "tex0"); // sampler2D
 
 r.useShaderProgram(shaderProgram); 
 
@@ -103,7 +102,7 @@ $(document).mousedown( function(event) {
   var x = event.pageX;
   var y = event.pageY;
   if (key==1) {
-	r.setUniformBoolean("mouseLeft", 1);
+	r.setUniformBoolean("mouseLeft", true);
   }
 });
 
@@ -111,7 +110,7 @@ $(document).mouseup( function(event) {
   event.preventDefault();
   var key = event.which;
   if (key==1) {
-	r.setUniformBoolean("mouseLeft", 0);
+	r.setUniformBoolean("mouseLeft", false);
   }
 });
 
@@ -123,24 +122,23 @@ $(document).mouseleave( function(event) {
 // Loop
 var time = Date.now(), runningTime = 0, delta = 0;
 
+// Bind Shader properties that do no change
 r.enableAttribute("aVertexPosition");
 r.enableAttribute("aTextureCoordinates");
+r.setAttribute("aVertexPosition", quadBuffer);
+r.setAttribute("aTextureCoordinates", textureBuffer);
+r.setUniformMatrix4("modelViewMatrix", modelViewMatrix);
+r.setUniformMatrix4("projectionMatrix", projectionMatrix);	
+
 
 var loop = function(){
 	delta = Date.now() - time; 
 	time += delta;
 	runningTime += delta;
-	// Bind Shader
-	// TODO: Move out un-necessary rebinds & event drive where possible
 	r.setUniformFloat("time", runningTime/1000);
-	r.setUniformMatrix4("modelViewMatrix", modelViewMatrix);
-	r.setUniformMatrix4("projectionMatrix", projectionMatrix);	
-	r.setAttribute("aVertexPosition", quadBuffer);
-	r.setAttribute("aTextureCoordinates", textureBuffer);
-	r.setTexture("tex0", texture); // Q: is binding tex0 presumably necessary
-	// Draw
+	r.setTexture(texture); 	// Note, no uniform location and binding required for texture, unlike example on WebGL Playground
 	r.clear();
-	r.drawTriangleStrip(quadBuffer.numItems);	// TODO: This seems a bit stupid, that is passing the count, it should know surely
+	r.drawTriangleStrip(quadBuffer.numItems);
 	setTimeout(loop, 1); // TODO: Use Request Animation Frame
 };
 
@@ -148,7 +146,7 @@ var loop = function(){
 // This is a bit syntaxically messy
 var texture, image = new Image();
 image.onload = function() {
-	texture = r.createTexture(image, "low"); // Investigate the errors recieved with "high"
+	texture = r.createTexture(image, "high");
 	loop();
 };
 image.src = "concrete1.jpg";

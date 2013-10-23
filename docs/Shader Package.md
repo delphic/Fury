@@ -56,3 +56,9 @@ Start with a textured pixel lit, limit to ambient + directional lights for now (
 * Specular Map
 * Bump/Normal Map
 
+## Thoughts after implementing test shader
+An error which I ran into was I was using the wrong bind function (float) instead of integer, ideally the wrapping / shader setup binding code that I place on top of the basic gl wrapper will either prevent or warn when this happens. Worth noting that the WebGL error reported that I was using uniform1fv when I had actually called uniform1f. So there is a WebGL error in this case even if it can be slightly misleading, so perhaps this isn't a massive priority
+
+Example project sets the texture uniform to 0, but it seems not to be necessary to initialise or bind this uniform, just making sure the active texture is the correct WebGL texture seems to be sufficient.
+
+Shader Programs could arguably be made in a single line by passing the shader sources rather than the created shaders themselves

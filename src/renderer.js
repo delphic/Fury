@@ -6,6 +6,9 @@ var gl, currentShaderProgram;
 
 exports.init = function(canvas) {
 	gl = canvas.getContext('webgl');
+	if(!gl) {
+		gl = canvas.getContext('experimental-webgl');
+	}
 	gl.viewportWidth = canvas.width;
 	gl.viewportHeight = canvas.height;
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -102,8 +105,7 @@ exports.createTexture = function(source, quality) {
 	return texture;
 };
 
-exports.setTexture = function(name, texture) {
-	gl.uniform1i(currentShaderProgram.uniformLocations[name], 0);
+exports.setTexture = function(texture) {
 	gl.activeTexture(gl.TEXTURE0);		// TODO: Use multi textures and expose management of this
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 };
