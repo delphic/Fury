@@ -74,11 +74,11 @@ So the original proposal was to have shaders specified as a js file. This would 
 
 However to avoid GC we can't pass in different versions of the render object to get the shader to only re-bind the bits we want. My current thinking is we cut down the rebinds (although don't get optimal) by separating the bindings / updates into groups (which are listed in roughly the order from outside to inside of loops running over them), each would have a corresponding function(s):
 
-1) Those that need to be changed once a frame, e.g. time, time delta, possibly projection matrix (although this might need to be separate for flexibility)
-2) Those that need to be changed per set of instances using the same textures - textures, maybe some tint colours (Q: this is the material?)
-3) Those that need to be changed once per set of instances, e.g. vertex buffers / normal buffers / texture coord buffers etc (Q: this is the mesh?)
-4) Those that need to be changed per instance, e.g. mvMatrix    (Q: this is the instance?)
-5) Those which can be event driven / are material based, e.g. custom uniforms like "mousePosition", "mouseDown", (?)"Colour"
+1. Those that need to be changed once a frame, e.g. time, time delta, possibly projection matrix (although this might need to be separate for flexibility)
+2. Those that need to be changed per set of instances using the same textures - textures, maybe some tint colours (Q: this is the material?)
+3. Those that need to be changed once per set of instances, e.g. vertex buffers / normal buffers / texture coord buffers etc (Q: this is the mesh?)
+4. Those that need to be changed per instance, e.g. mvMatrix    (Q: this is the instance?)
+5. Those which can be event driven / are material based, e.g. custom uniforms like "mousePosition", "mouseDown", (?)"Colour"
 
 There are some interesting questions on 5 on how to deal with multiple objects using the same Shader / Material, Unity takes the approach they are per material (a material is an instance of a shader) and if you alter the material you alter everything using it, but this won't be optimal in some circumstances (say you have 1,000,000 objects with the same texture and vertices but different tint colours). If you register changes to bound when it comes to render the object you'd presumably end up just rebinding it for every instance so that's not great.
 There is possible overlap in our thoughts between 2 and 5 here, in that 2 feels like its the instance of the material to me. There is the issue of using different instances of very similar materials on lots of otherwise identical objects... what is optimal probably depends on what takes more time to bind, textures or buffers. I get a feeling its the former but tests are needed... however given that we're likely to be using low res models but textures are size dependent not detail dependent, plumping for texture as a bigger drain is probably sensible.
