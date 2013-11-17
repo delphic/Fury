@@ -4,8 +4,13 @@ var canvas;
 // Fury Global
 Fury = {};
 // Modules
-Fury.Renderer = require('./renderer');
 Fury.Camera = require('./camera');
+Fury.Material = require('./material');
+Fury.Mesh = require('./mesh');
+Fury.Renderer = require('./renderer');
+Fury.Scene = require('./scene');
+Fury.Shader = require('./shader');
+
 // Public functions
 Fury.init = function(canvasId) {
 	canvas = document.getElementById(canvasId);
@@ -19,7 +24,109 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./renderer":2,"./camera":3}],2:[function(require,module,exports){
+},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],3:[function(require,module,exports){
+var Material = module.exports = function(){
+	var exports = {};
+	var prototype = {
+		setTexture: function(name, texture) {
+			// TODO: Check that its a valid GL texture
+			material.textures[name] = texture;
+		}
+	};
+
+	var create = exports.create = function(parameters) {
+		var material = Object.create(prototype);
+
+		if(parameters.shader) {
+			material.shader = parameters.shader;
+		}
+		material.textures = {};
+		if(parameters.textures) {
+			for(var i = 0, l = textures.length; i < l; i++) {
+				if(texture[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
+					material.textures[textures[i].name] = textures[i].texture;
+				} else {
+					throw new Error("Texture Array must contain objects with properties 'name' and 'texture'");
+				}
+			}
+		}
+
+		return material;
+	};
+
+	return exports;
+}();
+},{}],2:[function(require,module,exports){
+// glMatrix assumed Global
+var Camera = module.exports = function() {
+	var exports = {};
+	var prototype = {
+		// Set Rotation from Euler
+		// Set Position x, y, z
+		// Note do not have enforced copy setters, the user is responsible for this
+		getProjectionMatrix: function(out, ratio) {
+			if(this.type == Camera.Type.Perspective) {
+				mat4.perspective(out, this.fov, ratio, this.near, this.far);
+			} else {
+				var left = - (this.height * ratio) / 2;
+				var right = - left;
+				var top = this.height / 2;
+				var bottom = -top;
+				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
+			}
+			return out;
+		}
+	};
+	var Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
+	var create = exports.create = function(parameters) {
+		var camera = Object.create(prototype);
+		// TODO: Arguement Checking
+		camera.type = parameters.type ? parameters.type : Type.Perspective;
+		camera.near = parameters.near;
+		camera.far = parameters.far;
+		if(camera.type == Type.Perspective) {
+			camera.fov = parameters.fov;
+		} else if (camera.type == Type.Orthonormal) {
+			camera.height = parameters.height;
+
+		} else {
+			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+		}
+		camera.position = parameters.position ? parameters.position : vec3.create();
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+		return camera;
+	};
+	return exports;
+}();
+},{}],6:[function(require,module,exports){
+
+var Scene = module.exports = function() {
+	var exports = {};
+	var prototype = {
+		// Add Object (material & mesh provided, spawns mesh instance, returns object with transform)
+
+		// Add Camera
+	};
+
+	// private mesh list
+	// private mesh instances
+	// private material list
+
+	// Going to use dictionaries but with an array of keys for enumeration (hence private with accessor methods)
+
+	var create = exports.create = function(parameters) {
+		var scene = Object.create(prototype);
+
+
+		return scene;
+	};
+
+	return exports;
+}();
+},{}],5:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -218,50 +325,97 @@ exports.drawIndexedPoints = function(count, offset) {
 	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
 };
 
-},{}],3:[function(require,module,exports){
-// glMatrix assumed Global
-var Camera = module.exports = function() {
-	var exports = {};
-	var prototype = {
-		// Set Rotation from Euler
-		// Set Position x, y, z
-		// Note do not have enforced copy setters, the user is responsible for this
-		getProjectionMatrix: function(out, ratio) {
-			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, ratio, this.near, this.far);
-			} else {
-				var left = - (this.height * ratio) / 2;
-				var right = - left;
-				var top = this.height / 2;
-				var bottom = -top;
-				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
-			}
-			return out;
-		}
-	};
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
-	};
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
-		if(camera.type == Type.Perspective) {
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
+},{}],4:[function(require,module,exports){
+var r = require('./renderer');
 
-		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+var Mesh = module.exports = function(){
+	exports = {};
+
+	var prototype = {
+		calculateNormals: function() {
+			// TODO: Calculate Normals from Vertex information
+		},
+		setVertices: function(vertices) {
+			this.vertexBuffer = r.createBuffer(vertices, 3);
+		},
+		setTextureCoordinates: function(textureCoordinates) {
+			this.textureBuffer = r.createBuffer(textureCoordinates, 2);
+		},
+		setNormals: function(normals) {
+			this.normalBuffer = r.createBuffer(normals, 3);
+		},
+		setIndexBuffer: function(indices) {
+			this.indexBuffer = r.createBuffer(indices, 1);
+			this.indexed = true;
 		}
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
-		return camera;
 	};
+
+	var create = exports.create = function(parameters) {
+		var mesh = Object.create(prototype);
+		if(parameters) {
+			if(parameters.vertices) {
+				mesh.setVertices(parameters.vertices);
+			} 
+			if(parameters.textureCoordinates) {
+				mesh.setTextureCoordinates(parameters.textureCoordinates);
+			}
+			if(parameters.normals) {
+				mesh.setNormals(parameters.normals);
+			}
+			if(parameters.indices) {
+				mesh.setIndexBuffer(parameters.indices);
+			} else {
+				mesh.indexed = false;
+			}
+			// TODO: Render Mode Strip, Loose Triangles, Points, Lines etc
+		}
+		return mesh;
+	};
+
 	return exports;
 }();
-},{}]},{},[1])
+},{"./renderer":5}],7:[function(require,module,exports){
+var r = require('./renderer');
+
+var Shader = module.exports = function() {
+	var exports = {};
+	var prototype = {};
+
+	var create = exports.create = function(parameters) {
+		var i, l;
+		var shader = Object.create(prototype);
+
+		// Argument Validation
+		if(!parameters) {
+			throw new Error("No paramter object supplied, shader source must be provided");
+		}
+		if(!parameters.vsSource) {
+			throw new Error("No Vertex Shader Source 'vsSource'");
+		}
+		if(!parameters.fsSource) {
+			throw new Error("No Fragment Shader Source 'fsSource'");
+		}
+		
+		shader.vs = r.createShader("vertex", vsSource);
+		shader.fs = r.createShader("fragment", fsSource);
+		shader.shaderProgram = r.createShaderProgram(vs, fs);
+		if(parameters.attributeNames) {
+			for(i = 0, l = attributeNames.length; i < l; i++) {
+				r.initAttribute(shaderProgram, attributeNames[i]);
+			}
+		}
+		if(parameters.uniformNames) {
+			for(i = 0, l = uniformNames.length; i < l; i++) {
+				r.initUniform(shaderProgram, uniformNames[i]);
+			}
+		}
+
+		// TODO: Add binding functions		
+
+		return shader;
+	};
+
+	return exports;
+}();
+},{"./renderer":5}]},{},[1])
 ;

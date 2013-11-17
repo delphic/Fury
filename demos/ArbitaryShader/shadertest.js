@@ -136,7 +136,6 @@ var loop = function(){
 	time += delta;
 	runningTime += delta;
 	r.setUniformFloat("time", runningTime/1000);
-	r.setTexture(texture); 	// Note, no uniform location and binding required for texture, unlike example on WebGL Playground
 	r.clear();
 	r.drawTriangleStrip(quadBuffer.numItems);
 	setTimeout(loop, 1); // TODO: Use Request Animation Frame
@@ -147,6 +146,7 @@ var loop = function(){
 var texture, image = new Image();
 image.onload = function() {
 	texture = r.createTexture(image, "high");
+	r.setTexture(texture); 	// Note, no uniform location and binding required for texture, unlike example on WebGL Playground
 	loop();
 };
 image.src = "concrete1.jpg";

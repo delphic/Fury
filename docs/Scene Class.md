@@ -6,9 +6,8 @@ However access/lookup in these types of graphs / lists is not particularly fast,
 
 Initially we should implement the naive option of just using the simple array / dictionary of render objects and rebind everything for each object on the shader, we can then move forward from a (hopefully) working scene.
 
-Presumably we’re eventually going to need to a sorting operation every frame / render or at least anytime the camera or an object moves (so might as well be every frame), in that we have to at least sort the transparent / translucent objects against everything else.
+Presumably we’re eventually going to need to a sorting operation every frame / render or at least anytime the camera or an object moves (so might as well be every frame), in that we have to at least sort the transparent / translucent objects against everything else. Note: Painters algorithm for items with alpha, reverse painters algorithm for those without to make maximal use of the z-buffer.
 
-(We should investigate deferred rendering before we implement this stuff maybe?)
 
 ## Tasks
 Finalise renderobject structure (Q: Should every object have a list of instances, and it can just contain one if necessary, this is probably sensible?)

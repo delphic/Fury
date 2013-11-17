@@ -3,8 +3,13 @@ var canvas;
 // Fury Global
 Fury = {};
 // Modules
-Fury.Renderer = require('./renderer');
 Fury.Camera = require('./camera');
+Fury.Material = require('./material');
+Fury.Mesh = require('./mesh');
+Fury.Renderer = require('./renderer');
+Fury.Scene = require('./scene');
+Fury.Shader = require('./shader');
+
 // Public functions
 Fury.init = function(canvasId) {
 	canvas = document.getElementById(canvasId);
