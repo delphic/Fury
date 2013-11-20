@@ -5,13 +5,13 @@ var Camera = module.exports = function() {
 		// Set Rotation from Euler
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
-		getProjectionMatrix: function(out, ratio) {
+		getProjectionMatrix: function(out) {
 			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, ratio, this.near, this.far);
+				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
 			} else {
-				var left = - (this.height * ratio) / 2;
+				var left = - (this.height * this.ratio) / 2.0;
 				var right = - left;
-				var top = this.height / 2;
+				var top = this.height / 2.0;
 				var bottom = -top;
 				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
 			}
@@ -36,6 +36,7 @@ var Camera = module.exports = function() {
 		} else {
 			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
 		}
+		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
 		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
 		return camera;

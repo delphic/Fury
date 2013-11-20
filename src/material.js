@@ -3,16 +3,18 @@ var Material = module.exports = function(){
 	var prototype = {
 		setTexture: function(name, texture) {
 			// TODO: Check that its a valid GL texture
-			material.textures[name] = texture;
+			this.textures[name] = texture;
 		}
 	};
 
 	var create = exports.create = function(parameters) {
 		var material = Object.create(prototype);
 
-		if(parameters.shader) {
-			material.shader = parameters.shader;
+		if(!parameters.shader) {
+			throw new Error("Shader must be provided");
 		}
+		material.shader = parameters.shader;
+
 		material.textures = {};
 		if(parameters.textures) {
 			for(var i = 0, l = textures.length; i < l; i++) {

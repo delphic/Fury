@@ -7,17 +7,17 @@ var Mesh = module.exports = function(){
 		calculateNormals: function() {
 			// TODO: Calculate Normals from Vertex information
 		},
-		setVertices: function(vertices) {
-			this.vertexBuffer = r.createBuffer(vertices, 3);
+		updateVertices: function() {
+			this.vertexBuffer = r.createBuffer(this.vertices, 3);
 		},
-		setTextureCoordinates: function(textureCoordinates) {
-			this.textureBuffer = r.createBuffer(textureCoordinates, 2);
+		updateTextureCoordinates: function() {
+			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
 		},
-		setNormals: function(normals) {
-			this.normalBuffer = r.createBuffer(normals, 3);
+		updateNormals: function() {
+			this.normalBuffer = r.createBuffer(this.normals, 3);
 		},
-		setIndexBuffer: function(indices) {
-			this.indexBuffer = r.createBuffer(indices, 1);
+		updateIndexBuffer: function() {
+			this.indexBuffer = r.createBuffer(this.indices, 1);
 			this.indexed = true;
 		}
 	};
@@ -26,20 +26,32 @@ var Mesh = module.exports = function(){
 		var mesh = Object.create(prototype);
 		if(parameters) {
 			if(parameters.vertices) {
-				mesh.setVertices(parameters.vertices);
+				mesh.vertices = parameters.vertices;
+				mesh.updateVertices();
 			} 
 			if(parameters.textureCoordinates) {
-				mesh.setTextureCoordinates(parameters.textureCoordinates);
+				mesh.textureCoordinates = parameters.textureCoordinates;
+				mesh.updateTextureCoordinates();
 			}
 			if(parameters.normals) {
-				mesh.setNormals(parameters.normals);
+				mesh.normals = parameters.normals;
+				mesh.updateNormals();
 			}
 			if(parameters.indices) {
-				mesh.setIndexBuffer(parameters.indices);
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
 			} else {
 				mesh.indexed = false;
 			}
-			// TODO: Render Mode Strip, Loose Triangles, Points, Lines etc
+			if(parameters.renderMode) {
+				if(r.RenderMode.hasOwnProperty(parameters.renderMode)) {
+					mesh.renderMode = parameters.renderMode;
+				} else {
+					throw new Error("Unrecognised RenderMode '" + parameters.renderMode + "'");
+				}
+			} else {
+				mesh.renderMode = indexed ? r.RenderMode.IndexedTriangles : r.RenderMode.Triangles;
+			}
 		}
 		return mesh;
 	};

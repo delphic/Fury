@@ -77,7 +77,7 @@ var camera = Fury.Camera.create({
 });
 
 var projectionMatrix = mat4.create(), modelViewMatrix = mat4.create();
-camera.getProjectionMatrix(projectionMatrix, 1.0);
+camera.getProjectionMatrix(projectionMatrix);
 mat4.identity(modelViewMatrix);
 mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -2.0]);
 

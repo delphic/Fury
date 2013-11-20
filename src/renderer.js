@@ -173,25 +173,68 @@ exports.setUniformMatrix4 = function(name, value) {
 };
 
 // Draw Functions
+var RenderMode = exports.RenderMode = {
+	Triangles: "triangles",
+	TriangleStrip: "triangleStrip",
+	Lines: "lines",
+	Points: "points"
+};
 
-exports.drawTriangles = function(count) {
+exports.draw = function(renderMode, count, indexed, offset) {
+	switch(renderMode) {
+		case RenderMode.Triangles:
+			if(!indexed) { 
+				drawTriangles(count);
+			} else {
+				drawIndexedTriangles(count, offset);
+			}
+			break;
+		case RenderMode.TriangleStrip:
+			if(!indexed) {
+				drawTriangleStrip(count);
+			} else {
+				drawIndexedTriangleStrip(count);
+			}
+			break;
+		case RenderMode.Lines:
+			if(!indexed) {
+				drawLines(count);
+			} else {
+				drawIndexedLines(count, offset);
+			}
+			break;
+		case RenderMode.Points:
+			if(!indexed) {
+				drawPoints(count);
+			} else {
+				drawIndexedPoints(count, offset);
+			}
+			break;
+		default:
+			throw new Error("Unrecognised renderMode '"+renderMode+"'");
+	}
+}
+var drawTriangles = exports.drawTriangles = function(count) {
 	gl.drawArrays(gl.TRIANGLES, 0, count);
 };
-exports.drawTriangleStrip = function(count) {
+var drawTriangleStrip = exports.drawTriangleStrip = function(count) {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
 };
-exports.drawLines = function(count) {
+var drawLines = exports.drawLines = function(count) {
 	gl.drawArrays(gl.LINES, 0, count);
 };
-exports.drawPoints = function(count) {
+var drawPoints = exports.drawPoints = function(count) {
 	gl.drawArrays(gl.POINTS, 0, count);
 };
-exports.drawIndexedTriangles = function(count, offset) {
+var drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
 	gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
 };
-exports.drawIndexedLines = function(count, offset) {
+var drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
+	gl.drawElements(gl.TRIANGLE_STRIP, count, gl.UNSIGNED_SHORT, offset);
+}
+var drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
 	gl.drawElements(gl.LINES, count, gl.UNSIGNED_SHORT, offset);
 };
-exports.drawIndexedPoints = function(count, offset) {
+var drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
 	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
 };

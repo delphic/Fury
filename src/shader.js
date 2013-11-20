@@ -37,7 +37,27 @@ var Shader = module.exports = function() {
 			}
 		}
 
-		// TODO: Add binding functions		
+		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
+			throw new Error("You must provide a material binding function 'bindMaterial'");
+		}
+		shader.bindMaterial = parameters.bindMaterial;	
+
+		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
+			throw new Error("You must provide a mesh binding function 'bindBuffers'");
+		}
+		shader.bindBuffers = parameters.bindBuffers;
+
+		if(!parameters.bindProjectionMatrix || typeof(parameters.bindProjectionMatrix) !== 'function') {
+			throw new Error("You must provide a pMatrix binding function 'bindProjectionMatrix'");
+		}
+		shader.bindProjectionMatrix = parameters.bindProjectionMatrix;
+
+		if(!parameters.bindModelViewMatrix || typeof(parameters.bindModelViewMatrix) !== 'function') {
+			throw new Error("You must provide a mvMatrix binding function 'bindModelViewMatrix'");
+		}
+		shader.bindModelViewMatrix = parameters.bindModelViewMatrix;
+
+		// TODO: decide how to deal with non-standard uniforms
 
 		return shader;
 	};
