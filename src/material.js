@@ -3,6 +3,9 @@ var Material = module.exports = function(){
 	var prototype = {
 		setTexture: function(name, texture) {
 			// TODO: Check that its a valid GL texture
+			if(!texture[i].hasOwnProperty("name")) {
+				texture.name = name;
+			}
 			this.textures[name] = texture;
 		}
 	};

@@ -78,6 +78,8 @@ var Scene = module.exports = function() {
 			// Then by Mesh
 			// Then render each Mesh Instance
 
+			r.clear();
+
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var object = renderObjects[renderObjects.keys[i]];
 
@@ -85,18 +87,24 @@ var Scene = module.exports = function() {
 
 				var shader = object.material.shader;
 
-				shader.bindProjectionMatrix(pMatrix);
+				shader.bindProjectionMatrix(r, pMatrix);
 
-				shader.bindMaterial(object.material);
+				shader.bindMaterial(r, object.material);
 
-				shader.bindBuffers(object.mesh);
+				shader.bindBuffers(r, object.mesh);
 
 				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
 				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 
+				shader.bindModelViewMatrix(r, mvMatrix);
+
 				r.draw(mesh.renderMode, mesh.vertexBuffer.numItems, mesh.indexed, 0);
 			}
+		}
+
+		if(parameters && parameters.camera) {
+			scene.addCamera(camera);
 		}
 
 		return scene;

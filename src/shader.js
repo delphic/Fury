@@ -26,12 +26,12 @@ var Shader = module.exports = function() {
 		shader.vs = r.createShader("vertex", vsSource);
 		shader.fs = r.createShader("fragment", fsSource);
 		shader.shaderProgram = r.createShaderProgram(vs, fs);
-		if(parameters.attributeNames) {
+		if(parameters.attributeNames) {	// Could parse these from the shader
 			for(i = 0, l = attributeNames.length; i < l; i++) {
 				r.initAttribute(shaderProgram, attributeNames[i]);
 			}
 		}
-		if(parameters.uniformNames) {
+		if(parameters.uniformNames) {	// Could parse these from the shader
 			for(i = 0, l = uniformNames.length; i < l; i++) {
 				r.initUniform(shaderProgram, uniformNames[i]);
 			}
@@ -48,12 +48,12 @@ var Shader = module.exports = function() {
 		shader.bindBuffers = parameters.bindBuffers;
 
 		if(!parameters.bindProjectionMatrix || typeof(parameters.bindProjectionMatrix) !== 'function') {
-			throw new Error("You must provide a pMatrix binding function 'bindProjectionMatrix'");
+			throw new Error("You must provide a pMatrix binding function 'bindProjectionMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
 		}
 		shader.bindProjectionMatrix = parameters.bindProjectionMatrix;
 
 		if(!parameters.bindModelViewMatrix || typeof(parameters.bindModelViewMatrix) !== 'function') {
-			throw new Error("You must provide a mvMatrix binding function 'bindModelViewMatrix'");
+			throw new Error("You must provide a mvMatrix binding function 'bindModelViewMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
 		}
 		shader.bindModelViewMatrix = parameters.bindModelViewMatrix;
 
