@@ -17,7 +17,7 @@ var Mesh = module.exports = function(){
 			this.normalBuffer = r.createBuffer(this.normals, 3);
 		},
 		updateIndexBuffer: function() {
-			this.indexBuffer = r.createBuffer(this.indices, 1);
+			this.indexBuffer = r.createBuffer(this.indices, 1, true);
 			this.indexed = true;
 		}
 	};
@@ -44,13 +44,9 @@ var Mesh = module.exports = function(){
 				mesh.indexed = false;
 			}
 			if(parameters.renderMode) {
-				if(r.RenderMode.hasOwnProperty(parameters.renderMode)) {
-					mesh.renderMode = parameters.renderMode;
-				} else {
-					throw new Error("Unrecognised RenderMode '" + parameters.renderMode + "'");
-				}
+				mesh.renderMode = parameters.renderMode;
 			} else {
-				mesh.renderMode = indexed ? r.RenderMode.IndexedTriangles : r.RenderMode.Triangles;
+				mesh.renderMode = r.RenderMode.Triangles;
 			}
 		}
 		return mesh;

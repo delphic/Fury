@@ -18,7 +18,7 @@ var IndexedMap = module.exports = function(){
 		remove: function(key) {
 			if(key != "keys" && this.hasOwnProperty(key)) {
 				delete this.key;
-				for(var i = 0, l = this.keys.length; i++) {
+				for(var i = 0, l = this.keys.length; i < l; i++) {
 					if(this.keys[i] == key) {
 						this.keys.splice(key,1);
 					}

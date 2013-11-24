@@ -24,22 +24,24 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],3:[function(require,module,exports){
+},{"./material":2,"./camera":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],2:[function(require,module,exports){
 var Material = module.exports = function(){
 	var exports = {};
 	var prototype = {
 		setTexture: function(name, texture) {
 			// TODO: Check that its a valid GL texture
-			material.textures[name] = texture;
+			this.textures[name] = texture;
 		}
 	};
 
 	var create = exports.create = function(parameters) {
 		var material = Object.create(prototype);
 
-		if(parameters.shader) {
-			material.shader = parameters.shader;
+		if(!parameters.shader) {
+			throw new Error("Shader must be provided");
 		}
+		material.shader = parameters.shader;
+
 		material.textures = {};
 		if(parameters.textures) {
 			for(var i = 0, l = textures.length; i < l; i++) {
@@ -56,7 +58,7 @@ var Material = module.exports = function(){
 
 	return exports;
 }();
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 // glMatrix assumed Global
 var Camera = module.exports = function() {
 	var exports = {};
@@ -64,13 +66,13 @@ var Camera = module.exports = function() {
 		// Set Rotation from Euler
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
-		getProjectionMatrix: function(out, ratio) {
+		getProjectionMatrix: function(out) {
 			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, ratio, this.near, this.far);
+				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
 			} else {
-				var left = - (this.height * ratio) / 2;
+				var left = - (this.height * this.ratio) / 2.0;
 				var right = - left;
-				var top = this.height / 2;
+				var top = this.height / 2.0;
 				var bottom = -top;
 				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
 			}
@@ -95,35 +97,14 @@ var Camera = module.exports = function() {
 		} else {
 			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
 		}
+		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
 		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+
+		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
+
 		return camera;
 	};
-	return exports;
-}();
-},{}],6:[function(require,module,exports){
-
-var Scene = module.exports = function() {
-	var exports = {};
-	var prototype = {
-		// Add Object (material & mesh provided, spawns mesh instance, returns object with transform)
-
-		// Add Camera
-	};
-
-	// private mesh list
-	// private mesh instances
-	// private material list
-
-	// Going to use dictionaries but with an array of keys for enumeration (hence private with accessor methods)
-
-	var create = exports.create = function(parameters) {
-		var scene = Object.create(prototype);
-
-
-		return scene;
-	};
-
 	return exports;
 }();
 },{}],5:[function(require,module,exports){
@@ -195,10 +176,15 @@ exports.useShaderProgram = function(shaderProgram) {
 
 // Buffers
 
-exports.createBuffer = function(data, itemSize) {
+exports.createBuffer = function(data, itemSize, indexed) {
 	var buffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+	if(!indexed) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+	} else {
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(data), gl.STATIC_DRAW);
+	}
 	buffer.itemSize = itemSize;
 	buffer.numItems = data.length / itemSize;
 	return buffer;
@@ -265,9 +251,8 @@ exports.setAttribute = function(name, buffer) {
 	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);
 };
 
-exports.setIndexedAttribute = function(name, buffer) {
+exports.setIndexedAttribute = function(buffer) {	// Should arguably be renamed - there's isn't an index attribute
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);	
 };
 
 exports.setUniformBoolean = function(name, value) {
@@ -302,79 +287,191 @@ exports.setUniformMatrix4 = function(name, value) {
 };
 
 // Draw Functions
+var RenderMode = exports.RenderMode = {
+	Triangles: "triangles",
+	TriangleStrip: "triangleStrip",
+	Lines: "lines",
+	Points: "points"
+};
 
-exports.drawTriangles = function(count) {
+var drawTriangles = exports.drawTriangles = function(count) {
 	gl.drawArrays(gl.TRIANGLES, 0, count);
 };
-exports.drawTriangleStrip = function(count) {
+var drawTriangleStrip = exports.drawTriangleStrip = function(count) {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
 };
-exports.drawLines = function(count) {
+var drawLines = exports.drawLines = function(count) {
 	gl.drawArrays(gl.LINES, 0, count);
 };
-exports.drawPoints = function(count) {
+var drawPoints = exports.drawPoints = function(count) {
 	gl.drawArrays(gl.POINTS, 0, count);
 };
-exports.drawIndexedTriangles = function(count, offset) {
+var drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
 	gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
 };
-exports.drawIndexedLines = function(count, offset) {
+var drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
+	gl.drawElements(gl.TRIANGLE_STRIP, count, gl.UNSIGNED_SHORT, offset);
+}
+var drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
 	gl.drawElements(gl.LINES, count, gl.UNSIGNED_SHORT, offset);
 };
-exports.drawIndexedPoints = function(count, offset) {
+var drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
 	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
 };
 
-},{}],4:[function(require,module,exports){
-var r = require('./renderer');
-
-var Mesh = module.exports = function(){
-	exports = {};
-
-	var prototype = {
-		calculateNormals: function() {
-			// TODO: Calculate Normals from Vertex information
-		},
-		setVertices: function(vertices) {
-			this.vertexBuffer = r.createBuffer(vertices, 3);
-		},
-		setTextureCoordinates: function(textureCoordinates) {
-			this.textureBuffer = r.createBuffer(textureCoordinates, 2);
-		},
-		setNormals: function(normals) {
-			this.normalBuffer = r.createBuffer(normals, 3);
-		},
-		setIndexBuffer: function(indices) {
-			this.indexBuffer = r.createBuffer(indices, 1);
-			this.indexed = true;
-		}
-	};
-
-	var create = exports.create = function(parameters) {
-		var mesh = Object.create(prototype);
-		if(parameters) {
-			if(parameters.vertices) {
-				mesh.setVertices(parameters.vertices);
-			} 
-			if(parameters.textureCoordinates) {
-				mesh.setTextureCoordinates(parameters.textureCoordinates);
-			}
-			if(parameters.normals) {
-				mesh.setNormals(parameters.normals);
-			}
-			if(parameters.indices) {
-				mesh.setIndexBuffer(parameters.indices);
+exports.draw = function(renderMode, count, indexed, offset) {
+	switch(renderMode) {
+		case RenderMode.Triangles:
+			if(!indexed) { 
+				drawTriangles(count);
 			} else {
-				mesh.indexed = false;
+				drawIndexedTriangles(count, offset);
 			}
-			// TODO: Render Mode Strip, Loose Triangles, Points, Lines etc
+			break;
+		case RenderMode.TriangleStrip:
+			if(!indexed) {
+				drawTriangleStrip(count);
+			} else {
+				drawIndexedTriangleStrip(count);
+			}
+			break;
+		case RenderMode.Lines:
+			if(!indexed) {
+				drawLines(count);
+			} else {
+				drawIndexedLines(count, offset);
+			}
+			break;
+		case RenderMode.Points:
+			if(!indexed) {
+				drawPoints(count);
+			} else {
+				drawIndexedPoints(count, offset);
+			}
+			break;
+		default:
+			throw new Error("Unrecognised renderMode '"+renderMode+"'");
+	}
+};
+},{}],6:[function(require,module,exports){
+(function(){// glMatrix assumed global
+var r = require('./renderer');
+var indexedMap = require('./indexedMap');
+
+var Scene = module.exports = function() {
+	var nextSceneId = 0;
+	var exports = {};
+	var prototype = {};
+
+	// Note Meshes and Materials shared across scenes
+	// Going to use dictionaries but with an array of keys for enumeration (hence private with accessor methods)
+	var meshes = indexedMap.create();
+	var materials = indexedMap.create();
+	
+	var create = exports.create = function(parameters) {
+		var sceneId = (nextSceneId++).toString();
+		var cameras = {};
+		var cameraNames = [];
+		var mainCameraName = "main";
+		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
+
+		var scene = Object.create(prototype);
+
+		var renderObjects = indexedMap.create(); // No explicit instancing just yet - just a list of render renderObjects 
+		// these renderObjects need to contain at minimum materialId, meshId, and transform (currently object just has material and mesh as well as transform)
+
+		// Add Object 
+		scene.add = function(object) {
+			if(!object || !object.mesh || !object.material) {
+				throw new Error("Mesh and Material must be present on the object.");
+			}
+			if(!object.material.id) {
+				object.material.id = materials.add(object.material);
+			}
+			if(!object.mesh.id) {
+				object.mesh.id = meshes.add(object.mesh);
+			}
+
+			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
+			// Should be adding a renderer component to said concept (?) 
+			if(!object.position) {
+				object.position = vec3.create();
+			} 
+			if(!parameters.rotation) {
+				object.rotation = quat.create();
+			}
+			if(!object.scale) {
+				object.scale = vec3.create();
+			}
+
+			var id = renderObjects.add(object);
+			object.sceneId = id;
+			return object;
 		}
-		return mesh;
+		// Add Camera
+		scene.addCamera = function(camera, name) {
+			var key = name ? name : "main";
+			if(cameraNames.length == 0) {
+				mainCameraName = key;
+			} 
+			if(!cameras.hasOwnProperty(key)) {
+				cameraNames.push(key);
+			}
+			cameras[key] = camera;
+		}
+
+		// Render
+		scene.render = function(cameraName) {
+			var camera = cameras[cameraName ? cameraName : mainCameraName];
+			camera.getProjectionMatrix(pMatrix);
+			mat4.fromRotationTranslation(cameraMatrix, camera.rotation, camera.position);
+			
+			// Brute Force for now, rebind EVERYTHING (so no need for the meshes / materials lists just yet)
+
+			// TODO: Scene Graph - this will probably require setters for material / mesh on render objects so we don't have to rebuild the graph every frame
+			// We are going to need to reorder it every frame once we include alpha though
+			// Batched first by Material
+			// Then by Mesh
+			// Then render each Mesh Instance
+
+			r.clear();
+
+			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
+				var object = renderObjects[renderObjects.keys[i]];
+
+				// TODO: Frustum Culling
+
+				var shader = object.material.shader;
+				r.useShaderProgram(shader.shaderProgram);
+
+				shader.bindProjectionMatrix(r, pMatrix);
+
+				shader.bindMaterial(r, object.material);
+
+				shader.bindBuffers(r, object.mesh);
+
+				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
+				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
+				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
+
+				shader.bindModelViewMatrix(r, mvMatrix);
+				
+				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);
+			}
+		}
+
+		if(parameters && parameters.camera) {
+			scene.addCamera(camera);
+		}
+
+		return scene;
 	};
 
 	return exports;
 }();
-},{"./renderer":5}],7:[function(require,module,exports){
+})()
+},{"./renderer":5,"./indexedMap":8}],7:[function(require,module,exports){
+// Shader Class for use with Fury Scene
 var r = require('./renderer');
 
 var Shader = module.exports = function() {
@@ -382,6 +479,9 @@ var Shader = module.exports = function() {
 	var prototype = {};
 
 	var create = exports.create = function(parameters) {
+
+		// TODO: Make this work as Shader Package.md desires
+
 		var i, l;
 		var shader = Object.create(prototype);
 
@@ -396,26 +496,141 @@ var Shader = module.exports = function() {
 			throw new Error("No Fragment Shader Source 'fsSource'");
 		}
 		
-		shader.vs = r.createShader("vertex", vsSource);
-		shader.fs = r.createShader("fragment", fsSource);
-		shader.shaderProgram = r.createShaderProgram(vs, fs);
-		if(parameters.attributeNames) {
-			for(i = 0, l = attributeNames.length; i < l; i++) {
-				r.initAttribute(shaderProgram, attributeNames[i]);
+		shader.vs = r.createShader("vertex", parameters.vsSource);
+		shader.fs = r.createShader("fragment", parameters.fsSource);
+		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
+		if(parameters.attributeNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
+				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
 			}
 		}
-		if(parameters.uniformNames) {
-			for(i = 0, l = uniformNames.length; i < l; i++) {
-				r.initUniform(shaderProgram, uniformNames[i]);
+		if(parameters.uniformNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
+				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
 			}
 		}
 
-		// TODO: Add binding functions		
+		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
+			throw new Error("You must provide a material binding function 'bindMaterial'");
+		}
+		shader.bindMaterial = parameters.bindMaterial;	
+
+		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
+			throw new Error("You must provide a mesh binding function 'bindBuffers'");
+		}
+		shader.bindBuffers = parameters.bindBuffers;
+
+		if(!parameters.bindProjectionMatrix || typeof(parameters.bindProjectionMatrix) !== 'function') {
+			throw new Error("You must provide a pMatrix binding function 'bindProjectionMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
+		}
+		shader.bindProjectionMatrix = parameters.bindProjectionMatrix;
+
+		if(!parameters.bindModelViewMatrix || typeof(parameters.bindModelViewMatrix) !== 'function') {
+			throw new Error("You must provide a mvMatrix binding function 'bindModelViewMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
+		}
+		shader.bindModelViewMatrix = parameters.bindModelViewMatrix;
+
+		// TODO: decide how to deal with non-standard uniforms
 
 		return shader;
 	};
 
 	return exports;
 }();
-},{"./renderer":5}]},{},[1])
+},{"./renderer":5}],4:[function(require,module,exports){
+var r = require('./renderer');
+
+var Mesh = module.exports = function(){
+	exports = {};
+
+	var prototype = {
+		calculateNormals: function() {
+			// TODO: Calculate Normals from Vertex information
+		},
+		updateVertices: function() {
+			this.vertexBuffer = r.createBuffer(this.vertices, 3);
+		},
+		updateTextureCoordinates: function() {
+			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
+		},
+		updateNormals: function() {
+			this.normalBuffer = r.createBuffer(this.normals, 3);
+		},
+		updateIndexBuffer: function() {
+			this.indexBuffer = r.createBuffer(this.indices, 1, true);
+			this.indexed = true;
+		}
+	};
+
+	var create = exports.create = function(parameters) {
+		var mesh = Object.create(prototype);
+		if(parameters) {
+			if(parameters.vertices) {
+				mesh.vertices = parameters.vertices;
+				mesh.updateVertices();
+			} 
+			if(parameters.textureCoordinates) {
+				mesh.textureCoordinates = parameters.textureCoordinates;
+				mesh.updateTextureCoordinates();
+			}
+			if(parameters.normals) {
+				mesh.normals = parameters.normals;
+				mesh.updateNormals();
+			}
+			if(parameters.indices) {
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
+			} else {
+				mesh.indexed = false;
+			}
+			if(parameters.renderMode) {
+				mesh.renderMode = parameters.renderMode;
+			} else {
+				mesh.renderMode = r.RenderMode.Triangles;
+			}
+		}
+		return mesh;
+	};
+
+	return exports;
+}();
+},{"./renderer":5}],8:[function(require,module,exports){
+var IndexedMap = module.exports = function(){
+	// This creates a dictionary that provides its own keys
+	// It also contains an array of keys for quick enumeration
+	// This does of course slow removal, so this structure should
+	// be used for arrays where you want to enumerate a lot and 
+	// also want references that do not go out of date when 
+	// you remove an item (which is hopefully rarely).
+	var exports = {};
+	var nextKey = 1;
+
+	var prototype = {
+		add: function(item) {
+			var key = (nextKey++).toString(); 
+			this[key] = item;
+			this.keys.push(key);
+			return key; 
+		},
+		remove: function(key) {
+			if(key != "keys" && this.hasOwnProperty(key)) {
+				delete this.key;
+				for(var i = 0, l = this.keys.length; i < l; i++) {
+					if(this.keys[i] == key) {
+						this.keys.splice(key,1);
+					}
+				}
+			}
+		}
+	};
+
+	var create = exports.create = function() {
+		var map = Object.create(prototype);
+		map.keys = [];
+		return map;
+	};
+
+	return exports;
+}();
+},{}]},{},[1])
 ;

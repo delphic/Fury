@@ -55,11 +55,11 @@ var Scene = module.exports = function() {
 		// Add Camera
 		scene.addCamera = function(camera, name) {
 			var key = name ? name : "main";
-			if(cameras.names.length == 0) {
+			if(cameraNames.length == 0) {
 				mainCameraName = key;
 			} 
-			if(!camera.hasOwnProperty(key)) {
-				camerasNames.push(key);
+			if(!cameras.hasOwnProperty(key)) {
+				cameraNames.push(key);
 			}
 			cameras[key] = camera;
 		}
@@ -86,6 +86,7 @@ var Scene = module.exports = function() {
 				// TODO: Frustum Culling
 
 				var shader = object.material.shader;
+				r.useShaderProgram(shader.shaderProgram);
 
 				shader.bindProjectionMatrix(r, pMatrix);
 
@@ -98,8 +99,8 @@ var Scene = module.exports = function() {
 				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 
 				shader.bindModelViewMatrix(r, mvMatrix);
-
-				r.draw(mesh.renderMode, mesh.vertexBuffer.numItems, mesh.indexed, 0);
+				
+				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);
 			}
 		}
 

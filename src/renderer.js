@@ -66,10 +66,15 @@ exports.useShaderProgram = function(shaderProgram) {
 
 // Buffers
 
-exports.createBuffer = function(data, itemSize) {
+exports.createBuffer = function(data, itemSize, indexed) {
 	var buffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+	if(!indexed) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+	} else {
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(data), gl.STATIC_DRAW);
+	}
 	buffer.itemSize = itemSize;
 	buffer.numItems = data.length / itemSize;
 	return buffer;
@@ -136,9 +141,8 @@ exports.setAttribute = function(name, buffer) {
 	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);
 };
 
-exports.setIndexedAttribute = function(name, buffer) {
+exports.setIndexedAttribute = function(buffer) {	// Should arguably be renamed - there's isn't an index attribute
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);	
 };
 
 exports.setUniformBoolean = function(name, value) {
@@ -180,6 +184,31 @@ var RenderMode = exports.RenderMode = {
 	Points: "points"
 };
 
+var drawTriangles = exports.drawTriangles = function(count) {
+	gl.drawArrays(gl.TRIANGLES, 0, count);
+};
+var drawTriangleStrip = exports.drawTriangleStrip = function(count) {
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
+};
+var drawLines = exports.drawLines = function(count) {
+	gl.drawArrays(gl.LINES, 0, count);
+};
+var drawPoints = exports.drawPoints = function(count) {
+	gl.drawArrays(gl.POINTS, 0, count);
+};
+var drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
+	gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
+};
+var drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
+	gl.drawElements(gl.TRIANGLE_STRIP, count, gl.UNSIGNED_SHORT, offset);
+}
+var drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
+	gl.drawElements(gl.LINES, count, gl.UNSIGNED_SHORT, offset);
+};
+var drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
+	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
+};
+
 exports.draw = function(renderMode, count, indexed, offset) {
 	switch(renderMode) {
 		case RenderMode.Triangles:
@@ -213,28 +242,4 @@ exports.draw = function(renderMode, count, indexed, offset) {
 		default:
 			throw new Error("Unrecognised renderMode '"+renderMode+"'");
 	}
-}
-var drawTriangles = exports.drawTriangles = function(count) {
-	gl.drawArrays(gl.TRIANGLES, 0, count);
-};
-var drawTriangleStrip = exports.drawTriangleStrip = function(count) {
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
-};
-var drawLines = exports.drawLines = function(count) {
-	gl.drawArrays(gl.LINES, 0, count);
-};
-var drawPoints = exports.drawPoints = function(count) {
-	gl.drawArrays(gl.POINTS, 0, count);
-};
-var drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
-	gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
-};
-var drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
-	gl.drawElements(gl.TRIANGLE_STRIP, count, gl.UNSIGNED_SHORT, offset);
-}
-var drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
-	gl.drawElements(gl.LINES, count, gl.UNSIGNED_SHORT, offset);
-};
-var drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
-	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
 };

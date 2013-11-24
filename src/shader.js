@@ -23,17 +23,17 @@ var Shader = module.exports = function() {
 			throw new Error("No Fragment Shader Source 'fsSource'");
 		}
 		
-		shader.vs = r.createShader("vertex", vsSource);
-		shader.fs = r.createShader("fragment", fsSource);
-		shader.shaderProgram = r.createShaderProgram(vs, fs);
+		shader.vs = r.createShader("vertex", parameters.vsSource);
+		shader.fs = r.createShader("fragment", parameters.fsSource);
+		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
 		if(parameters.attributeNames) {	// Could parse these from the shader
-			for(i = 0, l = attributeNames.length; i < l; i++) {
-				r.initAttribute(shaderProgram, attributeNames[i]);
+			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
+				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
 			}
 		}
 		if(parameters.uniformNames) {	// Could parse these from the shader
-			for(i = 0, l = uniformNames.length; i < l; i++) {
-				r.initUniform(shaderProgram, uniformNames[i]);
+			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
+				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
 			}
 		}
 
