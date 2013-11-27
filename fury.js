@@ -24,7 +24,7 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],2:[function(require,module,exports){
+},{"./camera":2,"./material":3,"./renderer":4,"./mesh":5,"./scene":6,"./shader":7}],2:[function(require,module,exports){
 // glMatrix assumed Global
 var Camera = module.exports = function() {
 	var exports = {};
@@ -73,41 +73,7 @@ var Camera = module.exports = function() {
 	};
 	return exports;
 }();
-},{}],3:[function(require,module,exports){
-var Material = module.exports = function(){
-	var exports = {};
-	var prototype = {
-		setTexture: function(name, texture) {
-			// TODO: Check that its a valid GL texture
-			this.textures[name] = texture;
-		}
-	};
-
-	var create = exports.create = function(parameters) {
-		var material = Object.create(prototype);
-
-		if(!parameters.shader) {
-			throw new Error("Shader must be provided");
-		}
-		material.shader = parameters.shader;
-
-		material.textures = {};
-		if(parameters.textures) {
-			for(var i = 0, l = textures.length; i < l; i++) {
-				if(texture[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
-					material.textures[textures[i].name] = textures[i].texture;
-				} else {
-					throw new Error("Texture Array must contain objects with properties 'name' and 'texture'");
-				}
-			}
-		}
-
-		return material;
-	};
-
-	return exports;
-}();
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -353,7 +319,41 @@ exports.draw = function(renderMode, count, indexed, offset) {
 			throw new Error("Unrecognised renderMode '"+renderMode+"'");
 	}
 };
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
+var Material = module.exports = function(){
+	var exports = {};
+	var prototype = {
+		setTexture: function(name, texture) {
+			// TODO: Check that its a valid GL texture
+			this.textures[name] = texture;
+		}
+	};
+
+	var create = exports.create = function(parameters) {
+		var material = Object.create(prototype);
+
+		if(!parameters.shader) {
+			throw new Error("Shader must be provided");
+		}
+		material.shader = parameters.shader;
+
+		material.textures = {};
+		if(parameters.textures) {
+			for(var i = 0, l = textures.length; i < l; i++) {
+				if(texture[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
+					material.textures[textures[i].name] = textures[i].texture;
+				} else {
+					throw new Error("Texture Array must contain objects with properties 'name' and 'texture'");
+				}
+			}
+		}
+
+		return material;
+	};
+
+	return exports;
+}();
+},{}],5:[function(require,module,exports){
 var r = require('./renderer');
 
 var Mesh = module.exports = function(){
@@ -410,7 +410,7 @@ var Mesh = module.exports = function(){
 
 	return exports;
 }();
-},{"./renderer":5}],6:[function(require,module,exports){
+},{"./renderer":4}],6:[function(require,module,exports){
 (function(){// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
@@ -501,7 +501,7 @@ var Scene = module.exports = function() {
 				var shader = object.material.shader;
 				r.useShaderProgram(shader.shaderProgram);
 
-				shader.bindProjectionMatrix.call(r, pMatrix);
+				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
 
 				shader.bindMaterial.call(r, object.material);
 
@@ -511,7 +511,7 @@ var Scene = module.exports = function() {
 				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
 				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 
-				shader.bindModelViewMatrix.call(r, mvMatrix);
+				r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 				
 				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);
 			}
@@ -527,7 +527,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./renderer":5,"./indexedMap":8}],7:[function(require,module,exports){
+},{"./renderer":4,"./indexedMap":8}],7:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 
@@ -536,9 +536,6 @@ var Shader = module.exports = function() {
 	var prototype = {};
 
 	var create = exports.create = function(parameters) {
-
-		// TODO: Make this work as Shader Package.md desires
-
 		var i, l;
 		var shader = Object.create(prototype);
 
@@ -577,15 +574,8 @@ var Shader = module.exports = function() {
 		}
 		shader.bindBuffers = parameters.bindBuffers;
 
-		if(!parameters.bindProjectionMatrix || typeof(parameters.bindProjectionMatrix) !== 'function') {
-			throw new Error("You must provide a pMatrix binding function 'bindProjectionMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
-		}
-		shader.bindProjectionMatrix = parameters.bindProjectionMatrix;
-
-		if(!parameters.bindModelViewMatrix || typeof(parameters.bindModelViewMatrix) !== 'function') {
-			throw new Error("You must provide a mvMatrix binding function 'bindModelViewMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
-		}
-		shader.bindModelViewMatrix = parameters.bindModelViewMatrix;
+		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
+		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
 
 		// TODO: decide how to deal with non-standard uniforms
 
@@ -594,7 +584,7 @@ var Shader = module.exports = function() {
 
 	return exports;
 }();
-},{"./renderer":5}],8:[function(require,module,exports){
+},{"./renderer":4}],8:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration

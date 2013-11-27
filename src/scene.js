@@ -88,7 +88,7 @@ var Scene = module.exports = function() {
 				var shader = object.material.shader;
 				r.useShaderProgram(shader.shaderProgram);
 
-				shader.bindProjectionMatrix.call(r, pMatrix);
+				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
 
 				shader.bindMaterial.call(r, object.material);
 
@@ -98,7 +98,7 @@ var Scene = module.exports = function() {
 				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
 				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 
-				shader.bindModelViewMatrix.call(r, mvMatrix);
+				r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 				
 				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);
 			}

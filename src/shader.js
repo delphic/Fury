@@ -6,9 +6,6 @@ var Shader = module.exports = function() {
 	var prototype = {};
 
 	var create = exports.create = function(parameters) {
-
-		// TODO: Make this work as Shader Package.md desires
-
 		var i, l;
 		var shader = Object.create(prototype);
 
@@ -47,15 +44,8 @@ var Shader = module.exports = function() {
 		}
 		shader.bindBuffers = parameters.bindBuffers;
 
-		if(!parameters.bindProjectionMatrix || typeof(parameters.bindProjectionMatrix) !== 'function') {
-			throw new Error("You must provide a pMatrix binding function 'bindProjectionMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
-		}
-		shader.bindProjectionMatrix = parameters.bindProjectionMatrix;
-
-		if(!parameters.bindModelViewMatrix || typeof(parameters.bindModelViewMatrix) !== 'function') {
-			throw new Error("You must provide a mvMatrix binding function 'bindModelViewMatrix'");	// Could probably make a guess at these, or perhaps just request the attribute name?
-		}
-		shader.bindModelViewMatrix = parameters.bindModelViewMatrix;
+		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
+		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
 
 		// TODO: decide how to deal with non-standard uniforms
 
