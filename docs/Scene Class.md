@@ -13,10 +13,15 @@ Presumably we’re eventually going to need to a sorting operation every frame /
 Minimising rebinds (getting the benefits of instancing without having to be explicit about it - although if an editor is created will probably need an explicit option too).
 
 Stage 1: 
+
 Check if rebind necessary (i.e. store current Shader / Material / Mesh Id) (also possibly will need a rebind flag on meshes for if you dynamically alter them)
+
 Stage 2:	
+
 i) Order the render objects when created so they are rendered in an order that minimises rebinds
+
 ii) Store the materialId / meshId on the render object and check for changes compared to object.material.id, if it changes add it to a list for re-ordering
+
 iii) Take list of items to be reordered and put them back into the correct place in the scene grap
 
 ## Note on Alpha:
