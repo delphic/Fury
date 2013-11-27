@@ -88,17 +88,17 @@ var Scene = module.exports = function() {
 				var shader = object.material.shader;
 				r.useShaderProgram(shader.shaderProgram);
 
-				shader.bindProjectionMatrix(r, pMatrix);
+				shader.bindProjectionMatrix.call(r, pMatrix);
 
-				shader.bindMaterial(r, object.material);
+				shader.bindMaterial.call(r, object.material);
 
-				shader.bindBuffers(r, object.mesh);
+				shader.bindBuffers.call(r, object.mesh);
 
 				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
 				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 
-				shader.bindModelViewMatrix(r, mvMatrix);
+				shader.bindModelViewMatrix.call(r, mvMatrix);
 				
 				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);
 			}

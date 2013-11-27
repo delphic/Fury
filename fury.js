@@ -24,41 +24,7 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./material":2,"./camera":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],2:[function(require,module,exports){
-var Material = module.exports = function(){
-	var exports = {};
-	var prototype = {
-		setTexture: function(name, texture) {
-			// TODO: Check that its a valid GL texture
-			this.textures[name] = texture;
-		}
-	};
-
-	var create = exports.create = function(parameters) {
-		var material = Object.create(prototype);
-
-		if(!parameters.shader) {
-			throw new Error("Shader must be provided");
-		}
-		material.shader = parameters.shader;
-
-		material.textures = {};
-		if(parameters.textures) {
-			for(var i = 0, l = textures.length; i < l; i++) {
-				if(texture[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
-					material.textures[textures[i].name] = textures[i].texture;
-				} else {
-					throw new Error("Texture Array must contain objects with properties 'name' and 'texture'");
-				}
-			}
-		}
-
-		return material;
-	};
-
-	return exports;
-}();
-},{}],3:[function(require,module,exports){
+},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],2:[function(require,module,exports){
 // glMatrix assumed Global
 var Camera = module.exports = function() {
 	var exports = {};
@@ -105,6 +71,40 @@ var Camera = module.exports = function() {
 
 		return camera;
 	};
+	return exports;
+}();
+},{}],3:[function(require,module,exports){
+var Material = module.exports = function(){
+	var exports = {};
+	var prototype = {
+		setTexture: function(name, texture) {
+			// TODO: Check that its a valid GL texture
+			this.textures[name] = texture;
+		}
+	};
+
+	var create = exports.create = function(parameters) {
+		var material = Object.create(prototype);
+
+		if(!parameters.shader) {
+			throw new Error("Shader must be provided");
+		}
+		material.shader = parameters.shader;
+
+		material.textures = {};
+		if(parameters.textures) {
+			for(var i = 0, l = textures.length; i < l; i++) {
+				if(texture[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
+					material.textures[textures[i].name] = textures[i].texture;
+				} else {
+					throw new Error("Texture Array must contain objects with properties 'name' and 'texture'");
+				}
+			}
+		}
+
+		return material;
+	};
+
 	return exports;
 }();
 },{}],5:[function(require,module,exports){
@@ -353,7 +353,64 @@ exports.draw = function(renderMode, count, indexed, offset) {
 			throw new Error("Unrecognised renderMode '"+renderMode+"'");
 	}
 };
-},{}],6:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+var r = require('./renderer');
+
+var Mesh = module.exports = function(){
+	exports = {};
+
+	var prototype = {
+		calculateNormals: function() {
+			// TODO: Calculate Normals from Vertex information
+		},
+		updateVertices: function() {
+			this.vertexBuffer = r.createBuffer(this.vertices, 3);
+		},
+		updateTextureCoordinates: function() {
+			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
+		},
+		updateNormals: function() {
+			this.normalBuffer = r.createBuffer(this.normals, 3);
+		},
+		updateIndexBuffer: function() {
+			this.indexBuffer = r.createBuffer(this.indices, 1, true);
+			this.indexed = true;
+		}
+	};
+
+	var create = exports.create = function(parameters) {
+		var mesh = Object.create(prototype);
+		if(parameters) {
+			if(parameters.vertices) {
+				mesh.vertices = parameters.vertices;
+				mesh.updateVertices();
+			} 
+			if(parameters.textureCoordinates) {
+				mesh.textureCoordinates = parameters.textureCoordinates;
+				mesh.updateTextureCoordinates();
+			}
+			if(parameters.normals) {
+				mesh.normals = parameters.normals;
+				mesh.updateNormals();
+			}
+			if(parameters.indices) {
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
+			} else {
+				mesh.indexed = false;
+			}
+			if(parameters.renderMode) {
+				mesh.renderMode = parameters.renderMode;
+			} else {
+				mesh.renderMode = r.RenderMode.Triangles;
+			}
+		}
+		return mesh;
+	};
+
+	return exports;
+}();
+},{"./renderer":5}],6:[function(require,module,exports){
 (function(){// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
@@ -444,17 +501,17 @@ var Scene = module.exports = function() {
 				var shader = object.material.shader;
 				r.useShaderProgram(shader.shaderProgram);
 
-				shader.bindProjectionMatrix(r, pMatrix);
+				shader.bindProjectionMatrix.call(r, pMatrix);
 
-				shader.bindMaterial(r, object.material);
+				shader.bindMaterial.call(r, object.material);
 
-				shader.bindBuffers(r, object.mesh);
+				shader.bindBuffers.call(r, object.mesh);
 
 				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
 				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 
-				shader.bindModelViewMatrix(r, mvMatrix);
+				shader.bindModelViewMatrix.call(r, mvMatrix);
 				
 				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);
 			}
@@ -533,63 +590,6 @@ var Shader = module.exports = function() {
 		// TODO: decide how to deal with non-standard uniforms
 
 		return shader;
-	};
-
-	return exports;
-}();
-},{"./renderer":5}],4:[function(require,module,exports){
-var r = require('./renderer');
-
-var Mesh = module.exports = function(){
-	exports = {};
-
-	var prototype = {
-		calculateNormals: function() {
-			// TODO: Calculate Normals from Vertex information
-		},
-		updateVertices: function() {
-			this.vertexBuffer = r.createBuffer(this.vertices, 3);
-		},
-		updateTextureCoordinates: function() {
-			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
-		},
-		updateNormals: function() {
-			this.normalBuffer = r.createBuffer(this.normals, 3);
-		},
-		updateIndexBuffer: function() {
-			this.indexBuffer = r.createBuffer(this.indices, 1, true);
-			this.indexed = true;
-		}
-	};
-
-	var create = exports.create = function(parameters) {
-		var mesh = Object.create(prototype);
-		if(parameters) {
-			if(parameters.vertices) {
-				mesh.vertices = parameters.vertices;
-				mesh.updateVertices();
-			} 
-			if(parameters.textureCoordinates) {
-				mesh.textureCoordinates = parameters.textureCoordinates;
-				mesh.updateTextureCoordinates();
-			}
-			if(parameters.normals) {
-				mesh.normals = parameters.normals;
-				mesh.updateNormals();
-			}
-			if(parameters.indices) {
-				mesh.indices = parameters.indices;
-				mesh.updateIndexBuffer();
-			} else {
-				mesh.indexed = false;
-			}
-			if(parameters.renderMode) {
-				mesh.renderMode = parameters.renderMode;
-			} else {
-				mesh.renderMode = r.RenderMode.Triangles;
-			}
-		}
-		return mesh;
 	};
 
 	return exports;

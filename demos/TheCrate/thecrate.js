@@ -31,22 +31,22 @@ var shader = Fury.Shader.create({
     "}"].join('\n'),
 	attributeNames: [ "aVertexPosition", "aTextureCoord" ],
 	uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
-	bindMaterial: function(r, material) {
-		r.setUniformInteger("uSampler", 0);	// This should be managed rather than manual (although also requires update to setTexture)
-		r.setTexture(material.textures["crate"]); 
+	bindMaterial: function(material) {	// TODO: Update so that 'this' is the renderer and don't need to pass in renderer
+		this.setUniformInteger("uSampler", 0);	// This should be managed rather than manual (although also requires update to setTexture)
+		this.setTexture(material.textures["crate"]); 
 	},
-	bindBuffers: function(r, mesh) {
-		r.enableAttribute("aVertexPosition");
-		r.enableAttribute("aTextureCoord");
-		r.setAttribute("aVertexPosition", mesh.vertexBuffer);
-		r.setAttribute("aTextureCoord", mesh.textureBuffer);
-		r.setIndexedAttribute(mesh.indexBuffer);
+	bindBuffers: function(mesh) {
+		this.enableAttribute("aVertexPosition");
+		this.enableAttribute("aTextureCoord");
+		this.setAttribute("aVertexPosition", mesh.vertexBuffer);
+		this.setAttribute("aTextureCoord", mesh.textureBuffer);
+		this.setIndexedAttribute(mesh.indexBuffer);
 	},
-	bindProjectionMatrix: function(r, pMatrix) {
-		r.setUniformMatrix4("uPMatrix", pMatrix);
+	bindProjectionMatrix: function(pMatrix) {	// TODO: Switch to supplying "pMatrixUniformName" attribute, guess at "uPMatrix"
+		this.setUniformMatrix4("uPMatrix", pMatrix);
 	},
-	bindModelViewMatrix: function(r, mvMatrix) {
-		r.setUniformMatrix4("uMVMatrix", mvMatrix);
+	bindModelViewMatrix: function(mvMatrix) {	// TODO: Switch to supplying "mvMatrixUniformName" attribute, guess at "uMVMatrix"
+		this.setUniformMatrix4("uMVMatrix", mvMatrix);
 	}
 });
 
