@@ -11,6 +11,7 @@ var Scene = module.exports = function() {
 	// Going to use dictionaries but with an array of keys for enumeration (hence private with accessor methods)
 	var meshes = indexedMap.create();
 	var materials = indexedMap.create();
+	var shaders = indexedMap.create();
 	
 	var create = exports.create = function(parameters) {
 		var sceneId = (nextSceneId++).toString();
@@ -18,6 +19,7 @@ var Scene = module.exports = function() {
 		var cameraNames = [];
 		var mainCameraName = "main";
 		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
+		var currentShaderId, currentMaterialId, currentMeshId;
 
 		var scene = Object.create(prototype);
 
@@ -29,8 +31,12 @@ var Scene = module.exports = function() {
 			if(!object || !object.mesh || !object.material) {
 				throw new Error("Mesh and Material must be present on the object.");
 			}
+
 			if(!object.material.id) {
 				object.material.id = materials.add(object.material);
+			}
+			if(!object.material.shader.id) {
+				object.material.shader.id = shaders.add(object.material.shader);
 			}
 			if(!object.mesh.id) {
 				object.mesh.id = meshes.add(object.mesh);
@@ -72,8 +78,7 @@ var Scene = module.exports = function() {
 			
 			// Brute Force for now, rebind EVERYTHING (so no need for the meshes / materials lists just yet)
 
-			// TODO: Scene Graph - this will probably require setters for material / mesh on render objects so we don't have to rebuild the graph every frame
-			// We are going to need to reorder it every frame once we include alpha though
+			// TODO: Scene Graph - will check objects haven't 
 			// Batched first by Material
 			// Then by Mesh
 			// Then render each Mesh Instance
@@ -86,13 +91,31 @@ var Scene = module.exports = function() {
 				// TODO: Frustum Culling
 
 				var shader = object.material.shader;
-				r.useShaderProgram(shader.shaderProgram);
+				if(!shader.id || shader.id != currentShaderId) {
+					if(!shader.id) {	// Shader was changed on the material since originally added to scene
+						shader.id = shaders.add(shader); 
+					}
+					currentShaderId = shader.id;
+					r.useShaderProgram(shader.shaderProgram);
+				} 
 
 				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
 
-				shader.bindMaterial.call(r, object.material);
+				if(!object.material.id || object.material.id != currentMaterialId) {
+					if(!object.material.id) {	// material was changed on object since originally added to scene
+						object.material.id = materials.add(object.material);
+					}
+					currentMaterialId = object.material.id;
+					shader.bindMaterial.call(r, object.material);
+				}
 
-				shader.bindBuffers.call(r, object.mesh);
+				if(!object.mesh.id || object.mesh.id != currentMeshId) {
+					if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
+						object.mesh.id = mesh.add(object.mesh);
+					}
+					currentMeshId = object.mesh.id;
+					shader.bindBuffers.call(r, object.mesh);
+				}
 
 				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);

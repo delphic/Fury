@@ -24,7 +24,7 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./material":3,"./renderer":4,"./mesh":5,"./scene":6,"./shader":7}],2:[function(require,module,exports){
+},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],2:[function(require,module,exports){
 // glMatrix assumed Global
 var Camera = module.exports = function() {
 	var exports = {};
@@ -73,7 +73,7 @@ var Camera = module.exports = function() {
 	};
 	return exports;
 }();
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -353,7 +353,7 @@ var Material = module.exports = function(){
 
 	return exports;
 }();
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var r = require('./renderer');
 
 var Mesh = module.exports = function(){
@@ -410,7 +410,7 @@ var Mesh = module.exports = function(){
 
 	return exports;
 }();
-},{"./renderer":4}],6:[function(require,module,exports){
+},{"./renderer":5}],6:[function(require,module,exports){
 (function(){// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
@@ -424,6 +424,7 @@ var Scene = module.exports = function() {
 	// Going to use dictionaries but with an array of keys for enumeration (hence private with accessor methods)
 	var meshes = indexedMap.create();
 	var materials = indexedMap.create();
+	var shaders = indexedMap.create();
 	
 	var create = exports.create = function(parameters) {
 		var sceneId = (nextSceneId++).toString();
@@ -431,6 +432,7 @@ var Scene = module.exports = function() {
 		var cameraNames = [];
 		var mainCameraName = "main";
 		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
+		var currentShaderId, currentMaterialId, currentMeshId;
 
 		var scene = Object.create(prototype);
 
@@ -442,8 +444,12 @@ var Scene = module.exports = function() {
 			if(!object || !object.mesh || !object.material) {
 				throw new Error("Mesh and Material must be present on the object.");
 			}
+
 			if(!object.material.id) {
 				object.material.id = materials.add(object.material);
+			}
+			if(!object.material.shader.id) {
+				object.material.shader.id = shaders.add(object.material.shader);
 			}
 			if(!object.mesh.id) {
 				object.mesh.id = meshes.add(object.mesh);
@@ -499,13 +505,34 @@ var Scene = module.exports = function() {
 				// TODO: Frustum Culling
 
 				var shader = object.material.shader;
-				r.useShaderProgram(shader.shaderProgram);
+				if(!shader.id || shader.id != currentShaderId) {
+					if(!shader.id) {	// Shader was changed on the material since originally added to scene
+						shader.id = shaders.add(shader); 
+					}
+					currentShaderId = shader.id;
+					console.log("Bound Shader Program");
+					r.useShaderProgram(shader.shaderProgram);
+				} 
 
 				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
 
-				shader.bindMaterial.call(r, object.material);
+				if(!object.material.id || object.material.id != currentMaterialId) {
+					if(!object.material.id) {	// material was changed on object since originally added to scene
+						object.material.id = materials.add(object.material);
+					}
+					currentMaterialId = object.material.id;
+					console.log("Bound Material");
+					shader.bindMaterial.call(r, object.material);
+				}
 
-				shader.bindBuffers.call(r, object.mesh);
+				if(!object.mesh.id || object.mesh.id != currentMeshId) {
+					if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
+						object.mesh.id = mesh.add(object.mesh);
+					}
+					currentMeshId = object.mesh.id;
+					console.log("Boung Mesh");
+					shader.bindBuffers.call(r, object.mesh);
+				}
 
 				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
@@ -527,7 +554,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./renderer":4,"./indexedMap":8}],7:[function(require,module,exports){
+},{"./renderer":5,"./indexedMap":8}],7:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 
@@ -584,7 +611,7 @@ var Shader = module.exports = function() {
 
 	return exports;
 }();
-},{"./renderer":4}],8:[function(require,module,exports){
+},{"./renderer":5}],8:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
