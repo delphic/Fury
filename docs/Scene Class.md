@@ -6,14 +6,41 @@ However access/lookup in these types of graphs / lists is not particularly fast,
 
 Initially we should implement the naive option of just using the simple array / dictionary of render objects and rebind everything for each object on the shader, we can then move forward from a (hopefully) working scene.
 
-Presumably we’re eventually going to need to a sorting operation every frame / render or at least anytime the camera or an object moves (so might as well be every frame), in that we have to at least sort the transparent / translucent objects against everything else. Note: Painters algorithm for items with alpha, reverse painters algorithm for those without to make maximal use of the z-buffer.
+Presumably we’re eventually going to need to a sorting operation every frame / render or at least anytime the camera or an object moves (so might as well be every frame), in that we have to at least sort the transparent / translucent objects against each other. Note: Painters algorithm for items with alpha.
 
+# Refined Scene Thoughts
 
-## Tasks
-Finalise renderobject structure (Q: Should every object have a list of instances, and it can just contain one if necessary, this is probably sensible?)
+Minimising rebinds (getting the benefits of instancing without having to be explicit about it - although if an editor is created will probably need an explicit option too).
 
-Implement the naive - rebind everything - shader class for test shaders (i.e. will include an updateShader(renderObject) on instances of that shader), the scene class can then use this function
+Stage 1: 
+Check if rebind necessary (i.e. store current Shader / Material / Mesh Id) (also possibly will need a rebind flag on meshes for if you dynamically alter them)
+Stage 2:	
+i) Order the render objects when created so they are rendered in an order that minimises rebinds
+ii) Store the materialId / meshId on the render object and check for changes compared to object.material.id, if it changes add it to a list for re-ordering
+iii) Take list of items to be reordered and put them back into the correct place in the scene grap
 
-We need to create a scene class, which keeps this list of objects and has a render function (and a main camera - presumably as a passed in argument on create, which an option in render to pass a different camera)! As well as add object to scene function, add instance etc.
-  
-We should consider renaming the ‘renderer’ as glfacade (or glf) then the real ‘renderer’ can live on top with possibly extra functions (although I’ve forgotten what I thought these would be so lets hold off on that until necessary). 
+## Note on Alpha:
+Depth testing only needs to be disabled if there are back faces... simple way to solve this, no back faces allowed.
+This means we only need to order items with transparency by depth and render them after the solid objects.
+Initially items with back faces just won't work, an extension would be to split items with a material including alpha transparency into sub-meshes which can then be ordered.
+
+## Note on Textures:
+We can bind multiple textures and store the place you've bound it. 
+This means we don't necessarily need to rebind textures even when switching between materials (?).
+	Q: Do you need to rebind texture on changing shader?
+
+## Note on ordering:
+Obviously we need to group by having the same material and the same mesh. 
+We can do better!
+	Group materials with the same shaders.
+	Group materials which share the same textures.
+
+Arguably we could look for different meshes which share buffers too!
+
+## Note on depth ordering:
+Items which use alpha blending need to be ordered by depth, which sorting algorithm to use is an interesting question.
+
+If the camera isn't rotating insertion sort probably would win (http://en.wikipedia.org/wiki/Insertion_sort), however doing a quick 180 with the camera would quickly approach the worst case senario for insertion sort. 
+
+Perhaps initially we should just do merge-sort as it'll be pretty good for most circumstances (although we should possibly check the factors for low values etc etc). 
+ 
