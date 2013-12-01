@@ -3,7 +3,7 @@ Fury
 
 Fury (as in the mythical creature) - a WebGL based game engine / framework.
 
-The ideal being to allow easier low level access to WebGL, whilst not to forcing any abstractions upon the user.
+The ideal being to allow easier low level access to WebGL, whilst not to forcing any unnecessary abstractions upon the user.
 
 Standards or GTFO - This means WebGL and Web Audio API (without fall backs).
 

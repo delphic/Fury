@@ -2,13 +2,13 @@
 
 Fury (as in the mythical creature) is a second attempt at a WebGL based game engine / framework.
 
-The ideal being to allow easier low level access to WebGL, whilst not to forcing any abstractions upon the user.
+The ideal being to allow easier low level access to WebGL, whilst not to forcing any unnecessary abstractions upon the user.
 
 A focus on procedural content, no 'artists' required. (e.g. Voxels for terrian).
 
 Open Source - we're doing this for the lulz. This means git hub.
 
-Using ES5 and unshamadly using JQuery & Underscore. 
+Using ES5 and unshamadly using JQuery & Underscore, if need be. 
 
 Modular, Tesable Code is a strong focus. (Check out [https://ci.testling.com/](https://ci.testling.com/))
 
@@ -59,7 +59,18 @@ To be defined... (Use of frameworks is acceptable if they don't violate the guid
 To be defined... ([Web Audio API](http://www.html5rocks.com/en/tutorials/webaudio/intro/))
 
 ## Demos
-To be defined...
+* Arbitary shader demo 
+* Simple spinning create demo
+* Instancing / prefab demo
+* Voxel based terrain - minecraft style
+* Voxel based terrain - marching cubes
+* Lighting demo
+* Toon shading demo
+* HTML overlay demo
+* Particles demo
+* Animation demo
+* Partial Minecraft clone - walk around on the generated terrain
+* Texture blending demo - single mesh / patchwork mesh terrain with multiple textures
 
 We'll create separate demo for each set of features, essentially integration tests.
 
@@ -80,29 +91,30 @@ Readable variable names, everywhere, no shorthands / abbreviations, avoid Jargon
 No prefixs, that includes private variables with _, just a pain to read & type. If it has an exports assignment or is part of a literal declaration it's public, if not, it's not. Also no prefixing of type, if you want to give the type put the word at the end of the variable name.
 
 ## Class Format
-var Class = module.exports = function() {
-	var exports = {};
-	var prototype = {
-		protoMethod: function() { ... }
-	};
 
-	var privateFunc = function() { ... }; // Can be static or not depending on if you use .apply / .call
+	var Class = module.exports = function() {
+		var exports = {};
+		var prototype = {
+			protoMethod: function() { ... }
+		};
 
-	var staticFunc = exports.statFunc = function(args) {
+		var privateFunc = function() { ... }; // Can be static or not depending on if you use .apply / .call
 
-	};
+		var staticFunc = exports.statFunc = function(args) {
 
-	var create = exports.create = function(params) {
-		var object = Object.create(prototype);
-		
-		var privateMethod = function() { ... };
-		
-		object.property = params.property;
-		object.publicMethod = function() { ... };
-		
-		return object; 
-	};
-	return exports;
-}();
+		};
+
+		var create = exports.create = function(params) {
+			var object = Object.create(prototype);
+			
+			var privateMethod = function() { ... };
+			
+			object.property = params.property;
+			object.publicMethod = function() { ... };
+			
+			return object; 
+		};
+		return exports;
+	}();
 
 Modules are determined by their JavaScript file, and browserify / CommonJS will sort out the rest.
