@@ -10,6 +10,19 @@ Fury.Mesh = require('./mesh');
 Fury.Renderer = require('./renderer');
 Fury.Scene = require('./scene');
 Fury.Shader = require('./shader');
+Fury.Transform = require('./transform');
+Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
+
+Fury.createPrefab = function(parameters) {
+	var prefabs = Fury.prefabs;
+	if(!parameters || !parameters.name || prefabs[parameters.name]) {
+		throw new Error("Please provide a valid and unique name parameter for your prefab");
+	} else {
+		prefabs[parameters.name] = parameters;	
+		// TODO: Once using a component system will need to transfer from parameter flat structure to gameobject structure, for now these are the same
+		// Note that each component class should deal with setting up that component instance from supplied parameters itself
+	}
+};
 
 // Public functions
 Fury.init = function(canvasId) {
@@ -24,7 +37,56 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7}],3:[function(require,module,exports){
+},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7,"./transform":8}],2:[function(require,module,exports){
+// glMatrix assumed Global
+var Camera = module.exports = function() {
+	var exports = {};
+	var prototype = {
+		// Set Rotation from Euler
+		// Set Position x, y, z
+		// Note do not have enforced copy setters, the user is responsible for this
+		getProjectionMatrix: function(out) {
+			if(this.type == Camera.Type.Perspective) {
+				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
+			} else {
+				var left = - (this.height * this.ratio) / 2.0;
+				var right = - left;
+				var top = this.height / 2.0;
+				var bottom = -top;
+				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
+			}
+			return out;
+		}
+	};
+	var Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
+	var create = exports.create = function(parameters) {
+		var camera = Object.create(prototype);
+		// TODO: Arguement Checking
+		camera.type = parameters.type ? parameters.type : Type.Perspective;
+		camera.near = parameters.near;
+		camera.far = parameters.far;
+		if(camera.type == Type.Perspective) {
+			camera.fov = parameters.fov;
+		} else if (camera.type == Type.Orthonormal) {
+			camera.height = parameters.height;
+
+		} else {
+			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+		}
+		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
+		camera.position = parameters.position ? parameters.position : vec3.create();
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+
+		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
+
+		return camera;
+	};
+	return exports;
+}();
+},{}],3:[function(require,module,exports){
 var Material = module.exports = function(){
 	var exports = {};
 	var prototype = {
@@ -320,56 +382,89 @@ exports.draw = function(renderMode, count, indexed, offset) {
 			throw new Error("Unrecognised renderMode '"+renderMode+"'");
 	}
 };
-},{}],2:[function(require,module,exports){
-// glMatrix assumed Global
-var Camera = module.exports = function() {
+},{}],8:[function(require,module,exports){
+var Transform = module.exports = function() {
 	var exports = {};
-	var prototype = {
-		// Set Rotation from Euler
-		// Set Position x, y, z
-		// Note do not have enforced copy setters, the user is responsible for this
-		getProjectionMatrix: function(out) {
-			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
-			} else {
-				var left = - (this.height * this.ratio) / 2.0;
-				var right = - left;
-				var top = this.height / 2.0;
-				var bottom = -top;
-				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
-			}
-			return out;
+	var prototype = {};
+	exports.create = function(parameters) {
+		var transform = Object.create(prototype);
+		if(!parameters.position) {
+			transform.position = vec3.create();
+		}  else {
+			transform.position = parameters.position;
 		}
-	};
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
-	};
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
-		if(camera.type == Type.Perspective) {
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
-
+		if(!parameters.rotation) {
+			transform.rotation = quat.create();
 		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+			transform.rotation = parameters.rotation;
 		}
-		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
-
-		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
-
-		return camera;
-	};
+		if(!parameters.scale) {
+			transform.scale = vec3.fromValues(1.0, 1.0, 1.0);
+		} else {
+			transform.scale = parameters.scale;
+		}
+		return transform;
+	}
 	return exports;
 }();
-},{}],4:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+// Shader Class for use with Fury Scene
+var r = require('./renderer');
+
+var Shader = module.exports = function() {
+	var exports = {};
+	var prototype = {};
+
+	var create = exports.create = function(parameters) {
+		var i, l;
+		var shader = Object.create(prototype);
+
+		// Argument Validation
+		if(!parameters) {
+			throw new Error("No paramter object supplied, shader source must be provided");
+		}
+		if(!parameters.vsSource) {
+			throw new Error("No Vertex Shader Source 'vsSource'");
+		}
+		if(!parameters.fsSource) {
+			throw new Error("No Fragment Shader Source 'fsSource'");
+		}
+		
+		shader.vs = r.createShader("vertex", parameters.vsSource);
+		shader.fs = r.createShader("fragment", parameters.fsSource);
+		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
+		if(parameters.attributeNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
+				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
+			}
+		}
+		if(parameters.uniformNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
+				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
+			}
+		}
+
+		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
+			throw new Error("You must provide a material binding function 'bindMaterial'");
+		}
+		shader.bindMaterial = parameters.bindMaterial;	
+
+		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
+			throw new Error("You must provide a mesh binding function 'bindBuffers'");
+		}
+		shader.bindBuffers = parameters.bindBuffers;
+
+		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
+		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
+
+		// TODO: decide how to deal with non-standard uniforms
+
+		return shader;
+	};
+
+	return exports;
+}();
+},{"./renderer":5}],4:[function(require,module,exports){
 var r = require('./renderer');
 
 var Mesh = module.exports = function(){
@@ -454,6 +549,8 @@ var Mesh = module.exports = function(){
 (function(){// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
+var Material = require('./material');
+var Mesh = require('./mesh');
 var Transform = require('./transform');
 
 var Scene = module.exports = function() {
@@ -477,8 +574,10 @@ var Scene = module.exports = function() {
 
 		var scene = Object.create(prototype);
 
-		var renderObjects = indexedMap.create(); // No explicit instancing just yet - just a list of render renderObjects 
-		// these renderObjects need to contain at minimum materialId, meshId, and transform (currently object just has material and mesh as well as transform)
+		// these renderObjects / instances on prefabs need to contain at minimum materialId, meshId, and transform (currently object just has material and mesh as well as transform)
+		var renderObjects = indexedMap.create(); // TODO: use materialId / meshId to bind
+		var prefabs = { keys: [] };	// Arguably instances could be added to renderer objects and memory would still be saved, however keeping a separate list allows easier batching for now
+		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
 
 		// Add Object 
 		// TODO: RenderObject / Component should have its own class
@@ -491,14 +590,16 @@ var Scene = module.exports = function() {
 			object.material = parameters.material;
 			object.mesh = parameters.mesh;
 			
+			if(!object.mesh.id) {
+				object.mesh.id = meshes.add(object.mesh);
+				object.meshId = object.mesh.id;
+			}
 			if(!object.material.id) {
 				object.material.id = materials.add(object.material);
+				object.materialId = object.material.id;
 			}
 			if(!object.material.shader.id) {
 				object.material.shader.id = shaders.add(object.material.shader);
-			}
-			if(!object.mesh.id) {
-				object.mesh.id = meshes.add(object.mesh);
 			}
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
@@ -507,8 +608,54 @@ var Scene = module.exports = function() {
 
 			var id = renderObjects.add(object);
 			object.sceneId = id;
+			object.remove = function() {
+				renderObjects.remove(this.id);
+			}; // TODO: Move to prototype
 			return object;
 		}
+
+		scene.instantiate = function(parameters) {
+			var prefab;
+			if(!parameters || !parameters.name || !Fury.prefabs[parameters.name]) {
+				throw new Error("You must provide a valid prefab name");
+			}
+			if(!prefabs[parameters.name]) {
+				var defn = Fury.prefabs[parameters.name];
+				if(!defn.material || !defn.mesh) {
+					throw new Error("Requested prefab must have a material and a mesh present");
+				} 
+				prefab = {
+					name: parameters.name,
+					instances: indexedMap.create(),
+					mesh: Mesh.copy(defn.mesh),
+					material: Material.copy(defn.material),
+					remove: function() {
+						this.instaces.remove(this.id);
+						// Note not deleting the prefab, even if !instances.length as we would get duplicate mesh / materials if we were to readd
+						// Keeping the prefab details around is preferable and should be low overhead
+					}
+				};
+				if(!prefab.mesh.id) {
+					prefab.mesh.id = meshes.add(prefab.mesh);
+					prefab.meshId = prefab.mesh.id;
+				} 
+				if(!prefab.material.id) {
+					prefab.material.id = materials.add(prefab.material);
+					prefab.materialId = prefab.material.id;
+				}
+				if(!prefab.material.shader.id) {
+					prefab.material.shader.id = shaders.add(prefab.material.shader);
+				}
+				prefabs[parameters.name] = prefab;
+				prefabs.keys.push(parameters.name);
+			} else {
+				prefab = prefabs[parameters.name];
+			}
+			var instance = Object.create(prefab);
+			instance.transform = Transform.create(parameters);
+			instance.id = prefab.instances.add(instance);
+			return instance;
+		};
 
 		// Add Camera
 		scene.addCamera = function(camera, name) {
@@ -539,52 +686,63 @@ var Scene = module.exports = function() {
 
 			r.clear();
 
+			// TODO: Scene graph will provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
+			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching whilst providing a way to simple loop over all elements 
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
-				var object = renderObjects[renderObjects.keys[i]];
-
-				// TODO: Frustum Culling
-
-				var shader = object.material.shader;
-
-				if(!shader.id || shader.id != currentShaderId) {
-					if(!shader.id) {	// Shader was changed on the material since originally added to scene
-						shader.id = shaders.add(shader); 
-					}
-					currentShaderId = shader.id;
-					r.useShaderProgram(shader.shaderProgram);
-					pMatrixRebound = false;
-				} 
-				if(!pMatrixRebound) {
-					// New Shader or New Frame, rebind projection Matrix
-					r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
-					pMatrixRebound = true;	
-				}
-				
-				if(!object.material.id || object.material.id != currentMaterialId) {
-					if(!object.material.id) {	// material was changed on object since originally added to scene
-						object.material.id = materials.add(object.material);
-					}
-					currentMaterialId = object.material.id;
-					shader.bindMaterial.call(r, object.material);
-				}
-
-				if(!object.mesh.id || object.mesh.id != currentMeshId) {
-					if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
-						object.mesh.id = mesh.add(object.mesh);
-					}
-					currentMeshId = object.mesh.id;
-					shader.bindBuffers.call(r, object.mesh);
-				}
-
-				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
-				mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
-				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
-
-				r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
-					
-				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);				
+				// TODO: Frustum Culling	
+				bindAndDraw(renderObjects[renderObjects.keys[i]]);
 			}
-		}
+			for(i = 0, l = prefabs.keys.length; i < l; i++) {
+				var instances = prefabs[prefabs.keys[i]].instances;
+				for(var j = 0, n = instances.keys.length; j < n; j++) {
+					// TODO: Frustum Culling
+					bindAndDraw(instances[instances.keys[j]]);
+				}
+			}
+		};
+
+		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing
+			var shader = object.material.shader;
+
+			if(!shader.id || shader.id != currentShaderId) {
+				if(!shader.id) {	// Shader was changed on the material since originally added to scene
+					shader.id = shaders.add(shader); 
+				}
+				currentShaderId = shader.id;
+				r.useShaderProgram(shader.shaderProgram);
+				pMatrixRebound = false;
+			} 
+
+			if(!pMatrixRebound) {
+				// New Shader or New Frame, rebind projection Matrix
+				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
+				pMatrixRebound = true;	
+			}
+			
+			if(!object.material.id || object.material.id != currentMaterialId) {
+				if(!object.material.id) {	// material was changed on object since originally added to scene
+					object.material.id = materials.add(object.material);
+				}
+				currentMaterialId = object.material.id;
+				shader.bindMaterial.call(r, object.material);
+			}
+
+			if(!object.mesh.id || object.mesh.id != currentMeshId) {
+				if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
+					object.mesh.id = mesh.add(object.mesh);
+				}
+				currentMeshId = object.mesh.id;
+				shader.bindBuffers.call(r, object.mesh);
+			}
+
+			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
+			mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
+			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
+			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
+			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
+				
+			r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);	
+		};
 
 		if(parameters && parameters.camera) {
 			scene.addCamera(camera);
@@ -596,64 +754,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./renderer":5,"./indexedMap":8,"./transform":9}],7:[function(require,module,exports){
-// Shader Class for use with Fury Scene
-var r = require('./renderer');
-
-var Shader = module.exports = function() {
-	var exports = {};
-	var prototype = {};
-
-	var create = exports.create = function(parameters) {
-		var i, l;
-		var shader = Object.create(prototype);
-
-		// Argument Validation
-		if(!parameters) {
-			throw new Error("No paramter object supplied, shader source must be provided");
-		}
-		if(!parameters.vsSource) {
-			throw new Error("No Vertex Shader Source 'vsSource'");
-		}
-		if(!parameters.fsSource) {
-			throw new Error("No Fragment Shader Source 'fsSource'");
-		}
-		
-		shader.vs = r.createShader("vertex", parameters.vsSource);
-		shader.fs = r.createShader("fragment", parameters.fsSource);
-		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
-		if(parameters.attributeNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
-				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
-			}
-		}
-		if(parameters.uniformNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
-				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
-			}
-		}
-
-		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
-			throw new Error("You must provide a material binding function 'bindMaterial'");
-		}
-		shader.bindMaterial = parameters.bindMaterial;	
-
-		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
-			throw new Error("You must provide a mesh binding function 'bindBuffers'");
-		}
-		shader.bindBuffers = parameters.bindBuffers;
-
-		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
-		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
-
-		// TODO: decide how to deal with non-standard uniforms
-
-		return shader;
-	};
-
-	return exports;
-}();
-},{"./renderer":5}],8:[function(require,module,exports){
+},{"./renderer":5,"./indexedMap":9,"./material":3,"./mesh":4,"./transform":8}],9:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
@@ -689,31 +790,6 @@ var IndexedMap = module.exports = function(){
 		return map;
 	};
 
-	return exports;
-}();
-},{}],9:[function(require,module,exports){
-var Transform = module.exports = function() {
-	var exports = {};
-	var prototype = {};
-	exports.create = function(parameters) {
-		var transform = Object.create(prototype);
-		if(!parameters.position) {
-			transform.position = vec3.create();
-		}  else {
-			transform.position = parameters.position;
-		}
-		if(!parameters.rotation) {
-			transform.rotation = quat.create();
-		} else {
-			transform.rotation = parameters.rotation;
-		}
-		if(!parameters.scale) {
-			transform.scale = vec3.create();
-		} else {
-			transform.scale = parameters.scale;
-		}
-		return transform;
-	}
 	return exports;
 }();
 },{}]},{},[1])

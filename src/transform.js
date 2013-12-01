@@ -14,7 +14,7 @@ var Transform = module.exports = function() {
 			transform.rotation = parameters.rotation;
 		}
 		if(!parameters.scale) {
-			transform.scale = vec3.create();
+			transform.scale = vec3.fromValues(1.0, 1.0, 1.0);
 		} else {
 			transform.scale = parameters.scale;
 		}

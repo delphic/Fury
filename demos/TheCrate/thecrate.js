@@ -140,7 +140,6 @@ var scene = Fury.Scene.create({ camera: camera });
 var crate = scene.add({ material: material, mesh: cube });
 
 var loop = function(){
-	// TODO: Rotate Crate
 	var rotation = crate.transform.rotation;
 	quat.rotateX(rotation, rotation, 0.01);
 	quat.rotateY(rotation, rotation, 0.005);
