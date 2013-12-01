@@ -52,5 +52,29 @@ var Mesh = module.exports = function(){
 		return mesh;
 	};
 
+	var copy = exports.copy = function(mesh) {
+		var copy = Object.create(prototype);
+
+		copy.indexed = mesh.indexed;
+		copy.renderMode = mesh.renderMode;
+		if(mesh.vertices) {
+			copy.vertices = mesh.vertices.slice(0);
+			copy.updateVertices();
+		} 
+		if(mesh.textureCoordinates) {
+			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
+			copy.updateTextureCoordinates();
+		}
+		if(mesh.normals) {
+			copy.normals = mesh.normals.slice(0);
+			copy.updateNormals();
+		}
+		if(mesh.indices) {
+			copy.indices = mesh.indices.slice(0);
+			copy.updateIndexBuffer();
+		}			
+		return copy;
+	}
+
 	return exports;
 }();

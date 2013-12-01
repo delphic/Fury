@@ -17,8 +17,9 @@ var Material = module.exports = function(){
 
 		material.textures = {};
 		if(parameters.textures) {
+			var textures = parameters.textures;
 			for(var i = 0, l = textures.length; i < l; i++) {
-				if(texture[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
+				if(textures[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
 					material.textures[textures[i].name] = textures[i].texture;
 				} else {
 					throw new Error("Texture Array must contain objects with properties 'name' and 'texture'");
@@ -27,6 +28,21 @@ var Material = module.exports = function(){
 		}
 
 		return material;
+	};
+
+	var copy = exports.copy = function(material) {
+		var copy = Object.create(prototype);
+		copy.shader = material.shader;
+		copy.textures = {};
+		if(material.textures) {
+			var textures = material.textures;
+			for(var key in textures) {
+				if(textures.hasOwnProperty(key)) {
+					copy.textures[key] = textures[key];
+				}
+			}
+		}
+		return copy;
 	};
 
 	return exports;
