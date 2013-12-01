@@ -80,14 +80,20 @@ We would like to implement some procedural terrian a la [Red Blob](http://www-cs
 
 
 # JavaScript Style
+
 Passing Info to Functions:
-	Use parameter objects and argument checking on one-time only functions such as inits.
-	Use arguments on per frame functions such as update().
+* Use parameter objects and argument checking on one-time only functions such as inits.
+* Use arguments on per frame functions such as update().
+
 Do not create new objects during a frame unless completely unavoidable (then refactor so you don't have to) or actually creating new things in the game / engine.
+
 Try to keep class members public and rely on people using their head (i.e. don't enforce copy vector values, they should do that themselves). Whilst this might result in more errors, it gives greater flexibility and much more simple code (getters and setters are a bit of an arse in JS).
+
 Avoid the new keyword where-ever possible, use literals, class format is designed accordingly. 
+
 Readable variable names, everywhere, no shorthands / abbreviations, avoid Jargon where possible. Only indices are allowed to be single letter. 
-	Only exceptions are: extremely oftenly used variables, eg the webGraphicsLibraryContext -> 'gl'; abbreviations which are extremely well known jargon, eg 'fov'
+* Only exceptions are: extremely oftenly used variables, eg the webGraphicsLibraryContext -> 'gl'; abbreviations which are extremely well known jargon, eg 'fov'
+
 No prefixs, that includes private variables with _, just a pain to read & type. If it has an exports assignment or is part of a literal declaration it's public, if not, it's not. Also no prefixing of type, if you want to give the type put the word at the end of the variable name.
 
 ## Class Format
