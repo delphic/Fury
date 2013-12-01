@@ -12,4 +12,4 @@ The scene should obviously explicitly batch the rendering of prefabs together.
 
 In order to implement prefabs we will need to create copy methods for meshes and materials (copy of the associated shader is not performed in a material copy action, that should be a reference copy). 
 
-Note that we do not need to create the buffers for the mesh in the definition copy of the prefab - they'll never be used as new ones will be created when  (stored at top level in Fury (although arguably that should be Fury.Engine, so we can have Fury.Editor at a later stage)).
+Note that we do not need to create the buffers for the mesh in the definition copy of the prefab (stored at top level in Fury (although arguably that should be Fury.Engine, so we can have Fury.Editor at a later stage)) - they'll never be used as new ones will be created when instantiated.
