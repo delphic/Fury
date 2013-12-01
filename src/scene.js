@@ -1,6 +1,7 @@
 // glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
+var Transform = require('./transform');
 
 var Scene = module.exports = function() {
 	var nextSceneId = 0;
@@ -19,7 +20,7 @@ var Scene = module.exports = function() {
 		var cameraNames = [];
 		var mainCameraName = "main";
 		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
-		var currentShaderId, currentMaterialId, currentMeshId;
+		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 
 		var scene = Object.create(prototype);
 
@@ -27,11 +28,16 @@ var Scene = module.exports = function() {
 		// these renderObjects need to contain at minimum materialId, meshId, and transform (currently object just has material and mesh as well as transform)
 
 		// Add Object 
-		scene.add = function(object) {
-			if(!object || !object.mesh || !object.material) {
+		// TODO: RenderObject / Component should have its own class
+		scene.add = function(parameters) {
+			var object = {};
+			if(!parameters || !parameters.mesh || !parameters.material) {
 				throw new Error("Mesh and Material must be present on the object.");
 			}
 
+			object.material = parameters.material;
+			object.mesh = parameters.mesh;
+			
 			if(!object.material.id) {
 				object.material.id = materials.add(object.material);
 			}
@@ -44,20 +50,13 @@ var Scene = module.exports = function() {
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
 			// Should be adding a renderer component to said concept (?) 
-			if(!object.position) {
-				object.position = vec3.create();
-			} 
-			if(!parameters.rotation) {
-				object.rotation = quat.create();
-			}
-			if(!object.scale) {
-				object.scale = vec3.create();
-			}
+			object.transform = Transform.create(parameters); 	
 
 			var id = renderObjects.add(object);
 			object.sceneId = id;
 			return object;
 		}
+
 		// Add Camera
 		scene.addCamera = function(camera, name) {
 			var key = name ? name : "main";
@@ -75,13 +74,15 @@ var Scene = module.exports = function() {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
 			camera.getProjectionMatrix(pMatrix);
 			mat4.fromRotationTranslation(cameraMatrix, camera.rotation, camera.position);
-			
-			// Brute Force for now, rebind EVERYTHING (so no need for the meshes / materials lists just yet)
+			pMatrixRebound = false;
+			// Simple checks for now - no ordering
 
-			// TODO: Scene Graph - will check objects haven't 
+			// TODO: Scene Graph 
 			// Batched first by Material
 			// Then by Mesh
 			// Then render each Mesh Instance
+
+			// Extension batch materials such that shaders and then textures used overlap
 
 			r.clear();
 
@@ -91,16 +92,21 @@ var Scene = module.exports = function() {
 				// TODO: Frustum Culling
 
 				var shader = object.material.shader;
+
 				if(!shader.id || shader.id != currentShaderId) {
 					if(!shader.id) {	// Shader was changed on the material since originally added to scene
 						shader.id = shaders.add(shader); 
 					}
 					currentShaderId = shader.id;
 					r.useShaderProgram(shader.shaderProgram);
+					pMatrixRebound = false;
 				} 
-
-				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
-
+				if(!pMatrixRebound) {
+					// New Shader or New Frame, rebind projection Matrix
+					r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
+					pMatrixRebound = true;	
+				}
+				
 				if(!object.material.id || object.material.id != currentMaterialId) {
 					if(!object.material.id) {	// material was changed on object since originally added to scene
 						object.material.id = materials.add(object.material);
@@ -118,12 +124,12 @@ var Scene = module.exports = function() {
 				}
 
 				// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
-				mat4.fromRotationTranslation(mvMatrix, object.rotation, object.position);
+				mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
 				mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 
 				r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
-				
-				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);
+					
+				r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);				
 			}
 		}
 
