@@ -1,9 +1,9 @@
 var Material = module.exports = function(){
 	var exports = {};
 	var prototype = {
-		setTexture: function(name, texture) {
+		setTexture: function(uniformName, texture) {
 			// TODO: Check that its a valid GL texture
-			this.textures[name] = texture;
+			this.textures[uniformName] = texture;
 		}
 	};
 
@@ -19,10 +19,10 @@ var Material = module.exports = function(){
 		if(parameters.textures) {
 			var textures = parameters.textures;
 			for(var i = 0, l = textures.length; i < l; i++) {
-				if(textures[i].hasOwnProperty("name") && textures[i].hasOwnProperty("texture")) {
+				if(textures[i].hasOwnProperty("uniformName") && textures[i].hasOwnProperty("texture")) {
 					material.textures[textures[i].name] = textures[i].texture;
 				} else {
-					throw new Error("Texture Array must contain objects with properties 'name' and 'texture'");
+					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
 				}
 			}
 		}

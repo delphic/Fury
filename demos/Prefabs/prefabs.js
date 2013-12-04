@@ -117,6 +117,7 @@ var shader = Fury.Shader.create({
     "}"].join('\n'),
 	attributeNames: [ "aVertexPosition", "aTextureCoord" ],
 	uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
+	textureUniformNames: [ "uSampler" ],
 	pMatrixUniformName: "uPMatrix",
 	mvMatrixUniformName: "uMVMatrix",
 	bindMaterial: function(material) {

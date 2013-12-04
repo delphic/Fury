@@ -15,6 +15,7 @@ var Scene = module.exports = function() {
 	var meshes = indexedMap.create();
 	var materials = indexedMap.create();
 	var shaders = indexedMap.create();
+	var textures = indexedMap.create();
 	
 	var create = exports.create = function(parameters) {
 		var sceneId = (nextSceneId++).toString();
@@ -23,6 +24,7 @@ var Scene = module.exports = function() {
 		var mainCameraName = "main";
 		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
 		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
+		var currentTextureBindings = {};	// keyed on texture.id to webgl binding location
 
 		var scene = Object.create(prototype);
 
@@ -30,6 +32,17 @@ var Scene = module.exports = function() {
 		var renderObjects = indexedMap.create(); // TODO: use materialId / meshId to bind
 		var prefabs = { keys: [] };	// Arguably instances could be added to renderer objects and memory would still be saved, however keeping a separate list allows easier batching for now
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
+
+		var addTexturesToScene = function(material) {
+			for(var i = 0, l = object.material.shader.textureUniformNames; i < l; i++) {
+				var uniformName = object.material.shader.textureUniformNames[i];
+				var texture = object.material.textures[uniformName];
+				if(texture) {
+					texture.id = textures.add(texture);
+				}
+				// TODO: store materialId -> textureIds in scene so we can check for changes
+			}
+		};
 
 		// Add Object 
 		// TODO: RenderObject / Component should have its own class
@@ -42,17 +55,10 @@ var Scene = module.exports = function() {
 			object.material = parameters.material;
 			object.mesh = parameters.mesh;
 			
-			if(!object.mesh.id) {
-				object.mesh.id = meshes.add(object.mesh);
-				object.meshId = object.mesh.id;
-			}
-			if(!object.material.id) {
-				object.material.id = materials.add(object.material);
-				object.materialId = object.material.id;
-			}
-			if(!object.material.shader.id) {
-				object.material.shader.id = shaders.add(object.material.shader);
-			}
+			object.meshId = meshes.add(object.mesh);
+			object.materialId = materials.add(object.material);
+			object.material.shaderId = shaders.add(object.material.shader);	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+			addTexturesToScene(object.material);
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
 			// Should be adding a renderer component to said concept (?) 
@@ -87,17 +93,10 @@ var Scene = module.exports = function() {
 						// Keeping the prefab details around is preferable and should be low overhead
 					}
 				};
-				if(!prefab.mesh.id) {
-					prefab.mesh.id = meshes.add(prefab.mesh);
-					prefab.meshId = prefab.mesh.id;
-				} 
-				if(!prefab.material.id) {
-					prefab.material.id = materials.add(prefab.material);
-					prefab.materialId = prefab.material.id;
-				}
-				if(!prefab.material.shader.id) {
-					prefab.material.shader.id = shaders.add(prefab.material.shader);
-				}
+				prefab.meshId = meshes.add(prefab.mesh);
+				prefab.materialId =  materials.add(prefab.material);
+				prefab.material.shaderId = shaders.add(prefab.material.shader);	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+				addTexturesToScene(prefab.material);
 				prefabs[parameters.name] = prefab;
 				prefabs.keys.push(parameters.name);
 			} else {
@@ -156,9 +155,12 @@ var Scene = module.exports = function() {
 		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing
 			var shader = object.material.shader;
 
+			// TODO: When scene graph implemented - check material.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
+			// as this indicates that this object needs reording in the graph (as it's been changed). 
+
 			if(!shader.id || shader.id != currentShaderId) {
 				if(!shader.id) {	// Shader was changed on the material since originally added to scene
-					shader.id = shaders.add(shader); 
+					object.material.shaderId = shaders.add(shader); 	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
 				}
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
@@ -173,15 +175,34 @@ var Scene = module.exports = function() {
 			
 			if(!object.material.id || object.material.id != currentMaterialId) {
 				if(!object.material.id) {	// material was changed on object since originally added to scene
-					object.material.id = materials.add(object.material);
+					object.materialId = materials.add(object.material);
 				}
 				currentMaterialId = object.material.id;
 				shader.bindMaterial.call(r, object.material);
+
+				// TODO: this needs to be called if shader has changed OR if material has changed so perhaps the check for texture changes (see below)
+				// should go before shader and material change check and include the rebinding that is necessary in all three cases.
+				for(var i = 0, l = shader.textureUniformNames; i < l; i++) {
+					var uniformName = shader.textureUniformNames[i];
+					if(material.textures[uniformName]) {
+						// TODO: if no textureId bind add to textures
+						// if textureId doesn't exist in currentTextureBindings then bind to lowest available texture slot
+						// set uniform name to value for textureId in currentTextureBindings
+
+						// Note this requires an update to renderer.setTexture and thus an update to Arbitary Shader demo too
+
+						// Once this is implemented remove texture setting / uniform setting from bindMaterial functions
+					}
+				}
 			}
+
+			// TODO: Add check for texture changes on the material, although this is getting to be loops within loops which is making me think that perhaps we should depart from the 
+			// checking for changes require the user to call another function if they change the texture for a given uniform at run time. That said you don't get many textures on each 
+			// material so lets keep it consistent to begin with and we can optimise this later if required.
 
 			if(!object.mesh.id || object.mesh.id != currentMeshId) {
 				if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
-					object.mesh.id = mesh.add(object.mesh);
+					object.meshId = mesh.add(object.mesh);
 				}
 				currentMeshId = object.mesh.id;
 				shader.bindBuffers.call(r, object.mesh);
