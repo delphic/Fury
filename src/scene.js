@@ -42,17 +42,9 @@ var Scene = module.exports = function() {
 			object.material = parameters.material;
 			object.mesh = parameters.mesh;
 			
-			if(!object.mesh.id) {
-				object.mesh.id = meshes.add(object.mesh);
-				object.meshId = object.mesh.id;
-			}
-			if(!object.material.id) {
-				object.material.id = materials.add(object.material);
-				object.materialId = object.material.id;
-			}
-			if(!object.material.shader.id) {
-				object.material.shader.id = shaders.add(object.material.shader);
-			}
+			object.meshId = meshes.add(object.mesh);
+			object.materialId = materials.add(object.material);
+			object.material.shaderId = shaders.add(object.material.shader);
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
 			// Should be adding a renderer component to said concept (?) 
@@ -87,17 +79,9 @@ var Scene = module.exports = function() {
 						// Keeping the prefab details around is preferable and should be low overhead
 					}
 				};
-				if(!prefab.mesh.id) {
-					prefab.mesh.id = meshes.add(prefab.mesh);
-					prefab.meshId = prefab.mesh.id;
-				} 
-				if(!prefab.material.id) {
-					prefab.material.id = materials.add(prefab.material);
-					prefab.materialId = prefab.material.id;
-				}
-				if(!prefab.material.shader.id) {
-					prefab.material.shader.id = shaders.add(prefab.material.shader);
-				}
+				prefab.meshId = meshes.add(prefab.mesh);
+				prefab.materialId =  materials.add(prefab.material);
+				prefab.material.shaderId = shaders.add(prefab.material.shader);
 				prefabs[parameters.name] = prefab;
 				prefabs.keys.push(parameters.name);
 			} else {
@@ -156,9 +140,12 @@ var Scene = module.exports = function() {
 		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing
 			var shader = object.material.shader;
 
+			// TODO: When scene graph implemented - check material.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
+			// as this indicates that this object needs reording in the graph (as it's been changed). 
+
 			if(!shader.id || shader.id != currentShaderId) {
 				if(!shader.id) {	// Shader was changed on the material since originally added to scene
-					shader.id = shaders.add(shader); 
+					object.material.shaderId = shaders.add(shader); 
 				}
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
@@ -173,7 +160,7 @@ var Scene = module.exports = function() {
 			
 			if(!object.material.id || object.material.id != currentMaterialId) {
 				if(!object.material.id) {	// material was changed on object since originally added to scene
-					object.material.id = materials.add(object.material);
+					object.materialId = materials.add(object.material);
 				}
 				currentMaterialId = object.material.id;
 				shader.bindMaterial.call(r, object.material);
@@ -181,7 +168,7 @@ var Scene = module.exports = function() {
 
 			if(!object.mesh.id || object.mesh.id != currentMeshId) {
 				if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
-					object.mesh.id = mesh.add(object.mesh);
+					object.meshId = mesh.add(object.mesh);
 				}
 				currentMeshId = object.mesh.id;
 				shader.bindBuffers.call(r, object.mesh);
