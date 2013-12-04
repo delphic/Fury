@@ -83,7 +83,7 @@ var Scene = module.exports = function() {
 					material: Material.copy(defn.material),
 					remove: function() {
 						this.instaces.remove(this.id);
-						// Note not deleting the prefab, even if !instances.length as we would get duplicate mesh / materials if we were to readd
+						// Note not deleting the locally stored prefab, even if !instances.length as we would get duplicate mesh / materials if we were to readd
 						// Keeping the prefab details around is preferable and should be low overhead
 					}
 				};
