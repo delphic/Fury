@@ -33,6 +33,8 @@ var Shader = module.exports = function() {
 				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
 			}
 		}
+		shader.textureUniformNames = parameters.textureUniformNames ? parameters.textureUniformNames : []; // Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
+
 
 		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
 			throw new Error("You must provide a material binding function 'bindMaterial'");
