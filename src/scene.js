@@ -155,8 +155,31 @@ var Scene = module.exports = function() {
 		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing
 			var shader = object.material.shader;
 
+			// BUG: 
+			// If there's only one material or one mesh in the scene real time changes to it will not present themselves as the id will still match the currently bound
+			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case? Shouldn't be necessary if there's more than one though
+			// which is very annoying, we could solve this by rebinding each material and mesh on each frame regardless (could be a config option to turn this off)
+
 			// TODO: When scene graph implemented - check material.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reording in the graph (as it's been changed). 
+
+			if(!shader.id || shader.id != currentMeshId || !object.material.id || object.material.id != currentMaterialId) {
+				// Texture Rebinding dependencies 
+				// If the shader has changed all textures MUST BE rebound
+				// If the material has changed textures may need rebinding (could check against currently bound values or just rebind the lot)
+				for(var i = 0, l = shader.textureUniformNames; i < l; i++) {
+					var uniformName = shader.textureUniformNames[i];
+					if(material.textures[uniformName]) {
+						// TODO: if no textureId bind add to textures
+						// if textureId doesn't exist in currentTextureBindings then bind to lowest available gl texture slot (that isn't required by this material)
+						// set uniform name to value for textureId in currentTextureBindings
+
+						// Note this requires an update to renderer.setTexture and thus an update to Arbitary Shader demo too
+
+						// Once this is implemented remove texture setting / uniform setting from bindMaterial functions
+					}
+				}
+			}
 
 			if(!shader.id || shader.id != currentShaderId) {
 				if(!shader.id) {	// Shader was changed on the material since originally added to scene
@@ -179,26 +202,7 @@ var Scene = module.exports = function() {
 				}
 				currentMaterialId = object.material.id;
 				shader.bindMaterial.call(r, object.material);
-
-				// TODO: this needs to be called if shader has changed OR if material has changed so perhaps the check for texture changes (see below)
-				// should go before shader and material change check and include the rebinding that is necessary in all three cases.
-				for(var i = 0, l = shader.textureUniformNames; i < l; i++) {
-					var uniformName = shader.textureUniformNames[i];
-					if(material.textures[uniformName]) {
-						// TODO: if no textureId bind add to textures
-						// if textureId doesn't exist in currentTextureBindings then bind to lowest available texture slot
-						// set uniform name to value for textureId in currentTextureBindings
-
-						// Note this requires an update to renderer.setTexture and thus an update to Arbitary Shader demo too
-
-						// Once this is implemented remove texture setting / uniform setting from bindMaterial functions
-					}
-				}
 			}
-
-			// TODO: Add check for texture changes on the material, although this is getting to be loops within loops which is making me think that perhaps we should depart from the 
-			// checking for changes require the user to call another function if they change the texture for a given uniform at run time. That said you don't get many textures on each 
-			// material so lets keep it consistent to begin with and we can optimise this later if required.
 
 			if(!object.mesh.id || object.mesh.id != currentMeshId) {
 				if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
