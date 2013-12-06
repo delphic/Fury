@@ -156,7 +156,7 @@ var Scene = module.exports = function() {
 			var shader = object.material.shader;
 
 			// BUG: 
-			// If there's only one material or one mesh in the scene real time changes to it will not present themselves as the id will still match the currently bound
+			// If there's only one material or one mesh in the scene real time changes to the material or mesh will not present themselves as the id will still match the currently bound
 			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case? Shouldn't be necessary if there's more than one though
 			// which is very annoying, we could solve this by rebinding each material and mesh on each frame regardless (could be a config option to turn this off)
 
@@ -165,7 +165,7 @@ var Scene = module.exports = function() {
 
 			if(!shader.id || shader.id != currentMeshId || !object.material.id || object.material.id != currentMaterialId) {
 				// Texture Rebinding dependencies 
-				// If the shader has changed all textures MUST BE rebound
+				// If the shader has changed all textures MUST BE rebound (Test this - if the material last used for this shader is the same might this still technically work?)
 				// If the material has changed textures may need rebinding (could check against currently bound values or just rebind the lot)
 				for(var i = 0, l = shader.textureUniformNames; i < l; i++) {
 					var uniformName = shader.textureUniformNames[i];
