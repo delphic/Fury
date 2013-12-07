@@ -34,9 +34,9 @@ var Scene = module.exports = function() {
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
 
 		var addTexturesToScene = function(material) {
-			for(var i = 0, l = object.material.shader.textureUniformNames; i < l; i++) {
-				var uniformName = object.material.shader.textureUniformNames[i];
-				var texture = object.material.textures[uniformName];
+			for(var i = 0, l = material.shader.textureUniformNames; i < l; i++) {
+				var uniformName = material.shader.textureUniformNames[i];
+				var texture = material.textures[uniformName];
 				if(texture) {
 					texture.id = textures.add(texture);
 				}
@@ -157,16 +157,20 @@ var Scene = module.exports = function() {
 
 			// BUG: 
 			// If there's only one material or one mesh in the scene real time changes to the material or mesh will not present themselves as the id will still match the currently bound
-			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case? Shouldn't be necessary if there's more than one though
-			// which is very annoying, we could solve this by rebinding each material and mesh on each frame regardless (could be a config option to turn this off)
+			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case. (should probably be called forceRebind as it 'might' be rebound anyway)
+			// Having now determined that actually we don't need to rebind uniforms when switching shader programs, we'll need this flag whenever there's only one mesh or material using a given shader.
 
 			// TODO: When scene graph implemented - check material.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reording in the graph (as it's been changed). 
 
-			if(!shader.id || shader.id != currentMeshId || !object.material.id || object.material.id != currentMaterialId) {
+			if(!shader.id || shader.id != currentShaderId || !object.material.id || object.material.id != currentMaterialId) {
 				// Texture Rebinding dependencies 
-				// If the shader has changed all textures MUST BE rebound (Test this - if the material last used for this shader is the same might this still technically work?)
-				// If the material has changed textures may need rebinding (could check against currently bound values or just rebind the lot)
+				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniform have changed since the shaderProgram was last used...
+					// NOTE Large Changes needed because of this
+					// I think we're just going to have to add a flag to materials and meshes to say "rebind" (because I've changed something)
+					// This also means we should move the "currentMeshId / currentMaterial id to the shader instead or keep a keyed list on shader the id 
+					// Lets do this after we've done the texture binding though eh? so for now just rebind everything if shader or material changes (overkill but it'll work)
+				// If the material has changed textures may need rebinding
 				for(var i = 0, l = shader.textureUniformNames; i < l; i++) {
 					var uniformName = shader.textureUniformNames[i];
 					if(material.textures[uniformName]) {
