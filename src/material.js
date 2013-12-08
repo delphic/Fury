@@ -19,8 +19,8 @@ var Material = module.exports = function(){
 		if(parameters.textures) {
 			var textures = parameters.textures;
 			for(var i = 0, l = textures.length; i < l; i++) {
-				if(textures[i].hasOwnProperty("uniformName") && textures[i].hasOwnProperty("texture")) {
-					material.textures[textures[i].name] = textures[i].texture;
+				if(textures[i].uniformName && textures[i].texture) {
+					material.textures[textures[i].uniformName] = textures[i].texture;
 				} else {
 					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
 				}

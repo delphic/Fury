@@ -24,7 +24,7 @@ var Scene = module.exports = function() {
 		var mainCameraName = "main";
 		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
 		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
-		var currentTextureBindings = {};	// keyed on texture.id to webgl binding location
+		var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
 		var scene = Object.create(prototype);
 
@@ -34,13 +34,29 @@ var Scene = module.exports = function() {
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
 
 		var addTexturesToScene = function(material) {
-			for(var i = 0, l = material.shader.textureUniformNames; i < l; i++) {
+			for(var i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
 				var uniformName = material.shader.textureUniformNames[i];
 				var texture = material.textures[uniformName];
 				if(texture) {
-					texture.id = textures.add(texture);
+					textures.add(texture);
+					bindTextureToLocation(texture);
 				}
-				// TODO: store materialId -> textureIds in scene so we can check for changes
+				
+			}
+		};
+
+		var bindTextureToLocation = function(texture) {
+			if(currentTextureLocations.length < r.TextureLocations.length) {
+				r.setTexture(currentTextureLocations.length, texture);
+				currentTextureBindings[texture.id] = currentTextureLocations.length;
+				currentTextureLocations.push(texture.id);
+			} else {
+				// replace an existing texture
+				delete currentTextureBindings[currentTextureLocations[nextTextureLocation]]
+				r.setTexture(nextTextureLocation, texture);
+				currentTextureBindings[texture.id] = nextTextureLocation;
+				currentTextureLocations[nextTextureLocation] = texture.id
+				nextTextureLocation = (nextTextureLocation+1)%r.TextureLocations.length;
 			}
 		};
 
@@ -154,7 +170,8 @@ var Scene = module.exports = function() {
 
 		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing
 			var shader = object.material.shader;
-
+			var material = object.material;
+			var mesh = object.mesh;
 			// BUG: 
 			// If there's only one material or one mesh in the scene real time changes to the material or mesh will not present themselves as the id will still match the currently bound
 			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case. (should probably be called forceRebind as it 'might' be rebound anyway)
@@ -163,31 +180,12 @@ var Scene = module.exports = function() {
 			// TODO: When scene graph implemented - check material.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reording in the graph (as it's been changed). 
 
-			if(!shader.id || shader.id != currentShaderId || !object.material.id || object.material.id != currentMaterialId) {
-				// Texture Rebinding dependencies 
-				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniform have changed since the shaderProgram was last used...
-					// NOTE Large Changes needed because of this
-					// I think we're just going to have to add a flag to materials and meshes to say "rebind" (because I've changed something)
-					// This also means we should move the "currentMeshId / currentMaterial id to the shader instead or keep a keyed list on shader the id 
-					// Lets do this after we've done the texture binding though eh? so for now just rebind everything if shader or material changes (overkill but it'll work)
-				// If the material has changed textures may need rebinding
-				for(var i = 0, l = shader.textureUniformNames; i < l; i++) {
-					var uniformName = shader.textureUniformNames[i];
-					if(material.textures[uniformName]) {
-						// TODO: if no textureId bind add to textures
-						// if textureId doesn't exist in currentTextureBindings then bind to lowest available gl texture slot (that isn't required by this material)
-						// set uniform name to value for textureId in currentTextureBindings
-
-						// Note this requires an update to renderer.setTexture and thus an update to Arbitary Shader demo too
-
-						// Once this is implemented remove texture setting / uniform setting from bindMaterial functions
-					}
-				}
-			}
-
+			var shaderChanged = false;
+			var materialChanged = false;
 			if(!shader.id || shader.id != currentShaderId) {
+				shaderChanged = true;
 				if(!shader.id) {	// Shader was changed on the material since originally added to scene
-					object.material.shaderId = shaders.add(shader); 	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+					material.shaderId = shaders.add(shader); 	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
 				}
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
@@ -199,21 +197,61 @@ var Scene = module.exports = function() {
 				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
 				pMatrixRebound = true;	
 			}
-			
-			if(!object.material.id || object.material.id != currentMaterialId) {
-				if(!object.material.id) {	// material was changed on object since originally added to scene
-					object.materialId = materials.add(object.material);
+
+			if(!material.id || material.id != currentMaterialId) {
+				materialChanged = true;
+				if(!material.id) {	// material was changed on object since originally added to scene
+					object.materialId = materials.add(material);
 				}
-				currentMaterialId = object.material.id;
-				shader.bindMaterial.call(r, object.material);
+				currentMaterialId = material.id;
+				shader.bindMaterial.call(r, material);
 			}
 
-			if(!object.mesh.id || object.mesh.id != currentMeshId) {
-				if(!object.mesh.id) {	// mesh was changed on object since originally added to scene
-					object.meshId = mesh.add(object.mesh);
+			if(shaderChanged || materialChanged) {
+				// Texture Rebinding dependencies 
+				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniforms have changed since the shaderProgram was last used...
+					// NOTE Large Changes needed because of this
+					// I think we're just going to have to add a flag to materials and meshes to say "rebind" (because I've changed something)
+					// This also means we should move the "currentMeshId / currentMaterial id to the shader instead or keep a keyed list on shader the id 
+					// Lets do this after we've done the texture binding though eh? so for now just rebind everything if shader or material changes (overkill but it'll work)
+				// If the material has changed textures may need rebinding
+				
+				// Check for gl location rebinds needed, if any needed and rebind all to make sure we don't replace a texture we're using
+				var locationRebindsNeeded = false;
+				for(var i = 0, l = shader.textureUniformNames.length; i < l; i++) {
+					var uniformName = shader.textureUniformNames[i];
+					if(material.textures[uniformName]) {
+						var texture = material.textures[uniformName];
+						if(!texture.id) {
+							textures.add(texture);
+							locationRebindsNeeded = true;
+							break;
+						}
+						if(isNaN(currentTextureBindings[texture.id])) {
+							locationRebindsNeeded = true;
+							break;
+						}
+					}
 				}
-				currentMeshId = object.mesh.id;
-				shader.bindBuffers.call(r, object.mesh);
+				// Rebind if necessary and set uniforms
+				for(i = 0, l = shader.textureUniformNames.length; i < l; i++) {
+					var uniformName = shader.textureUniformNames[i];
+					if(material.textures[uniformName]) {
+						var texture = material.textures[uniformName];
+						if(locationRebindsNeeded) {
+							bindTextureToLocation(texture);
+						}
+						r.setUniformInteger(uniformName, currentTextureBindings[texture.id]);
+					}
+				}
+			}
+			
+			if(!mesh.id || mesh.id != currentMeshId) {
+				if(!mesh.id) {	// mesh was changed on object since originally added to scene
+					object.meshId = mesh.add(mesh);
+				}
+				currentMeshId = mesh.id;
+				shader.bindBuffers.call(r, mesh);
 			}
 
 			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
@@ -222,7 +260,7 @@ var Scene = module.exports = function() {
 			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 				
-			r.draw(object.mesh.renderMode, object.mesh.indexed ? object.mesh.indexBuffer.numItems : object.mesh.vertexBuffer.numItems, object.mesh.indexed, 0);	
+			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);	
 		};
 
 		if(parameters && parameters.camera) {

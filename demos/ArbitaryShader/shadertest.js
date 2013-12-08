@@ -148,7 +148,7 @@ var loop = function(){
 var texture, image = new Image();
 image.onload = function() {
 	texture = r.createTexture(image, "high");
-	r.setTexture(texture); 	// Note, no uniform location and binding required for texture, unlike example on WebGL Playground
+	r.setTexture(0, texture); 	// Note don't actually need to set tex0 uniform to 0, unlike in WebGL playground demo code
 	loop();
 };
 image.src = "concrete1.jpg";

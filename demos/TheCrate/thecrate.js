@@ -34,10 +34,7 @@ var shader = Fury.Shader.create({
 	textureUniformNames: [ "uSampler" ],
 	pMatrixUniformName: "uPMatrix",
 	mvMatrixUniformName: "uMVMatrix",
-	bindMaterial: function(material) {
-		this.setUniformInteger("uSampler", 0);	// This should be managed rather than manual (although also requires update to setTexture)
-		this.setTexture(material.textures["crate"]); 
-	},
+	bindMaterial: function(material) { },
 	bindBuffers: function(mesh) {
 		this.enableAttribute("aVertexPosition");
 		this.enableAttribute("aTextureCoord");
@@ -152,7 +149,7 @@ var loop = function(){
 // Create Texture
 var texture, image = new Image();
 image.onload = function() {
-	material.setTexture("crate", Fury.Renderer.createTexture(image, "high"));
+	material.setTexture("uSampler", Fury.Renderer.createTexture(image, "high"));
 	loop();
 };
 image.src = "crate.gif";

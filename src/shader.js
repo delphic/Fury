@@ -33,8 +33,14 @@ var Shader = module.exports = function() {
 				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
 			}
 		}
-		shader.textureUniformNames = parameters.textureUniformNames ? parameters.textureUniformNames : []; // Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
-
+		if(parameters.textureUniformNames) {
+			if(parameters.textureUniformNames.length > r.TextureLocations.length) {
+				throw new Error("Shader can not use more texture than total texture locations (" + r.TextureLocations.length + ")");
+			}
+			shader.textureUniformNames = parameters.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
+		} else {
+			shader.textureUniformNames = [];
+		}
 
 		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
 			throw new Error("You must provide a material binding function 'bindMaterial'");

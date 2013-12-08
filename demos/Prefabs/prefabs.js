@@ -120,10 +120,7 @@ var shader = Fury.Shader.create({
 	textureUniformNames: [ "uSampler" ],
 	pMatrixUniformName: "uPMatrix",
 	mvMatrixUniformName: "uMVMatrix",
-	bindMaterial: function(material) {
-		this.setUniformInteger("uSampler", 0);				// This should be managed rather than manual (although also requires update to setTexture)
-		this.setTexture(material.textures["texture1"]); 	// Use of this shader with multiple materials highlights need for refinement here - a map from texture uniforms to material textures is probably in order 
-	},
+	bindMaterial: function(material) { },
 	bindBuffers: function(mesh) {
 		this.enableAttribute("aVertexPosition");
 		this.enableAttribute("aTextureCoord");
@@ -185,14 +182,14 @@ var loop = function(){
 var loaded1 = false, loaded2 = false;
 var texture, image1 = new Image(), image2 = new Image();
 image1.onload = function() {
-	material1.setTexture("texture1", Fury.Renderer.createTexture(image1, "high"));
+	material1.setTexture("uSampler", Fury.Renderer.createTexture(image1, "high"));
 	loaded1 = true;
 	if(loaded1 && loaded2) { awake(); }
 };
 image2.onload = function() {
-	material2.setTexture("texture1", Fury.Renderer.createTexture(image2, "high"));
+	material2.setTexture("uSampler", Fury.Renderer.createTexture(image2, "high"));
 	loaded2 = true;
 	if(loaded1 && loaded2) { awake(); }
 };
-image1.src = "crate.gif";
 image2.src= "metal.jpg";
+image1.src = "crate.gif";

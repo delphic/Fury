@@ -13,6 +13,16 @@ exports.init = function(canvas) {
 	gl.viewportHeight = canvas.height;
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
+
+	// WebGL is supposed to have 32 texture locations but this seems to vary
+	// Now TextureLocations.length will tell you how many there are and provide
+	// a link from the integer to the actual value
+	TextureLocations.length = 0;
+	var i = 0;
+	while(gl["TEXTURE"+i.toString()]) {
+		TextureLocations.push(gl["TEXTURE"+i.toString()]);
+		i++;
+	}
 };
 
 exports.clearColor = function(r,g,b,a) {
@@ -82,6 +92,8 @@ exports.createBuffer = function(data, itemSize, indexed) {
 
 // Textures
 
+var TextureLocations = exports.TextureLocations = [];
+
 var TextureQuality = exports.TextureQuality = {
 	High: "high",			// Uses Mips & Interp
 	Medium: "medium",		// Linear Interp 
@@ -110,8 +122,8 @@ exports.createTexture = function(source, quality) {
 	return texture;
 };
 
-exports.setTexture = function(texture) {
-	gl.activeTexture(gl.TEXTURE0);		// TODO: Use multi textures and expose management of this
+exports.setTexture = function(location, texture) {
+	gl.activeTexture(TextureLocations[location]);
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 };
 
