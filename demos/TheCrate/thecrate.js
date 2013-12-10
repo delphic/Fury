@@ -149,7 +149,7 @@ var loop = function(){
 // Create Texture
 var texture, image = new Image();
 image.onload = function() {
-	material.setTexture("uSampler", Fury.Renderer.createTexture(image, "high"));
+	material.textures["uSampler"] = Fury.Renderer.createTexture(image, "high");
 	loop();
 };
 image.src = "crate.gif";

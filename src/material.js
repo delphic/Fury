@@ -1,11 +1,6 @@
 var Material = module.exports = function(){
 	var exports = {};
-	var prototype = {
-		setTexture: function(uniformName, texture) {
-			// TODO: Check that its a valid GL texture
-			this.textures[uniformName] = texture;
-		}
-	};
+	var prototype = {};
 
 	var create = exports.create = function(parameters) {
 		var material = Object.create(prototype);

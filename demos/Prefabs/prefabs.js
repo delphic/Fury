@@ -182,12 +182,12 @@ var loop = function(){
 var loaded1 = false, loaded2 = false;
 var texture, image1 = new Image(), image2 = new Image();
 image1.onload = function() {
-	material1.setTexture("uSampler", Fury.Renderer.createTexture(image1, "high"));
+	material1.textures["uSampler"] = Fury.Renderer.createTexture(image1, "high");
 	loaded1 = true;
 	if(loaded1 && loaded2) { awake(); }
 };
 image2.onload = function() {
-	material2.setTexture("uSampler", Fury.Renderer.createTexture(image2, "high"));
+	material2.textures["uSampler"] = Fury.Renderer.createTexture(image2, "high");
 	loaded2 = true;
 	if(loaded1 && loaded2) { awake(); }
 };
