@@ -1,6 +1,10 @@
 var Material = module.exports = function(){
 	var exports = {};
-	var prototype = {};
+	var prototype = {
+		blendEquation: "FUNC_ADD",
+		sourceBlendType: "SRC_ALPHA",
+		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
+	};
 
 	var create = exports.create = function(parameters) {
 		var material = Object.create(prototype);

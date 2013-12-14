@@ -45,6 +45,12 @@ var Camera = module.exports = function() {
 		// Set Rotation from Euler
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
+		getDepth: function(object) {
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
+				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
+			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
+		},
 		getProjectionMatrix: function(out) {
 			if(this.type == Camera.Type.Perspective) {
 				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
@@ -261,6 +267,45 @@ exports.setTexture = function(location, texture) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 };
 
+// Blending
+var BlendEquation = exports.BlendEquation = {
+	Add: "FUNC_ADD",
+	Subtract: "FUNC_SUBTRACT",
+	ReverseSubtract: "FUNC_REVERSE_SUBTRACT"
+};
+
+var BlendType = exports.BlendType = {
+	Zero: "ZERO",
+	One: "ONE",
+	ConstantAlpha: "CONSTANT_ALPHA",
+	ConstantColour: "CONSTANT_COLOR",
+	DestinationAlpha: "DST_ALPHA",
+	DestinationColour: "DST_COLOR",
+	SourceAlpha: "SRC_ALPHA",
+	SourceColour: "SRC_COLOR",
+	OneMinusConstantAlpha: "ONE_MINUS_CONSTANT_ALPHA",
+	OneMinusConstantColour: "ONE_MINUS_CONSTANT_COLOR",
+	OneMinusDestinationAlpha: "ONE_MINUS_DST_ALPHA",
+	OneMinusDestinationColour: "ONE_MINUS_DST_COLOR",
+	OneMinusSourceAlpha: "ONE_MINUS_SRC_ALPHA",
+	OneMinusSourceColour: "ONE_MINUS_SRC_COLOR",
+	SourceAlphaSaturate: "SRC_ALPHA_SATURATE"
+};
+
+exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
+	gl.enable(gl.BLEND);
+	if(equation) {
+		gl.blendEquation(gl[equation]);
+	}
+	if(sourceBlend && destinationBlend) {
+		gl.blendFunc(gl[sourceBlend], gl[destinationBlend]);
+	}
+};
+
+exports.disableBlending = function() {
+	gl.disable(gl.BLEND);
+};
+
 // Attributes and Uniforms
 
 exports.initAttribute = function(shaderProgram, name) {
@@ -414,153 +459,7 @@ var Transform = module.exports = function() {
 	}
 	return exports;
 }();
-},{}],4:[function(require,module,exports){
-var r = require('./renderer');
-
-var Mesh = module.exports = function(){
-	exports = {};
-
-	var prototype = {
-		calculateNormals: function() {
-			// TODO: Calculate Normals from Vertex information
-		},
-		updateVertices: function() {
-			this.vertexBuffer = r.createBuffer(this.vertices, 3);
-		},
-		updateTextureCoordinates: function() {
-			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
-		},
-		updateNormals: function() {
-			this.normalBuffer = r.createBuffer(this.normals, 3);
-		},
-		updateIndexBuffer: function() {
-			this.indexBuffer = r.createBuffer(this.indices, 1, true);
-			this.indexed = true;
-		}
-	};
-
-	var create = exports.create = function(parameters) {
-		var mesh = Object.create(prototype);
-		if(parameters) {
-			if(parameters.vertices) {
-				mesh.vertices = parameters.vertices;
-				mesh.updateVertices();
-			} 
-			if(parameters.textureCoordinates) {
-				mesh.textureCoordinates = parameters.textureCoordinates;
-				mesh.updateTextureCoordinates();
-			}
-			if(parameters.normals) {
-				mesh.normals = parameters.normals;
-				mesh.updateNormals();
-			}
-			if(parameters.indices) {
-				mesh.indices = parameters.indices;
-				mesh.updateIndexBuffer();
-			} else {
-				mesh.indexed = false;
-			}
-			if(parameters.renderMode) {
-				mesh.renderMode = parameters.renderMode;
-			} else {
-				mesh.renderMode = r.RenderMode.Triangles;
-			}
-		}
-		return mesh;
-	};
-
-	var copy = exports.copy = function(mesh) {
-		var copy = Object.create(prototype);
-
-		copy.indexed = mesh.indexed;
-		copy.renderMode = mesh.renderMode;
-		if(mesh.vertices) {
-			copy.vertices = mesh.vertices.slice(0);
-			copy.updateVertices();
-		} 
-		if(mesh.textureCoordinates) {
-			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
-			copy.updateTextureCoordinates();
-		}
-		if(mesh.normals) {
-			copy.normals = mesh.normals.slice(0);
-			copy.updateNormals();
-		}
-		if(mesh.indices) {
-			copy.indices = mesh.indices.slice(0);
-			copy.updateIndexBuffer();
-		}			
-		return copy;
-	}
-
-	return exports;
-}();
-},{"./renderer":5}],7:[function(require,module,exports){
-// Shader Class for use with Fury Scene
-var r = require('./renderer');
-
-var Shader = module.exports = function() {
-	var exports = {};
-	var prototype = {};
-
-	var create = exports.create = function(parameters) {
-		var i, l;
-		var shader = Object.create(prototype);
-
-		// Argument Validation
-		if(!parameters) {
-			throw new Error("No paramter object supplied, shader source must be provided");
-		}
-		if(!parameters.vsSource) {
-			throw new Error("No Vertex Shader Source 'vsSource'");
-		}
-		if(!parameters.fsSource) {
-			throw new Error("No Fragment Shader Source 'fsSource'");
-		}
-		
-		shader.vs = r.createShader("vertex", parameters.vsSource);
-		shader.fs = r.createShader("fragment", parameters.fsSource);
-		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
-		if(parameters.attributeNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
-				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
-			}
-		}
-		if(parameters.uniformNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
-				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
-			}
-		}
-		if(parameters.textureUniformNames) {
-			if(parameters.textureUniformNames.length > r.TextureLocations.length) {
-				throw new Error("Shader can not use more texture than total texture locations (" + r.TextureLocations.length + ")");
-			}
-			shader.textureUniformNames = parameters.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
-		} else {
-			shader.textureUniformNames = [];
-		}
-
-		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
-			throw new Error("You must provide a material binding function 'bindMaterial'");
-		}
-		shader.bindMaterial = parameters.bindMaterial;	
-
-		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
-			throw new Error("You must provide a mesh binding function 'bindBuffers'");
-		}
-		shader.bindBuffers = parameters.bindBuffers;
-
-		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
-		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
-
-		// TODO: decide how to deal with non-standard uniforms
-
-		return shader;
-	};
-
-	return exports;
-}();
-},{"./renderer":5}],6:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 (function(){// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
@@ -595,6 +494,8 @@ var Scene = module.exports = function() {
 		var renderObjects = indexedMap.create(); // TODO: use materialId / meshId to bind
 		var prefabs = { keys: [] };	// Arguably instances could be added to renderer objects and memory would still be saved, however keeping a separate list allows easier batching for now
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
+		var alphaRenderObjects = [];
+		var depths = {};
 
 		var addTexturesToScene = function(material) {
 			for(var i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
@@ -620,6 +521,29 @@ var Scene = module.exports = function() {
 				currentTextureBindings[texture.id] = nextTextureLocation;
 				currentTextureLocations[nextTextureLocation] = texture.id
 				nextTextureLocation = (nextTextureLocation+1)%r.TextureLocations.length;
+			}
+		};
+
+		var addToAlphaList = function(object, depth) { 
+			depths[object.sceneId] = depth;
+			// Binary search
+			// Could technically do better by batching up items with the same depth according to material / mesh like sence graph
+			var less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
+			while(!inserted) {
+				less = (index == 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
+				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth); 
+				if(less && more) {
+					alphaRenderObjects.splice(index, 0, object);
+					inserted = true;
+				} else {
+					itteration++;
+					var step = Math.ceil(alphaRenderObjects.length/(2*itteration));
+					if(!less) {
+						index -= step;
+					} else {
+						index += step; 
+					}
+				}
 			}
 		};
 
@@ -705,6 +629,7 @@ var Scene = module.exports = function() {
 			camera.getProjectionMatrix(pMatrix);
 			mat4.fromRotationTranslation(cameraMatrix, camera.rotation, camera.position);
 			pMatrixRebound = false;
+			alphaRenderObjects.length = 0;
 			// Simple checks for now - no ordering
 
 			// TODO: Scene Graph 
@@ -720,15 +645,32 @@ var Scene = module.exports = function() {
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching whilst providing a way to simple loop over all elements 
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				// TODO: Frustum Culling	
-				bindAndDraw(renderObjects[renderObjects.keys[i]]);
+				var renderObject = renderObjects[renderObjects.keys[i]];
+				if(renderObject.material.alpha) {
+					addToAlphaList(renderObject, camera.getDepth(renderObject));
+				} else {
+					bindAndDraw(renderObject);
+				}
 			}
 			for(i = 0, l = prefabs.keys.length; i < l; i++) {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					// TODO: Frustum Culling
-					bindAndDraw(instances[instances.keys[j]]);
+					var instance = instances[instances.keys[j]]; 
+					if(instance.material.alpha) {
+						addToAlphaList(instance, camerae.getDepth(instance));
+					} else {
+						bindAndDraw(instance);
+					}
 				}
 			}
+			for(i = 0, l = alphaRenderObjects.length; i < l; i++) {
+				var renderObject = alphaRenderObjects[i];
+				// Could probably do this in bind and draw method
+				r.enableBlending(renderObject.material.sourceBlendType, renderObject.material.destinationBlendType, renderObject.material.blendEquation);
+				bindAndDraw(renderObject);
+			}
+			r.disableBlending();
 		};
 
 		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing
@@ -836,7 +778,153 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./renderer":5,"./indexedMap":9,"./material":3,"./mesh":4,"./transform":8}],9:[function(require,module,exports){
+},{"./renderer":5,"./indexedMap":9,"./material":3,"./mesh":4,"./transform":8}],7:[function(require,module,exports){
+// Shader Class for use with Fury Scene
+var r = require('./renderer');
+
+var Shader = module.exports = function() {
+	var exports = {};
+	var prototype = {};
+
+	var create = exports.create = function(parameters) {
+		var i, l;
+		var shader = Object.create(prototype);
+
+		// Argument Validation
+		if(!parameters) {
+			throw new Error("No paramter object supplied, shader source must be provided");
+		}
+		if(!parameters.vsSource) {
+			throw new Error("No Vertex Shader Source 'vsSource'");
+		}
+		if(!parameters.fsSource) {
+			throw new Error("No Fragment Shader Source 'fsSource'");
+		}
+		
+		shader.vs = r.createShader("vertex", parameters.vsSource);
+		shader.fs = r.createShader("fragment", parameters.fsSource);
+		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
+		if(parameters.attributeNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
+				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
+			}
+		}
+		if(parameters.uniformNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
+				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
+			}
+		}
+		if(parameters.textureUniformNames) {
+			if(parameters.textureUniformNames.length > r.TextureLocations.length) {
+				throw new Error("Shader can not use more texture than total texture locations (" + r.TextureLocations.length + ")");
+			}
+			shader.textureUniformNames = parameters.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
+		} else {
+			shader.textureUniformNames = [];
+		}
+
+		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
+			throw new Error("You must provide a material binding function 'bindMaterial'");
+		}
+		shader.bindMaterial = parameters.bindMaterial;	
+
+		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
+			throw new Error("You must provide a mesh binding function 'bindBuffers'");
+		}
+		shader.bindBuffers = parameters.bindBuffers;
+
+		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
+		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
+
+		// TODO: decide how to deal with non-standard uniforms
+
+		return shader;
+	};
+
+	return exports;
+}();
+},{"./renderer":5}],4:[function(require,module,exports){
+var r = require('./renderer');
+
+var Mesh = module.exports = function(){
+	exports = {};
+
+	var prototype = {
+		calculateNormals: function() {
+			// TODO: Calculate Normals from Vertex information
+		},
+		updateVertices: function() {
+			this.vertexBuffer = r.createBuffer(this.vertices, 3);
+		},
+		updateTextureCoordinates: function() {
+			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
+		},
+		updateNormals: function() {
+			this.normalBuffer = r.createBuffer(this.normals, 3);
+		},
+		updateIndexBuffer: function() {
+			this.indexBuffer = r.createBuffer(this.indices, 1, true);
+			this.indexed = true;
+		}
+	};
+
+	var create = exports.create = function(parameters) {
+		var mesh = Object.create(prototype);
+		if(parameters) {
+			if(parameters.vertices) {
+				mesh.vertices = parameters.vertices;
+				mesh.updateVertices();
+			} 
+			if(parameters.textureCoordinates) {
+				mesh.textureCoordinates = parameters.textureCoordinates;
+				mesh.updateTextureCoordinates();
+			}
+			if(parameters.normals) {
+				mesh.normals = parameters.normals;
+				mesh.updateNormals();
+			}
+			if(parameters.indices) {
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
+			} else {
+				mesh.indexed = false;
+			}
+			if(parameters.renderMode) {
+				mesh.renderMode = parameters.renderMode;
+			} else {
+				mesh.renderMode = r.RenderMode.Triangles;
+			}
+		}
+		return mesh;
+	};
+
+	var copy = exports.copy = function(mesh) {
+		var copy = Object.create(prototype);
+
+		copy.indexed = mesh.indexed;
+		copy.renderMode = mesh.renderMode;
+		if(mesh.vertices) {
+			copy.vertices = mesh.vertices.slice(0);
+			copy.updateVertices();
+		} 
+		if(mesh.textureCoordinates) {
+			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
+			copy.updateTextureCoordinates();
+		}
+		if(mesh.normals) {
+			copy.normals = mesh.normals.slice(0);
+			copy.updateNormals();
+		}
+		if(mesh.indices) {
+			copy.indices = mesh.indices.slice(0);
+			copy.updateIndexBuffer();
+		}			
+		return copy;
+	}
+
+	return exports;
+}();
+},{"./renderer":5}],9:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration

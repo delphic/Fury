@@ -32,6 +32,8 @@ var Scene = module.exports = function() {
 		var renderObjects = indexedMap.create(); // TODO: use materialId / meshId to bind
 		var prefabs = { keys: [] };	// Arguably instances could be added to renderer objects and memory would still be saved, however keeping a separate list allows easier batching for now
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
+		var alphaRenderObjects = [];
+		var depths = {};
 
 		var addTexturesToScene = function(material) {
 			for(var i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
@@ -57,6 +59,29 @@ var Scene = module.exports = function() {
 				currentTextureBindings[texture.id] = nextTextureLocation;
 				currentTextureLocations[nextTextureLocation] = texture.id
 				nextTextureLocation = (nextTextureLocation+1)%r.TextureLocations.length;
+			}
+		};
+
+		var addToAlphaList = function(object, depth) { 
+			depths[object.sceneId] = depth;
+			// Binary search
+			// Could technically do better by batching up items with the same depth according to material / mesh like sence graph
+			var less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
+			while(!inserted) {
+				less = (index == 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
+				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth); 
+				if(less && more) {
+					alphaRenderObjects.splice(index, 0, object);
+					inserted = true;
+				} else {
+					itteration++;
+					var step = Math.ceil(alphaRenderObjects.length/(2*itteration));
+					if(!less) {
+						index -= step;
+					} else {
+						index += step; 
+					}
+				}
 			}
 		};
 
@@ -142,6 +167,7 @@ var Scene = module.exports = function() {
 			camera.getProjectionMatrix(pMatrix);
 			mat4.fromRotationTranslation(cameraMatrix, camera.rotation, camera.position);
 			pMatrixRebound = false;
+			alphaRenderObjects.length = 0;
 			// Simple checks for now - no ordering
 
 			// TODO: Scene Graph 
@@ -157,15 +183,32 @@ var Scene = module.exports = function() {
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching whilst providing a way to simple loop over all elements 
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				// TODO: Frustum Culling	
-				bindAndDraw(renderObjects[renderObjects.keys[i]]);
+				var renderObject = renderObjects[renderObjects.keys[i]];
+				if(renderObject.material.alpha) {
+					addToAlphaList(renderObject, camera.getDepth(renderObject));
+				} else {
+					bindAndDraw(renderObject);
+				}
 			}
 			for(i = 0, l = prefabs.keys.length; i < l; i++) {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					// TODO: Frustum Culling
-					bindAndDraw(instances[instances.keys[j]]);
+					var instance = instances[instances.keys[j]]; 
+					if(instance.material.alpha) {
+						addToAlphaList(instance, camerae.getDepth(instance));
+					} else {
+						bindAndDraw(instance);
+					}
 				}
 			}
+			for(i = 0, l = alphaRenderObjects.length; i < l; i++) {
+				var renderObject = alphaRenderObjects[i];
+				// Could probably do this in bind and draw method
+				r.enableBlending(renderObject.material.sourceBlendType, renderObject.material.destinationBlendType, renderObject.material.blendEquation);
+				bindAndDraw(renderObject);
+			}
+			r.disableBlending();
 		};
 
 		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing

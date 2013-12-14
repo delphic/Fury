@@ -127,6 +127,45 @@ exports.setTexture = function(location, texture) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 };
 
+// Blending
+var BlendEquation = exports.BlendEquation = {
+	Add: "FUNC_ADD",
+	Subtract: "FUNC_SUBTRACT",
+	ReverseSubtract: "FUNC_REVERSE_SUBTRACT"
+};
+
+var BlendType = exports.BlendType = {
+	Zero: "ZERO",
+	One: "ONE",
+	ConstantAlpha: "CONSTANT_ALPHA",
+	ConstantColour: "CONSTANT_COLOR",
+	DestinationAlpha: "DST_ALPHA",
+	DestinationColour: "DST_COLOR",
+	SourceAlpha: "SRC_ALPHA",
+	SourceColour: "SRC_COLOR",
+	OneMinusConstantAlpha: "ONE_MINUS_CONSTANT_ALPHA",
+	OneMinusConstantColour: "ONE_MINUS_CONSTANT_COLOR",
+	OneMinusDestinationAlpha: "ONE_MINUS_DST_ALPHA",
+	OneMinusDestinationColour: "ONE_MINUS_DST_COLOR",
+	OneMinusSourceAlpha: "ONE_MINUS_SRC_ALPHA",
+	OneMinusSourceColour: "ONE_MINUS_SRC_COLOR",
+	SourceAlphaSaturate: "SRC_ALPHA_SATURATE"
+};
+
+exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
+	gl.enable(gl.BLEND);
+	if(equation) {
+		gl.blendEquation(gl[equation]);
+	}
+	if(sourceBlend && destinationBlend) {
+		gl.blendFunc(gl[sourceBlend], gl[destinationBlend]);
+	}
+};
+
+exports.disableBlending = function() {
+	gl.disable(gl.BLEND);
+};
+
 // Attributes and Uniforms
 
 exports.initAttribute = function(shaderProgram, name) {
