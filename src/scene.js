@@ -68,8 +68,8 @@ var Scene = module.exports = function() {
 			// Could technically do better by batching up items with the same depth according to material / mesh like sence graph
 			var less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
 			while(!inserted) {
-				more = (index == 0 || depths[alphaRenderObjects[index-1].sceneId] >= depth);
-				less = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] <= depth); 
+				less = (index == 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
+				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth); 
 				if(less && more) {
 					alphaRenderObjects.splice(index, 0, object);
 					inserted = true;
@@ -77,9 +77,9 @@ var Scene = module.exports = function() {
 					itteration++;
 					var step = Math.ceil(alphaRenderObjects.length/(2*itteration));
 					if(!less) {
-						index += step;
+						index -= step;
 					} else {
-						index -= step; 
+						index += step; 
 					}
 				}
 			}

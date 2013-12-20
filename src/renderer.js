@@ -153,17 +153,20 @@ var BlendType = exports.BlendType = {
 };
 
 exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
-	gl.enable(gl.BLEND);
 	if(equation) {
 		gl.blendEquation(gl[equation]);
 	}
 	if(sourceBlend && destinationBlend) {
 		gl.blendFunc(gl[sourceBlend], gl[destinationBlend]);
 	}
+	gl.enable(gl.BLEND);
+	gl.depthMask(false);
+
 };
 
 exports.disableBlending = function() {
 	gl.disable(gl.BLEND);
+	gl.depthMask(true);
 };
 
 // Attributes and Uniforms
