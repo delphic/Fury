@@ -68,10 +68,10 @@ r.initUniform(shaderProgram, "time"); // float
 r.initUniform(shaderProgram, "mouse"); // vec2
 r.initUniform(shaderProgram, "mouseLeft"); // bool
 
-r.useShaderProgram(shaderProgram); 
+r.useShaderProgram(shaderProgram);
 
 // Camera
-var camera = Fury.Camera.create({ 
+var camera = Fury.Camera.create({
 	type: "Orthonormal",
 	near: 0.1,
 	far: 100.0,
@@ -84,41 +84,41 @@ mat4.identity(modelViewMatrix);
 mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -2.0]);
 
 // Events!
-$(document).keydown( function(event) {
-  event.preventDefault();
-  var key = event.which;
+$(document).keydown(function(event) {
+	event.preventDefault();
+	var key = event.which;
 });
 
-$(document).mousemove( function(event) {
-  event.preventDefault();
-  // transforming cursor coordinates to [-1.0, 1.0] range
-  // [0,0] being in the left bottom corner to match the vertex coordinates
-  var x = (event.pageX / 512)*2.0 - 1.0;
-  var y = 0.0 - ((event.pageY / 512)*2.0 - 1.0);
-  r.setUniformFloat2("mouse", x, y);
+$(document).mousemove(function(event) {
+	event.preventDefault();
+	// transforming cursor coordinates to [-1.0, 1.0] range
+	// [0,0] being in the left bottom corner to match the vertex coordinates
+	var x = (event.pageX / 512)*2.0 - 1.0;
+	var y = 0.0 - ((event.pageY / 512)*2.0 - 1.0);
+	r.setUniformFloat2("mouse", x, y);
 });
 
-$(document).mousedown( function(event) {
-  event.preventDefault();
-  var key = event.which;
-  var x = event.pageX;
-  var y = event.pageY;
-  if (key==1) {
-	r.setUniformBoolean("mouseLeft", true);
-  }
+$(document).mousedown(function(event) {
+	event.preventDefault();
+	var key = event.which;
+	var x = event.pageX;
+	var y = event.pageY;
+	if (key==1) {
+		r.setUniformBoolean("mouseLeft", true);
+	}
 });
 
-$(document).mouseup( function(event) {
-  event.preventDefault();
-  var key = event.which;
-  if (key==1) {
-	r.setUniformBoolean("mouseLeft", false);
-  }
+$(document).mouseup(function(event) {
+	event.preventDefault();
+	var key = event.which;
+	if (key==1) {
+		r.setUniformBoolean("mouseLeft", false);
+	}
 });
 
-$(document).mouseleave( function(event) {
-  event.preventDefault();
-  r.setUniformFloat2("mouse", 0, 0);
+$(document).mouseleave(function(event) {
+	event.preventDefault();
+	r.setUniformFloat2("mouse", 0, 0);
 });
 
 // Loop
@@ -130,11 +130,11 @@ r.enableAttribute("aTextureCoordinates");
 r.setAttribute("aVertexPosition", quadBuffer);
 r.setAttribute("aTextureCoordinates", textureBuffer);
 r.setUniformMatrix4("modelViewMatrix", modelViewMatrix);
-r.setUniformMatrix4("projectionMatrix", projectionMatrix);	
+r.setUniformMatrix4("projectionMatrix", projectionMatrix);
 
 
 var loop = function(){
-	delta = Date.now() - time; 
+	delta = Date.now() - time;
 	time += delta;
 	runningTime += delta;
 	r.setUniformFloat("time", runningTime/1000);

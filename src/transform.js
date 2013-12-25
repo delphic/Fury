@@ -19,6 +19,6 @@ var Transform = module.exports = function() {
 			transform.scale = parameters.scale;
 		}
 		return transform;
-	}
+	};
 	return exports;
 }();

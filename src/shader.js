@@ -45,7 +45,7 @@ var Shader = module.exports = function() {
 		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
 			throw new Error("You must provide a material binding function 'bindMaterial'");
 		}
-		shader.bindMaterial = parameters.bindMaterial;	
+		shader.bindMaterial = parameters.bindMaterial;
 
 		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
 			throw new Error("You must provide a mesh binding function 'bindBuffers'");

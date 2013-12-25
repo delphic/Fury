@@ -17,7 +17,7 @@ Fury.createPrefab = function(parameters) {
 	if(!parameters || !parameters.name || prefabs[parameters.name]) {
 		throw new Error("Please provide a valid and unique name parameter for your prefab");
 	} else {
-		prefabs[parameters.name] = parameters;	
+		prefabs[parameters.name] = parameters;
 		// TODO: Once using a component system will need to transfer from parameter flat structure to gameobject structure, for now these are the same
 		// Note that each component class should deal with setting up that component instance from supplied parameters itself
 	}

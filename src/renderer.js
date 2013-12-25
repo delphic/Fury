@@ -27,7 +27,7 @@ exports.init = function(canvas) {
 
 exports.clearColor = function(r,g,b,a) {
 	gl.clearColor(r, g, b, a);
-}
+};
 
 exports.clear = function() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight); // TODO: this isn't necessary every frame
@@ -178,7 +178,7 @@ exports.initAttribute = function(shaderProgram, name) {
 	shaderProgram.attributeLocations[name] = gl.getAttribLocation(shaderProgram, name);
 };
 exports.initUniform = function(shaderProgram, name) {
-	if(!shaderProgram.uniformLocations) { 
+	if(!shaderProgram.uniformLocations) {
 		shaderProgram.uniformLocations = {};
 	}
 	shaderProgram.uniformLocations[name] = gl.getUniformLocation(shaderProgram, name);

@@ -47,8 +47,8 @@ var shader = Fury.Shader.create({
 var material = Fury.Material.create({ shader : shader });
 
 // Create Mesh
-var cube = Fury.Mesh.create({ 
-	vertices: [ 
+var cube = Fury.Mesh.create({
+	vertices: [
 		// Front face
 		-1.0, -1.0,  1.0,
 		 1.0, -1.0,  1.0,
@@ -83,8 +83,8 @@ var cube = Fury.Mesh.create({
 		-1.0, -1.0, -1.0,
 		-1.0, -1.0,  1.0,
 		-1.0,  1.0,  1.0,
-		-1.0,  1.0, -1.0], 
-	textureCoordinates: [ 
+		-1.0,  1.0, -1.0],
+	textureCoordinates: [
 		// Front face
 		0.0, 0.0,
 		1.0, 0.0,
@@ -119,7 +119,7 @@ var cube = Fury.Mesh.create({
 		0.0, 0.0,
 		1.0, 0.0,
 		1.0, 1.0,
-		0.0, 1.0 ], 
+		0.0, 1.0 ],
 	indices: [
 		0, 1, 2,      0, 2, 3,    // Front face
 		4, 5, 6,      4, 6, 7,    // Back face
@@ -143,11 +143,11 @@ var loop = function(){
 	quat.rotateY(rotation, rotation, 0.005);
 	quat.rotateZ(rotation, rotation, 0.0025);
 	scene.render();
-	setTimeout(loop, 1); 
+	setTimeout(loop, 1);
 };
 
 // Create Texture
-var texture, image = new Image();
+var image = new Image();
 image.onload = function() {
 	material.textures["uSampler"] = Fury.Renderer.createTexture(image, "high");
 	loop();

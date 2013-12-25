@@ -16,12 +16,12 @@ var IndexedMap = module.exports = function(){
 	var prototype = {
 		add: function(item) {
 			if(!item.id) {
-				var key = (nextKey++).toString(); 
+				var key = (nextKey++).toString();
 				item.id = key;
 				this[key] = item;
 				this.keys.push(key);
 			}
-			return item.id; 
+			return item.id;
 		},
 		remove: function(key) {
 			if(key != "keys" && this.hasOwnProperty(key)) {

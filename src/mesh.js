@@ -28,7 +28,7 @@ var Mesh = module.exports = function(){
 			if(parameters.vertices) {
 				mesh.vertices = parameters.vertices;
 				mesh.updateVertices();
-			} 
+			}
 			if(parameters.textureCoordinates) {
 				mesh.textureCoordinates = parameters.textureCoordinates;
 				mesh.updateTextureCoordinates();
@@ -60,7 +60,7 @@ var Mesh = module.exports = function(){
 		if(mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);
 			copy.updateVertices();
-		} 
+		}
 		if(mesh.textureCoordinates) {
 			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
 			copy.updateTextureCoordinates();
@@ -72,9 +72,9 @@ var Mesh = module.exports = function(){
 		if(mesh.indices) {
 			copy.indices = mesh.indices.slice(0);
 			copy.updateIndexBuffer();
-		}			
+		}
 		return copy;
-	}
+	};
 
 	return exports;
 }();

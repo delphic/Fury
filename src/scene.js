@@ -54,22 +54,22 @@ var Scene = module.exports = function() {
 				currentTextureLocations.push(texture.id);
 			} else {
 				// replace an existing texture
-				delete currentTextureBindings[currentTextureLocations[nextTextureLocation]]
+				delete currentTextureBindings[currentTextureLocations[nextTextureLocation]];
 				r.setTexture(nextTextureLocation, texture);
 				currentTextureBindings[texture.id] = nextTextureLocation;
-				currentTextureLocations[nextTextureLocation] = texture.id
+				currentTextureLocations[nextTextureLocation] = texture.id;
 				nextTextureLocation = (nextTextureLocation+1)%r.TextureLocations.length;
 			}
 		};
 
-		var addToAlphaList = function(object, depth) { 
+		var addToAlphaList = function(object, depth) {
 			depths[object.sceneId] = depth;
 			// Binary search
 			// Could technically do better by batching up items with the same depth according to material / mesh like sence graph
 			var less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
 			while(!inserted) {
-				less = (index == 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
-				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth); 
+				less = (index === 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
+				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth);
 				if(less && more) {
 					alphaRenderObjects.splice(index, 0, object);
 					inserted = true;
@@ -79,7 +79,7 @@ var Scene = module.exports = function() {
 					if(!less) {
 						index -= step;
 					} else {
-						index += step; 
+						index += step;
 					}
 				}
 			}
@@ -103,7 +103,7 @@ var Scene = module.exports = function() {
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
 			// Should be adding a renderer component to said concept (?) 
-			object.transform = Transform.create(parameters); 	
+			object.transform = Transform.create(parameters);
 
 			var id = renderObjects.add(object);
 			object.sceneId = id;
@@ -111,7 +111,7 @@ var Scene = module.exports = function() {
 				renderObjects.remove(this.id);
 			}; // TODO: Move to prototype
 			return object;
-		}
+		};
 
 		scene.instantiate = function(parameters) {
 			var prefab;
@@ -122,7 +122,7 @@ var Scene = module.exports = function() {
 				var defn = Fury.prefabs[parameters.name];
 				if(!defn.material || !defn.mesh) {
 					throw new Error("Requested prefab must have a material and a mesh present");
-				} 
+				}
 				prefab = {
 					name: parameters.name,
 					instances: indexedMap.create(),
@@ -152,14 +152,14 @@ var Scene = module.exports = function() {
 		// Add Camera
 		scene.addCamera = function(camera, name) {
 			var key = name ? name : "main";
-			if(cameraNames.length == 0) {
+			if(cameraNames.length === 0) {
 				mainCameraName = key;
-			} 
+			}
 			if(!cameras.hasOwnProperty(key)) {
 				cameraNames.push(key);
 			}
 			cameras[key] = camera;
-		}
+		};
 
 		// Render
 		scene.render = function(cameraName) {
@@ -194,9 +194,9 @@ var Scene = module.exports = function() {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					// TODO: Frustum Culling
-					var instance = instances[instances.keys[j]]; 
+					var instance = instances[instances.keys[j]];
 					if(instance.material.alpha) {
-						addToAlphaList(instance, camerae.getDepth(instance));
+						addToAlphaList(instance, camera.getDepth(instance));
 					} else {
 						bindAndDraw(instance);
 					}
@@ -233,12 +233,12 @@ var Scene = module.exports = function() {
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
 				pMatrixRebound = false;
-			} 
+			}
 
 			if(!pMatrixRebound) {
 				// New Shader or New Frame, rebind projection Matrix
 				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
-				pMatrixRebound = true;	
+				pMatrixRebound = true;
 			}
 
 			if(!material.id || material.id != currentMaterialId) {
@@ -300,14 +300,14 @@ var Scene = module.exports = function() {
 			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 			mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
 			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
-			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
+			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 				
-			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);	
+			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
 
 		if(parameters && parameters.camera) {
-			scene.addCamera(camera);
+			scene.addCamera(parameters.camera);
 		}
 
 		return scene;

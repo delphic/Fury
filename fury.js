@@ -37,7 +37,7 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./mesh":3,"./material":4,"./scene":5,"./renderer":6,"./shader":7,"./transform":8}],2:[function(require,module,exports){
+},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7,"./transform":8}],2:[function(require,module,exports){
 // glMatrix assumed Global
 var Camera = module.exports = function() {
 	var exports = {};
@@ -92,7 +92,7 @@ var Camera = module.exports = function() {
 	};
 	return exports;
 }();
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 var Material = module.exports = function(){
 	var exports = {};
 	var prototype = {
@@ -141,7 +141,7 @@ var Material = module.exports = function(){
 
 	return exports;
 }();
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -466,72 +466,7 @@ var Transform = module.exports = function() {
 	}
 	return exports;
 }();
-},{}],7:[function(require,module,exports){
-// Shader Class for use with Fury Scene
-var r = require('./renderer');
-
-var Shader = module.exports = function() {
-	var exports = {};
-	var prototype = {};
-
-	var create = exports.create = function(parameters) {
-		var i, l;
-		var shader = Object.create(prototype);
-
-		// Argument Validation
-		if(!parameters) {
-			throw new Error("No paramter object supplied, shader source must be provided");
-		}
-		if(!parameters.vsSource) {
-			throw new Error("No Vertex Shader Source 'vsSource'");
-		}
-		if(!parameters.fsSource) {
-			throw new Error("No Fragment Shader Source 'fsSource'");
-		}
-		
-		shader.vs = r.createShader("vertex", parameters.vsSource);
-		shader.fs = r.createShader("fragment", parameters.fsSource);
-		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
-		if(parameters.attributeNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
-				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
-			}
-		}
-		if(parameters.uniformNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
-				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
-			}
-		}
-		if(parameters.textureUniformNames) {
-			if(parameters.textureUniformNames.length > r.TextureLocations.length) {
-				throw new Error("Shader can not use more texture than total texture locations (" + r.TextureLocations.length + ")");
-			}
-			shader.textureUniformNames = parameters.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
-		} else {
-			shader.textureUniformNames = [];
-		}
-
-		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
-			throw new Error("You must provide a material binding function 'bindMaterial'");
-		}
-		shader.bindMaterial = parameters.bindMaterial;	
-
-		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
-			throw new Error("You must provide a mesh binding function 'bindBuffers'");
-		}
-		shader.bindBuffers = parameters.bindBuffers;
-
-		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
-		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
-
-		// TODO: decide how to deal with non-standard uniforms
-
-		return shader;
-	};
-
-	return exports;
-}();
-},{"./renderer":6}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var r = require('./renderer');
 
 var Mesh = module.exports = function(){
@@ -612,7 +547,7 @@ var Mesh = module.exports = function(){
 
 	return exports;
 }();
-},{"./renderer":6}],5:[function(require,module,exports){
+},{"./renderer":5}],6:[function(require,module,exports){
 (function(){// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
@@ -669,10 +604,10 @@ var Scene = module.exports = function() {
 				currentTextureLocations.push(texture.id);
 			} else {
 				// replace an existing texture
-				delete currentTextureBindings[currentTextureLocations[nextTextureLocation]]
+				delete currentTextureBindings[currentTextureLocations[nextTextureLocation]];
 				r.setTexture(nextTextureLocation, texture);
 				currentTextureBindings[texture.id] = nextTextureLocation;
-				currentTextureLocations[nextTextureLocation] = texture.id
+				currentTextureLocations[nextTextureLocation] = texture.id;
 				nextTextureLocation = (nextTextureLocation+1)%r.TextureLocations.length;
 			}
 		};
@@ -774,7 +709,7 @@ var Scene = module.exports = function() {
 				cameraNames.push(key);
 			}
 			cameras[key] = camera;
-		}
+		};
 
 		// Render
 		scene.render = function(cameraName) {
@@ -811,7 +746,7 @@ var Scene = module.exports = function() {
 					// TODO: Frustum Culling
 					var instance = instances[instances.keys[j]]; 
 					if(instance.material.alpha) {
-						addToAlphaList(instance, camerae.getDepth(instance));
+						addToAlphaList(instance, camera.getDepth(instance));
 					} else {
 						bindAndDraw(instance);
 					}
@@ -922,7 +857,7 @@ var Scene = module.exports = function() {
 		};
 
 		if(parameters && parameters.camera) {
-			scene.addCamera(camera);
+			scene.addCamera(parameters.camera);
 		}
 
 		return scene;
@@ -931,7 +866,72 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./indexedMap":9,"./renderer":6,"./material":4,"./mesh":3,"./transform":8}],9:[function(require,module,exports){
+},{"./renderer":5,"./mesh":4,"./indexedMap":9,"./material":3,"./transform":8}],7:[function(require,module,exports){
+// Shader Class for use with Fury Scene
+var r = require('./renderer');
+
+var Shader = module.exports = function() {
+	var exports = {};
+	var prototype = {};
+
+	var create = exports.create = function(parameters) {
+		var i, l;
+		var shader = Object.create(prototype);
+
+		// Argument Validation
+		if(!parameters) {
+			throw new Error("No paramter object supplied, shader source must be provided");
+		}
+		if(!parameters.vsSource) {
+			throw new Error("No Vertex Shader Source 'vsSource'");
+		}
+		if(!parameters.fsSource) {
+			throw new Error("No Fragment Shader Source 'fsSource'");
+		}
+		
+		shader.vs = r.createShader("vertex", parameters.vsSource);
+		shader.fs = r.createShader("fragment", parameters.fsSource);
+		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
+		if(parameters.attributeNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
+				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
+			}
+		}
+		if(parameters.uniformNames) {	// Could parse these from the shader
+			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
+				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
+			}
+		}
+		if(parameters.textureUniformNames) {
+			if(parameters.textureUniformNames.length > r.TextureLocations.length) {
+				throw new Error("Shader can not use more texture than total texture locations (" + r.TextureLocations.length + ")");
+			}
+			shader.textureUniformNames = parameters.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
+		} else {
+			shader.textureUniformNames = [];
+		}
+
+		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
+			throw new Error("You must provide a material binding function 'bindMaterial'");
+		}
+		shader.bindMaterial = parameters.bindMaterial;	
+
+		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
+			throw new Error("You must provide a mesh binding function 'bindBuffers'");
+		}
+		shader.bindBuffers = parameters.bindBuffers;
+
+		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
+		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
+
+		// TODO: decide how to deal with non-standard uniforms
+
+		return shader;
+	};
+
+	return exports;
+}();
+},{"./renderer":5}],9:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
