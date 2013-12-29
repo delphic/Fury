@@ -100,7 +100,7 @@ var TextureQuality = exports.TextureQuality = {
 	Low: "low"				// Uses nearest pixel
 };
 
-exports.createTexture = function(source, quality) {
+exports.createTexture = function(source, quality, clamp) {
 	var texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -117,6 +117,10 @@ exports.createTexture = function(source, quality) {
 	else {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	}
+	if (clamp) {
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
 	gl.bindTexture(gl.TEXTURE_2D, null);
 	return texture;

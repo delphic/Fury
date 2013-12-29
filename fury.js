@@ -18,7 +18,7 @@ Fury.createPrefab = function(parameters) {
 	if(!parameters || !parameters.name || prefabs[parameters.name]) {
 		throw new Error("Please provide a valid and unique name parameter for your prefab");
 	} else {
-		prefabs[parameters.name] = parameters;	
+		prefabs[parameters.name] = parameters;
 		// TODO: Once using a component system will need to transfer from parameter flat structure to gameobject structure, for now these are the same
 		// Note that each component class should deal with setting up that component instance from supplied parameters itself
 	}
@@ -37,7 +37,56 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./material":3,"./mesh":4,"./renderer":5,"./scene":6,"./shader":7,"./transform":8}],2:[function(require,module,exports){
+},{"./camera":2,"./material":3,"./mesh":4,"./scene":5,"./renderer":6,"./shader":7,"./transform":8}],3:[function(require,module,exports){
+var Material = module.exports = function(){
+	var exports = {};
+	var prototype = {
+		blendEquation: "FUNC_ADD",
+		sourceBlendType: "SRC_ALPHA",
+		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
+	};
+
+	var create = exports.create = function(parameters) {
+		var material = Object.create(prototype);
+
+		if(!parameters.shader) {
+			throw new Error("Shader must be provided");
+		}
+		material.shader = parameters.shader;
+
+		material.textures = {};
+		if(parameters.textures) {
+			var textures = parameters.textures;
+			for(var i = 0, l = textures.length; i < l; i++) {
+				if(textures[i].uniformName && textures[i].texture) {
+					material.textures[textures[i].uniformName] = textures[i].texture;
+				} else {
+					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
+				}
+			}
+		}
+
+		return material;
+	};
+
+	var copy = exports.copy = function(material) {
+		var copy = Object.create(prototype);
+		copy.shader = material.shader;
+		copy.textures = {};
+		if(material.textures) {
+			var textures = material.textures;
+			for(var key in textures) {
+				if(textures.hasOwnProperty(key)) {
+					copy.textures[key] = textures[key];
+				}
+			}
+		}
+		return copy;
+	};
+
+	return exports;
+}();
+},{}],2:[function(require,module,exports){
 // glMatrix assumed Global
 var Camera = module.exports = function() {
 	var exports = {};
@@ -92,56 +141,7 @@ var Camera = module.exports = function() {
 	};
 	return exports;
 }();
-},{}],3:[function(require,module,exports){
-var Material = module.exports = function(){
-	var exports = {};
-	var prototype = {
-		blendEquation: "FUNC_ADD",
-		sourceBlendType: "SRC_ALPHA",
-		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
-	};
-
-	var create = exports.create = function(parameters) {
-		var material = Object.create(prototype);
-
-		if(!parameters.shader) {
-			throw new Error("Shader must be provided");
-		}
-		material.shader = parameters.shader;
-
-		material.textures = {};
-		if(parameters.textures) {
-			var textures = parameters.textures;
-			for(var i = 0, l = textures.length; i < l; i++) {
-				if(textures[i].uniformName && textures[i].texture) {
-					material.textures[textures[i].uniformName] = textures[i].texture;
-				} else {
-					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
-				}
-			}
-		}
-
-		return material;
-	};
-
-	var copy = exports.copy = function(material) {
-		var copy = Object.create(prototype);
-		copy.shader = material.shader;
-		copy.textures = {};
-		if(material.textures) {
-			var textures = material.textures;
-			for(var key in textures) {
-				if(textures.hasOwnProperty(key)) {
-					copy.textures[key] = textures[key];
-				}
-			}
-		}
-		return copy;
-	};
-
-	return exports;
-}();
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -171,7 +171,7 @@ exports.init = function(canvas) {
 
 exports.clearColor = function(r,g,b,a) {
 	gl.clearColor(r, g, b, a);
-}
+};
 
 exports.clear = function() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight); // TODO: this isn't necessary every frame
@@ -244,7 +244,7 @@ var TextureQuality = exports.TextureQuality = {
 	Low: "low"				// Uses nearest pixel
 };
 
-exports.createTexture = function(source, quality) {
+exports.createTexture = function(source, quality, clamp) {
 	var texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -261,6 +261,10 @@ exports.createTexture = function(source, quality) {
 	else {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	}
+	if (clamp) {
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
 	gl.bindTexture(gl.TEXTURE_2D, null);
 	return texture;
@@ -322,7 +326,7 @@ exports.initAttribute = function(shaderProgram, name) {
 	shaderProgram.attributeLocations[name] = gl.getAttribLocation(shaderProgram, name);
 };
 exports.initUniform = function(shaderProgram, name) {
-	if(!shaderProgram.uniformLocations) { 
+	if(!shaderProgram.uniformLocations) {
 		shaderProgram.uniformLocations = {};
 	}
 	shaderProgram.uniformLocations[name] = gl.getUniformLocation(shaderProgram, name);
@@ -463,7 +467,7 @@ var Transform = module.exports = function() {
 			transform.scale = parameters.scale;
 		}
 		return transform;
-	}
+	};
 	return exports;
 }();
 },{}],4:[function(require,module,exports){
@@ -497,7 +501,7 @@ var Mesh = module.exports = function(){
 			if(parameters.vertices) {
 				mesh.vertices = parameters.vertices;
 				mesh.updateVertices();
-			} 
+			}
 			if(parameters.textureCoordinates) {
 				mesh.textureCoordinates = parameters.textureCoordinates;
 				mesh.updateTextureCoordinates();
@@ -529,7 +533,7 @@ var Mesh = module.exports = function(){
 		if(mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);
 			copy.updateVertices();
-		} 
+		}
 		if(mesh.textureCoordinates) {
 			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
 			copy.updateTextureCoordinates();
@@ -541,13 +545,13 @@ var Mesh = module.exports = function(){
 		if(mesh.indices) {
 			copy.indices = mesh.indices.slice(0);
 			copy.updateIndexBuffer();
-		}			
+		}
 		return copy;
-	}
+	};
 
 	return exports;
 }();
-},{"./renderer":5}],6:[function(require,module,exports){
+},{"./renderer":6}],5:[function(require,module,exports){
 (function(){// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
@@ -612,14 +616,14 @@ var Scene = module.exports = function() {
 			}
 		};
 
-		var addToAlphaList = function(object, depth) { 
+		var addToAlphaList = function(object, depth) {
 			depths[object.sceneId] = depth;
 			// Binary search
 			// Could technically do better by batching up items with the same depth according to material / mesh like sence graph
 			var less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
 			while(!inserted) {
-				less = (index == 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
-				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth); 
+				less = (index === 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
+				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth);
 				if(less && more) {
 					alphaRenderObjects.splice(index, 0, object);
 					inserted = true;
@@ -629,7 +633,7 @@ var Scene = module.exports = function() {
 					if(!less) {
 						index -= step;
 					} else {
-						index += step; 
+						index += step;
 					}
 				}
 			}
@@ -653,7 +657,7 @@ var Scene = module.exports = function() {
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
 			// Should be adding a renderer component to said concept (?) 
-			object.transform = Transform.create(parameters); 	
+			object.transform = Transform.create(parameters);
 
 			var id = renderObjects.add(object);
 			object.sceneId = id;
@@ -661,7 +665,7 @@ var Scene = module.exports = function() {
 				renderObjects.remove(this.id);
 			}; // TODO: Move to prototype
 			return object;
-		}
+		};
 
 		scene.instantiate = function(parameters) {
 			var prefab;
@@ -672,7 +676,7 @@ var Scene = module.exports = function() {
 				var defn = Fury.prefabs[parameters.name];
 				if(!defn.material || !defn.mesh) {
 					throw new Error("Requested prefab must have a material and a mesh present");
-				} 
+				}
 				prefab = {
 					name: parameters.name,
 					instances: indexedMap.create(),
@@ -702,9 +706,9 @@ var Scene = module.exports = function() {
 		// Add Camera
 		scene.addCamera = function(camera, name) {
 			var key = name ? name : "main";
-			if(cameraNames.length == 0) {
+			if(cameraNames.length === 0) {
 				mainCameraName = key;
-			} 
+			}
 			if(!cameras.hasOwnProperty(key)) {
 				cameraNames.push(key);
 			}
@@ -744,7 +748,7 @@ var Scene = module.exports = function() {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					// TODO: Frustum Culling
-					var instance = instances[instances.keys[j]]; 
+					var instance = instances[instances.keys[j]];
 					if(instance.material.alpha) {
 						addToAlphaList(instance, camera.getDepth(instance));
 					} else {
@@ -783,12 +787,12 @@ var Scene = module.exports = function() {
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
 				pMatrixRebound = false;
-			} 
+			}
 
 			if(!pMatrixRebound) {
 				// New Shader or New Frame, rebind projection Matrix
 				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
-				pMatrixRebound = true;	
+				pMatrixRebound = true;
 			}
 
 			if(!material.id || material.id != currentMaterialId) {
@@ -850,10 +854,10 @@ var Scene = module.exports = function() {
 			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 			mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
 			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
-			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);	
+			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 				
-			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);	
+			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
 
 		if(parameters && parameters.camera) {
@@ -866,7 +870,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./renderer":5,"./mesh":4,"./indexedMap":9,"./material":3,"./transform":8}],7:[function(require,module,exports){
+},{"./renderer":6,"./indexedMap":9,"./material":3,"./transform":8,"./mesh":4}],7:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 
@@ -914,7 +918,7 @@ var Shader = module.exports = function() {
 		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
 			throw new Error("You must provide a material binding function 'bindMaterial'");
 		}
-		shader.bindMaterial = parameters.bindMaterial;	
+		shader.bindMaterial = parameters.bindMaterial;
 
 		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
 			throw new Error("You must provide a mesh binding function 'bindBuffers'");
@@ -931,7 +935,7 @@ var Shader = module.exports = function() {
 
 	return exports;
 }();
-},{"./renderer":5}],9:[function(require,module,exports){
+},{"./renderer":6}],9:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
@@ -950,12 +954,12 @@ var IndexedMap = module.exports = function(){
 	var prototype = {
 		add: function(item) {
 			if(!item.id) {
-				var key = (nextKey++).toString(); 
+				var key = (nextKey++).toString();
 				item.id = key;
 				this[key] = item;
 				this.keys.push(key);
 			}
-			return item.id; 
+			return item.id;
 		},
 		remove: function(key) {
 			if(key != "keys" && this.hasOwnProperty(key)) {

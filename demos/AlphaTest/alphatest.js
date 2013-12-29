@@ -189,7 +189,7 @@ var loop = function(){
 var image1Loaded = false, image2Loaded = false;
 var texture, image1 = new Image(), image2 = new Image();
 image1.onload = function() {
-	var texture = Fury.Renderer.createTexture(image1, "high");
+	var texture = Fury.Renderer.createTexture(image1, "high", true);
 	redMaterial.textures["uSampler"] = texture;
 	greenMaterial.textures["uSampler"] = texture;
 	blueMaterial.textures["uSampler"] = texture;
