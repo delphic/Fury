@@ -4,12 +4,14 @@ var canvas;
 Fury = {};
 // Modules
 Fury.Camera = require('./camera');
+Fury.Input = require('./input');
 Fury.Material = require('./material');
 Fury.Mesh = require('./mesh');
 Fury.Renderer = require('./renderer');
 Fury.Scene = require('./scene');
 Fury.Shader = require('./shader');
 Fury.Transform = require('./transform');
+
 Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
 
 Fury.createPrefab = function(parameters) {
