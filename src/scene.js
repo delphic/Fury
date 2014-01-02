@@ -165,7 +165,12 @@ var Scene = module.exports = function() {
 		scene.render = function(cameraName) {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
 			camera.getProjectionMatrix(pMatrix);
-			mat4.fromRotationTranslation(cameraMatrix, camera.rotation, camera.position);
+			mat4.fromQuat(cameraMatrix, camera.rotation);
+			mat4.multiply(cameraMatrix, cameraMatrix, cameraRotation);
+			mat4.translate(cameraMatrix, cameraMatrix, camera.position);
+			// TODO: This can be optimised see mat4.fromRotationTranslation(cameraMatrix, camera.rotation, camera.position);
+			// but note that rotation and translation are in wrong order if you use that function
+
 			pMatrixRebound = false;
 			alphaRenderObjects.length = 0;
 			// Simple checks for now - no ordering

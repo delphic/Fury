@@ -91,11 +91,10 @@ var atlasMaterial = Fury.Material.create({ shader: shader });
 
 // Create Camera & Scene 
 var rotateRate = Math.PI;
-var zoomRate = 4;
+var zoomRate = 16;	
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, -128.0), rotation: quat.rotateY(initalRotation, quat.rotateX(initalRotation, initalRotation, Math.PI/4.0), -Math.PI/4.0) });	
-// Oh dear the camera rotation is not working, it's being applied after the position transform, making the camera rotate around the origin, kind of useful but not a standard camera!
-// TODO: Fix so camera works properly but add a "look at" camera change this demo to use that camera
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, -32.0, -128.0) });	
+// TODO: Add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
 
 createBlockPrefab("grass", atlasMaterial, [1,0], [0,0], [0,1]);
@@ -193,26 +192,31 @@ var loop = function(){
 var handleInput = function(elapsed) {
 	var q = camera.rotation;
 	var p = camera.position;
+
+	// TODO: use local axes now that we've fixed the camera
 	if(Input.keyDown("Left")) {
-		quat.rotateY(q, q, rotateRate*elapsed);
-	}
-	if(Input.keyDown("Right")) {
 		quat.rotateY(q, q, -rotateRate*elapsed);
 	}
+	if(Input.keyDown("Right")) {
+		quat.rotateY(q, q, rotateRate*elapsed);
+	}
 	if(Input.keyDown("Up")) {
-		quat.rotateX(q, q, rotateRate*elapsed);
+		quat.rotateX(q, q, -rotateRate*elapsed);
 	}
 	if(Input.keyDown("Down")) {
-		quat.rotateX(q, q, -rotateRate*elapsed);
+		quat.rotateX(q, q, rotateRate*elapsed);
 	}
 	if(Input.keyDown("w")) {
 		p[2] += zoomRate*elapsed;
-		if(p[2] > 0) { 
-			p[2] = 0; 
-		}
 	}
 	if(Input.keyDown("s")) {
 		p[2] -= zoomRate*elapsed;
+	}
+	if(Input.keyDown("a")) {
+		p[0] += zoomRate*elapsed;
+	}
+	if(Input.keyDown("d")) {
+		p[0] -= zoomRate*elapsed;
 	}
 };
 
