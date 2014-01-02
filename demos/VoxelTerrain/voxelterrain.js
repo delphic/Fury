@@ -94,7 +94,7 @@ var atlasMaterial = Fury.Material.create({ shader: shader });
 var rotateRate = Math.PI;
 var zoomRate = 4;
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, -4.0), rotation: quat.rotateY(initalRotation, quat.rotateX(initalRotation, initalRotation, Math.PI/4.0), -Math.PI/4.0) });	
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, -55.0), rotation: quat.rotateY(initalRotation, quat.rotateX(initalRotation, initalRotation, Math.PI/4.0), -Math.PI/4.0) });	
 // Oh dear the camera rotation is not working, it's being applied after the position transform, making the camera rotate around the origin, kind of useful but not a standard camera!
 // TODO: Fix so camera works properly but add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
@@ -116,9 +116,39 @@ var awake = function() {
 	// will then try to use octaves where the octave integer is k you sample at x(2^k) and y(2^k) where 2^k is wavelength and naturally 1/(2^k) is frequency each octave needs a weighing
 
 	// TODO: Use Noise to determine please
-	scene.instantiate({ name: "soil", position: [0, 0, 0], scale: [0.5, 0.5, 0.5] });
-	scene.instantiate({ name: "grass", position: [0, 1, 0], scale: [0.5, 0.5, 0.5] });
-	scene.instantiate({ name: "stone", position: [1, 0, 0], scale: [0.5, 0.5, 0.5] });
+
+	// Try 3D Noise First - almost honestly I think a multi-octave heightmap with caves carved out using 3D perlin noise is likely to give better results.
+	// 2^5 chunk first
+	// Divide by m * (maxdepth + y) and adjust m as initial way to ensure air / ground distinction
+	// Try < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone - will need edge detection for grass?
+	var getChunk = function(value) {
+		if(value < 0.5) {
+			return "air";
+		}
+		if(value < 0.8) {
+			return "soil";
+		}
+		return "stone";
+	};
+	var Perlin = new ClassicalNoise(); // TODO: Flag for Simpelx versus Classical Noise
+	var size = 32, maxDepth = 16, x, y, z, i, j, k, adjust, m = 0.01;	// TODO: Expose m via form
+	var scale = vec3.fromValues(0.5,0.5,0.5);
+	// TODO: Need edge detection before instantiating objects OR need occulusion culling, slows down quite strongly at 2^6
+	// This will also allow us to figure out which should be grass rather than soil!
+	for(i = 0; i < size; i++) {
+		x = i - Math.floor(size/2.0);
+		for(j = 0; j < size; j++) {
+			y = j - Math.floor(size/2.0);
+			for(k = 0; k < size; k++) {
+				z = k - Math.floor(size/2.0);
+				adjust = m * (maxDepth + y);
+				var chunk = getChunk(Perlin.noise(i/size, j/size, k/size) / adjust);
+				if(chunk != "air") {
+					scene.instantiate({ name: chunk, position: vec3.fromValues(x,y,z), scale: scale });
+				}
+			}
+		}
+	}
 	loop();
 };
 
