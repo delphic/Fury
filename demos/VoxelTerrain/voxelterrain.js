@@ -88,13 +88,12 @@ var createBlockPrefab = function(name, material, sideTile, topTile, bottomTile) 
 
 var atlasSize = [2, 2];
 var atlasMaterial = Fury.Material.create({ shader: shader });
-// TODO: Apply atlas texture to material
 
 // Create Camera & Scene 
 var rotateRate = Math.PI;
 var zoomRate = 4;
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, -55.0), rotation: quat.rotateY(initalRotation, quat.rotateX(initalRotation, initalRotation, Math.PI/4.0), -Math.PI/4.0) });	
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, -128.0), rotation: quat.rotateY(initalRotation, quat.rotateX(initalRotation, initalRotation, Math.PI/4.0), -Math.PI/4.0) });	
 // Oh dear the camera rotation is not working, it's being applied after the position transform, making the camera rotate around the origin, kind of useful but not a standard camera!
 // TODO: Fix so camera works properly but add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
@@ -109,6 +108,7 @@ var awake = function() {
 	// Note this needs to happen after materials loaded so that when they are copied the textures have loaded.
 	// Perhaps textures should be stored at the Fury (Fury.Engine) level and thus loading callbacks will provide the texture to all materials
 	// who have that texture id and this will work even if they've been copied prior to texture load
+	// More sensible would giving Fury this awake / update functionality so we don't need to write it each time.
 
 	// Add Blocks to Scene
 
@@ -123,7 +123,7 @@ var awake = function() {
 	// Try < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone - will need edge detection for grass?
 	var getChunk = function(value) {
 		if(value < 0.5) {
-			return "air";
+			return "";
 		}
 		if(value < 0.8) {
 			return "soil";
@@ -131,20 +131,49 @@ var awake = function() {
 		return "stone";
 	};
 	var Perlin = new ClassicalNoise(); // TODO: Flag for Simpelx versus Classical Noise
-	var size = 32, maxDepth = 16, x, y, z, i, j, k, adjust, m = 0.01;	// TODO: Expose m via form
+	var maxDepth = 32, x, y, z, i, j, k, adjust, m = 0.01;	// TODO: Expose m via form
 	var scale = vec3.fromValues(0.5,0.5,0.5);
-	// TODO: Need edge detection before instantiating objects OR need occulusion culling, slows down quite strongly at 2^6
-	// This will also allow us to figure out which should be grass rather than soil!
-	for(i = 0; i < size; i++) {
-		x = i - Math.floor(size/2.0);
-		for(j = 0; j < size; j++) {
-			y = j - Math.floor(size/2.0);
-			for(k = 0; k < size; k++) {
-				z = k - Math.floor(size/2.0);
+	var chunk = { 
+		blocks: [],
+		size: 64,
+		addBlock: function(i,j,k,block) {
+			this.blocks[i + this.size*j + this.size*this.size*k] = block;
+		},
+		getBlock: function(i,j,k) {
+			return this.blocks[i + this.size*j + this.size*this.size*k];
+		}
+	};
+
+	// Determine block from noise function
+	// TODO: a seed rather than randomised function
+	for(i = 0; i < chunk.size; i++) {
+		for(j = 0; j < chunk.size; j++) {
+			y = j - Math.floor(chunk.size/2.0);
+			for(k = 0; k < chunk.size; k++) {
 				adjust = m * (maxDepth + y);
-				var chunk = getChunk(Perlin.noise(i/size, j/size, k/size) / adjust);
-				if(chunk != "air") {
-					scene.instantiate({ name: chunk, position: vec3.fromValues(x,y,z), scale: scale });
+				var block = getChunk(Perlin.noise(i/chunk.size, j/chunk.size, k/chunk.size) / adjust);
+				chunk.addBlock(i,j,k,block)
+			}
+		}
+	}
+	// Spawn just blocks on an edge
+	// Technically we should be itterating over chunks in a separate function, but you know get it working for a single chunk first
+	for(i = 0; i < chunk.size; i++) {
+		x = i - Math.floor(chunk.size/2.0);
+		for(j = 0; j < chunk.size; j++) {
+			y = j - Math.floor(chunk.size/2.0);
+			for(k = 0; k < chunk.size; k++) {
+				z = k - Math.floor(chunk.size/2.0);
+				// Does Exist and is on any edge?
+				if(chunk.getBlock(i,j,k) 
+					&& ((!chunk.getBlock(i,j+1,k) || !chunk.getBlock(i,j-1,k) || !chunk.getBlock(i+1,j,k) || !chunk.getBlock(i-1,j,k) || !chunk.getBlock(i,j,k+1) || !chunk.getBlock(i,j,k-1)) 
+						|| (j+1 >= chunk.size  || j-1 < 0 || i+1 >= chunk.size || i-1 < 0 || k+1 >= chunk.size || k-1 < 0))) { // Note the checks on index only apply when rendering a single chunk if rendering multiple chunks these checks should not be performed
+					var block = chunk.getBlock(i,j,k);
+					if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
+						scene.instantiate({ name: "grass", position: vec3.fromValues(x,y,z), scale: scale });
+					} else {
+						scene.instantiate({ name: block, position: vec3.fromValues(x,y,z), scale: scale });
+					}
 				}
 			}
 		}
