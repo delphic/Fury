@@ -1,10 +1,69 @@
 var Input = module.exports = function() {
 	var exports = {};
-
+	var mouseState = [], currentlyPressedKeys = [];
 	// For now just helpful descriptions to key code maps
 	// Event binding can be handled in game code
 
+	var init = exports.init = function(canvas) {
+			canvas.addEventListener("mousemove", handleMouseMove);
+			canvas.addEventListener("mousedown", handleMouseDown, true);
+			canvas.addEventListener("mouseup", handleMouseUp);
+			document.addEventListener("keyup", handleKeyUp);
+			document.addEventListener("keydown", handleKeyDown);
+	};
+
+	var MousePosition = exports.MousePosition = [0, 0];
+
+	var keyDown = exports.keyDown = function(key) {
+		if (!isNaN(key) && !key.length) {
+			return currentlyPressedKeys[key];
+		}
+		else if (key) {
+			var map = DescriptionToKeyCode[key];
+			return (map) ? currentlyPressedKeys[map] : false;
+		}
+		else {
+			return false;
+		}
+	};
+
+	var mouseDown = exports.mouseDown = function(button) {
+		if (!isNaN(button) && !button.length) {
+			return mouseState[button];
+		}
+		else if (button) {
+			var map = DescriptionToMouseButton[button];
+			return (!isNaN(map)) ? mouseState[map] : false;
+		}
+		else {
+			return false;
+		}
+	};
+
+	var handleKeyDown = function(event) {
+		currentlyPressedKeys[event.keyCode] = true;
+	};
+
+	var handleKeyUp = function(event) {
+		currentlyPressedKeys[event.keyCode] = false;
+	};
+
+	var handleMouseMove = function(event) {
+		MousePosition[0] = event.pageX;
+		MousePosition[1] = event.pageY;
+	};
+
+	var handleMouseDown = function(event) {
+		mouseState[event.button] = true; 
+		return false;
+	};
+
+	var handleMouseUp = function(event) {
+		mouseState[event.button] = false;
+	};
+
 	// TODO: Add Numpad Keys
+	// TODO: Deal with shift in map (probably going to need to move to a function from JSON object for this)
 	var DescriptionToKeyCode = exports.DescriptionToKeyCode = {
 		"a": 65,
 		"b": 66,

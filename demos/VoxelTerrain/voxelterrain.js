@@ -3,6 +3,7 @@
 // Multiple Octaves of Perlin / Simplex noise -> Cubes
 
 Fury.init("fury");
+var Input = Fury.Input;
 
 // Basic Cube JSON
 // Note each cube type needs to have its own mesh with adjusted texture coordinates
@@ -90,15 +91,19 @@ var atlasMaterial = Fury.Material.create({ shader: shader });
 // TODO: Apply atlas texture to material
 
 // Create Camera & Scene 
-var cameraQuat = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, -4.0), rotation: quat.rotateY(cameraQuat, quat.rotateX(cameraQuat, cameraQuat, 0.75), -0.75) });	
+var rotateRate = Math.PI;
+var zoomRate = 4;
+var initalRotation = quat.create();
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, -4.0), rotation: quat.rotateY(initalRotation, quat.rotateX(initalRotation, initalRotation, Math.PI/4.0), -Math.PI/4.0) });	
 // Oh dear the camera rotation is not working, it's being applied after the position transform, making the camera rotate around the origin, kind of useful but not a standard camera!
-// TODO: Fix so camera works properly but add a "look at" camera which is current implementation and change this demo to use that camera
+// TODO: Fix so camera works properly but add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
 
 createBlockPrefab("grass", atlasMaterial, [1,0], [0,0], [0,1]);
 createBlockPrefab("soil", atlasMaterial, [0,1], [0,1], [0,1]);
 createBlockPrefab("stone", atlasMaterial, [1,1], [1,1], [1,1]);
+
+var lastTime = Date.now();
 
 var awake = function() {
 	// Note this needs to happen after materials loaded so that when they are copied the textures have loaded.
@@ -106,6 +111,9 @@ var awake = function() {
 	// who have that texture id and this will work even if they've been copied prior to texture load
 
 	// Add Blocks to Scene
+
+	// First up one noise function (equivilent to 0th Octave)
+	// will then try to use octaves where the octave integer is k you sample at x(2^k) and y(2^k) where 2^k is wavelength and naturally 1/(2^k) is frequency each octave needs a weighing
 
 	// TODO: Use Noise to determine please
 	scene.instantiate({ name: "soil", position: [0, 0, 0], scale: [0.5, 0.5, 0.5] });
@@ -115,8 +123,38 @@ var awake = function() {
 };
 
 var loop = function(){
+	var elapsed = Date.now() - lastTime;
+	lastTime += elapsed;
+	elapsed /= 1000;
+	handleInput(elapsed);
 	scene.render();
 	setTimeout(loop, 1);
+};
+
+var handleInput = function(elapsed) {
+	var q = camera.rotation;
+	var p = camera.position;
+	if(Input.keyDown("Left")) {
+		quat.rotateY(q, q, rotateRate*elapsed);
+	}
+	if(Input.keyDown("Right")) {
+		quat.rotateY(q, q, -rotateRate*elapsed);
+	}
+	if(Input.keyDown("Up")) {
+		quat.rotateX(q, q, rotateRate*elapsed);
+	}
+	if(Input.keyDown("Down")) {
+		quat.rotateX(q, q, -rotateRate*elapsed);
+	}
+	if(Input.keyDown("w")) {
+		p[2] += zoomRate*elapsed;
+		if(p[2] > 0) { 
+			p[2] = 0; 
+		}
+	}
+	if(Input.keyDown("s")) {
+		p[2] -= zoomRate*elapsed;
+	}
 };
 
 // Create Texture

@@ -35,5 +35,6 @@ Fury.init = function(canvasId) {
 		console.log(error.message);
 		return false;
 	}
+	Fury.Input.init(canvas);
 	return true;
 };
