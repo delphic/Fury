@@ -2,6 +2,15 @@
 // First Method to implement
 // Multiple Octaves of Perlin / Simplex noise -> Cubes
 
+// glMatrix extension, seems to work should probably fork the repo
+quat.rotate = (function() { 
+	var i = quat.create();
+	return function(out, q, rad, axis) {
+		quat.setAxisAngle(i, axis, rad);
+		return quat.multiply(out, i, q);
+	}
+})();
+
 Fury.init("fury");
 var Input = Fury.Input;
 
@@ -192,6 +201,7 @@ var loop = function(){
 var localx = vec3.create();
 var localz = vec3.create();
 var unitx = vec3.fromValues(1,0,0);
+var unity = vec3.fromValues(0,1,0);
 var unitz = vec3.fromValues(0,0,1); 
 
 var handleInput = function(elapsed) {
@@ -201,10 +211,10 @@ var handleInput = function(elapsed) {
 	vec3.transformQuat(localz, unitz, q);
 
 	if(Input.keyDown("Left")) {
-		quat.rotateY(q, q, rotateRate*elapsed);	// Needs to rotate around global y not local
+		quat.rotate(q, q, rotateRate*elapsed, unity);
 	}
 	if(Input.keyDown("Right")) {
-		quat.rotateY(q, q, -rotateRate*elapsed); // Needs to rotate around global y not local
+		quat.rotate(q, q, -rotateRate*elapsed, unity);
 	}
 	if(Input.keyDown("Up")) {
 		quat.rotateX(q, q, rotateRate*elapsed);
