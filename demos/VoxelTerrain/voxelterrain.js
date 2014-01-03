@@ -102,7 +102,7 @@ var atlasMaterial = Fury.Material.create({ shader: shader });
 var rotateRate = Math.PI;
 var zoomRate = 16;	
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 32.0, 128.0) });	
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(0.0, 32.0, 128.0) });	
 // TODO: Add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
 
@@ -123,13 +123,10 @@ var awake = function() {
 	// First up one noise function (equivilent to 0th Octave)
 	// will then try to use octaves where the octave integer is k you sample at x(2^k) and y(2^k) where 2^k is wavelength and naturally 1/(2^k) is frequency each octave needs a weighing
 
-	// TODO: Use Noise to determine please
-
-	// Try 3D Noise First - almost honestly I think a multi-octave heightmap with caves carved out using 3D perlin noise is likely to give better results.
 	// 2^5 chunk first
 	// Divide by m * (maxdepth + y) and adjust m as initial way to ensure air / ground distinction
-	// Try < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone - will need edge detection for grass?
-	var getChunk = function(value) {
+	// Try < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone
+	var getBlockType = function(value) {
 		if(value < 0.5) {
 			return "";
 		}
@@ -138,8 +135,10 @@ var awake = function() {
 		}
 		return "stone";
 	};
-	var Perlin = new ClassicalNoise(); // TODO: Flag for Simpelx versus Classical Noise
-	var maxDepth = 32, x, y, z, i, j, k, adjust, m = 0.01;	// TODO: Expose m via form
+
+	var octaves = [], numOctaves = 4;
+	var octaveWeightings = [ 0.5, 0.5, 0.25, 0.1 ];
+	var maxDepth = 32, x, y, z, i, j, k, o, adjust, m = 0.01;	// TODO: Expose m via form
 	var scale = vec3.fromValues(0.5,0.5,0.5);
 	var chunk = { 
 		blocks: [],
@@ -152,6 +151,11 @@ var awake = function() {
 		}
 	};
 
+	for(o = 0; o < numOctaves; o++) {
+		// TODO: Flag for Simpelx versus Classical Noise
+		octaves.push(new ClassicalNoise());
+	}
+
 	// Determine block from noise function
 	// TODO: a seed rather than randomised function
 	for(i = 0; i < chunk.size; i++) {
@@ -159,7 +163,15 @@ var awake = function() {
 			y = j - Math.floor(chunk.size/2.0);
 			for(k = 0; k < chunk.size; k++) {
 				adjust = m * (maxDepth + y);
-				var block = getChunk(Perlin.noise(i/chunk.size, j/chunk.size, k/chunk.size) / adjust);
+				var value = 0;
+				var totalWeight = 0;
+				for(o = 0; o < numOctaves; o++) {
+					var wavelength = Math.pow(2, o);
+					totalWeight += octaveWeightings[o];
+					value += octaveWeightings[o] * octaves[o].noise(wavelength*i/chunk.size, wavelength*j/chunk.size, wavelength*k/chunk.size);
+				}
+				value /= totalWeight;
+				var block = getBlockType(value / adjust);
 				chunk.addBlock(i,j,k,block)
 			}
 		}
