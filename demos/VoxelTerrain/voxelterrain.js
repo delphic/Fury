@@ -93,7 +93,7 @@ var atlasMaterial = Fury.Material.create({ shader: shader });
 var rotateRate = Math.PI;
 var zoomRate = 16;	
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, -32.0, -128.0) });	
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 32.0, 128.0) });	
 // TODO: Add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
 

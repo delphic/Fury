@@ -44,7 +44,7 @@ var Camera = module.exports = function() {
 		}
 		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.fromValues(0,1,0,0);	// HACK: Want to face +z direction for no rotation, adjust scene maths and revert to quat.create()
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
 
 		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
 

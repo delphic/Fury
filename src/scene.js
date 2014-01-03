@@ -22,7 +22,8 @@ var Scene = module.exports = function() {
 		var cameras = {};
 		var cameraNames = [];
 		var mainCameraName = "main";
-		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
+		// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
+		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
 		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 		var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
@@ -167,7 +168,7 @@ var Scene = module.exports = function() {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
 			camera.getProjectionMatrix(pMatrix);
 			// Camera Matrix should transform world space -> camera space
-			quat.invert(inverseCameraRotation, camera.rotation);	// TODO: Not quite sure about this, check axes of rotation, no rotation should be facing +z direction? 
+			quat.invert(inverseCameraRotation, camera.rotation);						// TODO: Not quite sure about this, camera's looking in -z but THREE.js does it so it's probably okay
 			mat4.fromQuat(cameraMatrix, inverseCameraRotation);
 			mat4.translate(cameraMatrix, cameraMatrix, vec3.set(cameraOffset, -camera.position[0], -camera.position[1], -camera.position[2]));
 
