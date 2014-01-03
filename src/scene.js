@@ -22,7 +22,7 @@ var Scene = module.exports = function() {
 		var cameras = {};
 		var cameraNames = [];
 		var mainCameraName = "main";
-		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
+		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();	// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
 		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 		var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
@@ -109,6 +109,7 @@ var Scene = module.exports = function() {
 			object.sceneId = id;
 			object.remove = function() {
 				renderObjects.remove(this.id);
+				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete 
 			}; // TODO: Move to prototype
 			return object;
 		};
@@ -165,11 +166,10 @@ var Scene = module.exports = function() {
 		scene.render = function(cameraName) {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
 			camera.getProjectionMatrix(pMatrix);
-			mat4.fromQuat(cameraMatrix, camera.rotation);
-			mat4.multiply(cameraMatrix, cameraMatrix, cameraRotation);
-			mat4.translate(cameraMatrix, cameraMatrix, camera.position);
-			// TODO: This can be optimised see mat4.fromRotationTranslation(cameraMatrix, camera.rotation, camera.position);
-			// but note that rotation and translation are in wrong order if you use that function
+			// Camera Matrix should transform world space -> camera space
+			quat.invert(inverseCameraRotation, camera.rotation);	// TODO: Not quite sure about this, check axes of rotation, no rotation should be facing +z direction? 
+			mat4.fromQuat(cameraMatrix, inverseCameraRotation);
+			mat4.translate(cameraMatrix, cameraMatrix, vec3.set(cameraOffset, -camera.position[0], -camera.position[1], -camera.position[2]));
 
 			pMatrixRebound = false;
 			alphaRenderObjects.length = 0;

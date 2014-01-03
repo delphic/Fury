@@ -189,34 +189,40 @@ var loop = function(){
 	setTimeout(loop, 1);
 };
 
+var localx = vec3.create();
+var localz = vec3.create();
+var unitx = vec3.fromValues(1,0,0);
+var unitz = vec3.fromValues(0,0,1); 
+
 var handleInput = function(elapsed) {
 	var q = camera.rotation;
 	var p = camera.position;
+	vec3.transformQuat(localx, unitx, q);
+	vec3.transformQuat(localz, unitz, q);
 
-	// TODO: use local axes now that we've fixed the camera
 	if(Input.keyDown("Left")) {
-		quat.rotateY(q, q, -rotateRate*elapsed);
+		quat.rotateY(q, q, rotateRate*elapsed);	// Needs to rotate around global y not local
 	}
 	if(Input.keyDown("Right")) {
-		quat.rotateY(q, q, rotateRate*elapsed);
+		quat.rotateY(q, q, -rotateRate*elapsed); // Needs to rotate around global y not local
 	}
 	if(Input.keyDown("Up")) {
-		quat.rotateX(q, q, -rotateRate*elapsed);
-	}
-	if(Input.keyDown("Down")) {
 		quat.rotateX(q, q, rotateRate*elapsed);
 	}
+	if(Input.keyDown("Down")) {
+		quat.rotateX(q, q, -rotateRate*elapsed);
+	}
 	if(Input.keyDown("w")) {
-		p[2] += zoomRate*elapsed;
+		vec3.scaleAndAdd(p, p, localz, -zoomRate*elapsed);
 	}
 	if(Input.keyDown("s")) {
-		p[2] -= zoomRate*elapsed;
+		vec3.scaleAndAdd(p, p, localz, zoomRate*elapsed);
 	}
 	if(Input.keyDown("a")) {
-		p[0] += zoomRate*elapsed;
+		vec3.scaleAndAdd(p, p, localx, -zoomRate*elapsed);
 	}
 	if(Input.keyDown("d")) {
-		p[0] -= zoomRate*elapsed;
+		vec3.scaleAndAdd(p, p, localx, zoomRate*elapsed);
 	}
 };
 
