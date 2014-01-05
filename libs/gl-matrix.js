@@ -3810,6 +3810,23 @@ quat.mul = quat.multiply;
 quat.scale = vec4.scale;
 
 /**
+ * Rotates a quaternion by the given angle around the given global axis
+ *
+ * @param {quat} out quat receiving operation result
+ * @param {quat} a quat to rotate
+ * @param {Number} rad angle (in radians) to rotate
+ * @param {vec3} axis the axis around which to rotate
+ * @returns {quat} out
+ */
+quat.rotate = (function() { 
+    var i = quat.create();
+    return function(out, q, rad, axis) {
+        quat.setAxisAngle(i, axis, rad);
+        return quat.multiply(out, i, q);
+    }
+})();
+
+/**
  * Rotates a quaternion by the given angle about the X axis
  *
  * @param {quat} out quat receiving operation result
