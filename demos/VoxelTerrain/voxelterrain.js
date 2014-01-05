@@ -2,15 +2,6 @@
 // First Method to implement
 // Multiple Octaves of Perlin / Simplex noise -> Cubes
 
-// glMatrix extension, seems to work should probably fork the repo
-quat.rotate = (function() { 
-	var i = quat.create();
-	return function(out, q, rad, axis) {
-		quat.setAxisAngle(i, axis, rad);
-		return quat.multiply(out, i, q);
-	}
-})();
-
 Fury.init("fury");
 var Input = Fury.Input;
 
