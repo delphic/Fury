@@ -129,12 +129,20 @@ var initalRotation = quat.create();
 var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(0.0, 32.0, 128.0) });	
 // TODO: Add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
+var blocks = [];
 
 createBlockPrefab("grass", atlasMaterial, [1,0], [0,0], [0,1]);
 createBlockPrefab("soil", atlasMaterial, [0,1], [0,1], [0,1]);
 createBlockPrefab("stone", atlasMaterial, [1,1], [1,1], [1,1]);
 
 var lastTime = Date.now();
+
+var clear = function() {
+	for(var i = 0, l = blocks.length; i < l; i++) {
+		blocks[i].remove();
+	}
+	blocks.length = 0;
+};
 
 var awake = function() {
 	// Note this needs to happen after materials loaded so that when they are copied the textures have loaded.
@@ -214,9 +222,9 @@ var awake = function() {
 						|| (j+1 >= chunk.size  || j-1 < 0 || i+1 >= chunk.size || i-1 < 0 || k+1 >= chunk.size || k-1 < 0))) { // Note the checks on index only apply when rendering a single chunk if rendering multiple chunks these checks should not be performed
 					var block = chunk.getBlock(i,j,k);
 					if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
-						scene.instantiate({ name: "grass", position: vec3.fromValues(x,y,z), scale: scale });
+						blocks.push(scene.instantiate({ name: "grass", position: vec3.fromValues(x,y,z), scale: scale }));
 					} else {
-						scene.instantiate({ name: block, position: vec3.fromValues(x,y,z), scale: scale });
+						blocks.push(scene.instantiate({ name: block, position: vec3.fromValues(x,y,z), scale: scale }));
 					}
 				}
 			}

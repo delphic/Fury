@@ -50,6 +50,12 @@ var Mesh = module.exports = function(){
 			} else {
 				mesh.renderMode = r.RenderMode.Triangles;
 			}
+			if(parameters.indices) {
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
+			} else {
+				mesh.indexed = false;
+			}
 			if(parameters.vertices) {
 				mesh.vertices = parameters.vertices;
 				mesh.updateVertices();
@@ -62,12 +68,6 @@ var Mesh = module.exports = function(){
 				mesh.normals = parameters.normals;
 				mesh.updateNormals();
 			}
-			if(parameters.indices) {
-				mesh.indices = parameters.indices;
-				mesh.updateIndexBuffer();
-			} else {
-				mesh.indexed = false;
-			}
 		}
 		return mesh;
 	};
@@ -78,6 +78,10 @@ var Mesh = module.exports = function(){
 		copy.indexed = mesh.indexed;
 		copy.renderMode = mesh.renderMode;
 		copy.boundingRadius = mesh.boundingRadius;
+		if(mesh.indices) {
+			copy.indices = mesh.indices.slice(0);
+			copy.updateIndexBuffer();
+		}
 		if(mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);
 			copy.updateVertices();
@@ -90,10 +94,7 @@ var Mesh = module.exports = function(){
 			copy.normals = mesh.normals.slice(0);
 			copy.updateNormals();
 		}
-		if(mesh.indices) {
-			copy.indices = mesh.indices.slice(0);
-			copy.updateIndexBuffer();
-		}
+		
 		return copy;
 	};
 
