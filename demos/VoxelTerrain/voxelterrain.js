@@ -11,6 +11,30 @@ quat.rotate = (function() {
 	}
 })();
 
+// Predicatable but kinda random numbers for seed based generation
+var createSeed = function(seedValue) {
+	var minCode = seedValue.charCodeAt(0), maxCode = seedValue.charCodeAt(0), i = 0, j;
+	for(var n = 1, l = seedValue.length; n < l; n++) {
+		minCode = Math.min(minCode, seedValue.charCodeAt(n));
+		maxCode = Math.max(maxCode, seedValue.charCodeAt(n));
+	}
+	var number = function(index) {
+		return (seedValue.charCodeAt(index) - (minCode - 0.0001)) / (maxCode + 0.001);
+	};
+	j = Math.floor(seedValue.length*number(0));
+	return {
+		random: function() {
+			var result = 0.5*(number(i) + number(j));
+			i+=1;
+			j+=2;
+			if(i>=seedValue.length) { i = 0; }
+			if(j>=seedValue.length) { j = j%seedValue.length; }
+			return result;
+		}
+	};
+};
+var testSeedString = "XUVNREAZOZJFPQMSAKEMSDJURTQPWEORHZMD";
+
 Fury.init("fury");
 var Input = Fury.Input;
 
@@ -153,7 +177,7 @@ var awake = function() {
 
 	for(o = 0; o < numOctaves; o++) {
 		// TODO: Flag for Simpelx versus Classical Noise
-		octaves.push(new ClassicalNoise());
+		octaves.push(new ClassicalNoise(createSeed(testSeedString)));
 	}
 
 	// Determine block from noise function
