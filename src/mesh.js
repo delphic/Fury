@@ -45,6 +45,11 @@ var Mesh = module.exports = function(){
 		var mesh = Object.create(prototype);
 		mesh.boundingRadius = 0;
 		if(parameters) {
+			if(parameters.renderMode) {
+				mesh.renderMode = parameters.renderMode;
+			} else {
+				mesh.renderMode = r.RenderMode.Triangles;
+			}
 			if(parameters.vertices) {
 				mesh.vertices = parameters.vertices;
 				mesh.updateVertices();
@@ -62,11 +67,6 @@ var Mesh = module.exports = function(){
 				mesh.updateIndexBuffer();
 			} else {
 				mesh.indexed = false;
-			}
-			if(parameters.renderMode) {
-				mesh.renderMode = parameters.renderMode;
-			} else {
-				mesh.renderMode = r.RenderMode.Triangles;
 			}
 		}
 		return mesh;
