@@ -4,10 +4,29 @@ var Mesh = module.exports = function(){
 	exports = {};
 
 	var prototype = {
+		calculateBoundingRadius: function() {
+			var i, l, n, sqRadius = 0, v1, v2, v3;
+			n = this.renderMode == r.RenderMode.TriangleStrip ? 2 : 3;	// Would be 1 for triangle fan
+			l = this.indexed ? this.indices.length : this.vertices.length;
+			for(i = 0; i < l; i+=n) {
+				if(!this.indexed) {
+					v1 = this.vertices[i];
+					v2 = this.vertices[i+1];
+					v3 = this.vertices[i+2];
+				} else {
+					v1 = this.vertices[this.indices[i]];
+					v2 = this.vertices[this.indices[i+1]];
+					v3 = this.vertices[this.indices[i+2]];
+				}
+				sqRadius = Math.max(sqRadius, v1*v1 + v2*v2 + v3*v3);
+			}
+			return Math.sqrt(sqRadius);
+		},
 		calculateNormals: function() {
 			// TODO: Calculate Normals from Vertex information
 		},
 		updateVertices: function() {
+			this.boundingRadius = this.calculateBoundingRadius();
 			this.vertexBuffer = r.createBuffer(this.vertices, 3);
 		},
 		updateTextureCoordinates: function() {
@@ -24,6 +43,7 @@ var Mesh = module.exports = function(){
 
 	var create = exports.create = function(parameters) {
 		var mesh = Object.create(prototype);
+		mesh.boundingRadius = 0;
 		if(parameters) {
 			if(parameters.vertices) {
 				mesh.vertices = parameters.vertices;
@@ -57,6 +77,7 @@ var Mesh = module.exports = function(){
 
 		copy.indexed = mesh.indexed;
 		copy.renderMode = mesh.renderMode;
+		copy.boundingRadius = mesh.boundingRadius;
 		if(mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);
 			copy.updateVertices();
