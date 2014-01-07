@@ -33,7 +33,6 @@ var createSeed = function(seedValue) {
 		}
 	};
 };
-var testSeedString = "XUVNREAZOZJFPQMSAKEMSDJURTQPWEORHZMD";
 
 Fury.init("fury");
 var Input = Fury.Input;
@@ -122,6 +121,52 @@ var createBlockPrefab = function(name, material, sideTile, topTile, bottomTile) 
 var atlasSize = [2, 2];
 var atlasMaterial = Fury.Material.create({ shader: shader });
 
+// Regeneration Variables and form details
+var octaves = [], numOctaves = 4;
+var octaveWeightings = [ 0.5, 0.5, 0.25, 0.1 ];
+var perlin = true;
+var seedString = "XUVNREAZOZJFPQMSAKEMSDJURTQPWEORHZMD";
+var adjustmentFactor = 0.01;
+var getGenerationVariables = function() {
+	octaves.length = 0;
+	octaveWeightings.length = 0;
+	numOctaves = parseInt($("#octaves").val(),10);
+	for(var i = 0; i < numOctaves; i++) {
+		octaveWeightings.push(parseFloat($("#ow"+i).val()));
+	}
+	perlin = $("input[name='noiseType']:checked").val() == "Perlin";
+	seedString = $("#seed").val();
+	adjustmentFactor = parseFloat($("#adjust").val());
+};
+$(document).ready(function(){ 
+	$("#octaves").change(function(event){
+		$("#octavesDisplay").html(this.value);
+		var html = "";
+		for(var i = 0; i < this.value; i++) {
+			var value = i < octaveWeightings.length ? octaveWeightings[i] : 1 / (1 + i); 
+			html += "<input id=\"ow"+i+"\" type=\"number\" value=\"" + value + "\" />";
+		}
+		$("#weightingsContainer").html(html);
+	});
+	$("#regen").click(function(event){
+		getGenerationVariables();
+		clear();
+		awake();
+	});
+
+	// TODO: Should also really set the range over which the 1st octave works (aka Wavelength) settable, as having only 64 means anything more than 4 ovctaves just ends up messy.
+
+	// Set initial values
+	$("#octaves").val(numOctaves);
+	var html = "";
+	for(var i = 0; i < octaveWeightings.length; i++) {
+		html += "<input id=\"ow"+i+"\" type=\"number\" value=\"" + octaveWeightings[i] + "\" />";
+	}
+	$("#weightingsContainer").html(html);
+	$("#seed").val(seedString);
+	$("#adjust").val(adjustmentFactor);
+});
+
 // Create Camera & Scene 
 var rotateRate = Math.PI;
 var zoomRate = 16;	
@@ -153,7 +198,7 @@ var awake = function() {
 
 	// Use octaves where the octave integer is k you sample at x(2^k) and y(2^k) where 2^k is wavelength and naturally 1/(2^k) is frequency each octave needs a weighing
 
-	// Divide by m * (maxdepth + y) and adjust m as initial way to ensure air / ground distinction
+	// Divide by adjustmentFactor * (maxdepth + y) and adjust m as initial way to ensure air / ground distinction
 	// Try < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone
 	var getBlockType = function(value) {
 		if(value < 0.5) {
@@ -165,9 +210,7 @@ var awake = function() {
 		return "stone";
 	};
 
-	var octaves = [], numOctaves = 4;
-	var octaveWeightings = [ 0.5, 0.5, 0.25, 0.1 ];
-	var maxDepth = 32, x, y, z, i, j, k, o, adjust, m = 0.01;	// TODO: Expose m via form
+	var maxDepth = 32, x, y, z, i, j, k, o, adjust;
 	var scale = vec3.fromValues(0.5,0.5,0.5);
 	var chunk = { 
 		blocks: [],
@@ -182,7 +225,7 @@ var awake = function() {
 
 	for(o = 0; o < numOctaves; o++) {
 		// TODO: Flag for Simpelx versus Classical Noise
-		octaves.push(new ClassicalNoise(createSeed(testSeedString)));
+		octaves.push(perlin ? new ClassicalNoise(createSeed(seedString)) : new SimplexNoise(createSeed(seedString)));
 	}
 
 	// Determine block from noise function
@@ -190,7 +233,7 @@ var awake = function() {
 		for(j = 0; j < chunk.size; j++) {
 			y = j - Math.floor(chunk.size/2.0);
 			for(k = 0; k < chunk.size; k++) {
-				adjust = m * (maxDepth + y);
+				adjust = adjustmentFactor * (maxDepth + y);
 				var value = 0;
 				var totalWeight = 0;
 				for(o = 0; o < numOctaves; o++) {

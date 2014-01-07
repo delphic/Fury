@@ -3,6 +3,7 @@
 		<head>
 				<title>Voxel Terrain</title>
 				<script src="../../libs/gl-matrix.js"></script>
+				<script src="../../libs/jquery-2.0.2.js"></script>
 				<script src="../../fury.js"></script>
 				<script src="perlin.js"></script>
 				<script src="simplex.js"></script>
@@ -10,6 +11,30 @@
 		<body>
 			<canvas id="fury" width="800" height="600" oncontextmenu="return false;"></canvas>
 			<script src="voxelterrain.js"></script>
-			<!-- TODO: Form input: seed, clear, regen, num octaves, weightings, adjustment divisor, flag for Perlin versus Simplex -->
+			<frameset>
+				<form>
+					<div>
+						<label for="seed">Seed: </label><input id="seed" type="text" style="width: 500px" />
+					</div>
+					<div style="display: none">
+						<!-- Simplex seems buggy! Hide this for now -->
+						<p>Noise Type:</p>
+						<div><input id="perlin" type="radio" name="noiseType" value="Perlin" checked="checked"/><label for="perlin">Perlin</label></div>
+						<div><input id="simplex" type="radio" name="noiseType" value="Simplex" /><label for="simplex">Simplex</label></div>
+					</div>
+					<div>
+						<label for="octaves">Octaves: </label><input id="octaves" type="range" step="1" min="1" max="8" /><span id="octavesDisplay">4</span>
+					</div>
+					<p>Octave weightings:</p>
+					<div id="weightingsContainer">
+					</div>
+					<div>
+						<p>Values from noise are divided by m * (maxdepth + y), where m is the adjustment factor, currently maxdepth is 32 and generated chunk is 64.</p>
+						<label for="adjust">Adjustment Factor</label><input id="adjust" type="number" />
+					<div>
+						<input id="regen" type="button" value="Regenerate Terrain" />
+					</div>
+				</form>
+			</frameset>
 		</body>
 </html>
