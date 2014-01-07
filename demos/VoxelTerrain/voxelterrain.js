@@ -127,6 +127,7 @@ var octaveWeightings = [ 0.5, 0.5, 0.25, 0.1 ];
 var perlin = true;
 var seedString = "XUVNREAZOZJFPQMSAKEMSDJURTQPWEORHZMD";
 var adjustmentFactor = 0.01;
+var baseWavelength = 64;
 var getGenerationVariables = function() {
 	octaves.length = 0;
 	octaveWeightings.length = 0;
@@ -137,6 +138,7 @@ var getGenerationVariables = function() {
 	perlin = $("input[name='noiseType']:checked").val() == "Perlin";
 	seedString = $("#seed").val();
 	adjustmentFactor = parseFloat($("#adjust").val());
+	baseWavelength = parseInt($("#baseWavelength").val(), 10);
 };
 $(document).ready(function(){ 
 	$("#octaves").change(function(event){
@@ -147,6 +149,10 @@ $(document).ready(function(){
 			html += "<input id=\"ow"+i+"\" type=\"number\" value=\"" + value + "\" />";
 		}
 		$("#weightingsContainer").html(html);
+	});
+	$("#wavelengthPower").change(function(event){
+		var power = parseInt(this.value, 10);
+		$("#baseWavelength").val(Math.pow(2, power));
 	});
 	$("#regen").click(function(event){
 		getGenerationVariables();
@@ -165,6 +171,7 @@ $(document).ready(function(){
 	$("#weightingsContainer").html(html);
 	$("#seed").val(seedString);
 	$("#adjust").val(adjustmentFactor);
+	$("#baseWavelength").val(baseWavelength);
 });
 
 // Create Camera & Scene 
@@ -239,7 +246,7 @@ var awake = function() {
 				for(o = 0; o < numOctaves; o++) {
 					var wavelength = Math.pow(2, o);
 					totalWeight += octaveWeightings[o];
-					value += octaveWeightings[o] * octaves[o].noise(wavelength*i/chunk.size, wavelength*j/chunk.size, wavelength*k/chunk.size);
+					value += octaveWeightings[o] * octaves[o].noise(wavelength*i/baseWavelength, wavelength*j/baseWavelength, wavelength*k/baseWavelength);
 				}
 				value /= totalWeight;
 				var block = getBlockType(value / adjust);

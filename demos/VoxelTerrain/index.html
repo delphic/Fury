@@ -24,7 +24,10 @@
 						<div><input id="simplex" type="radio" name="noiseType" value="Simplex" /><label for="simplex">Simplex</label></div>
 					</div>
 					<div>
-						<label for="octaves">Number of Octaves: </label><input id="octaves" type="range" step="1" min="1" max="8" /><span id="octavesDisplay">4</span>
+						<label for="octaves">Number of Octaves: </label><input id="octaves" type="range" step="1" min="1" max="16" /><span id="octavesDisplay">4</span>
+					</div>
+					<div>
+						<label for="wavelengthPower">Wavelength: (0th Octave) 2^</label><input id="wavelengthPower" type="number" step="1" /> = <input id="baseWavelength" disabled="disabled" />
 					</div>
 					<p>Octave weightings:</p>
 					<div id="weightingsContainer">
