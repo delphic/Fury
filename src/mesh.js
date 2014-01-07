@@ -7,17 +7,10 @@ var Mesh = module.exports = function(){
 		calculateBoundingRadius: function() {
 			var i, l, n, sqRadius = 0, v1, v2, v3;
 			n = this.renderMode == r.RenderMode.TriangleStrip ? 2 : 3;	// Would be 1 for triangle fan
-			l = this.indexed ? this.indices.length : this.vertices.length;
-			for(i = 0; i < l; i+=n) {
-				if(!this.indexed) {
-					v1 = this.vertices[i];
-					v2 = this.vertices[i+1];
-					v3 = this.vertices[i+2];
-				} else {
-					v1 = this.vertices[this.indices[i]];
-					v2 = this.vertices[this.indices[i+1]];
-					v3 = this.vertices[this.indices[i+2]];
-				}
+			for(i = 0, l = this.vertices.length; i < l; i+=n) {
+				v1 = this.vertices[i];
+				v2 = this.vertices[i+1];
+				v3 = this.vertices[i+2];
 				sqRadius = Math.max(sqRadius, v1*v1 + v2*v2 + v3*v3);
 			}
 			return Math.sqrt(sqRadius);
@@ -50,12 +43,6 @@ var Mesh = module.exports = function(){
 			} else {
 				mesh.renderMode = r.RenderMode.Triangles;
 			}
-			if(parameters.indices) {
-				mesh.indices = parameters.indices;
-				mesh.updateIndexBuffer();
-			} else {
-				mesh.indexed = false;
-			}
 			if(parameters.vertices) {
 				mesh.vertices = parameters.vertices;
 				mesh.updateVertices();
@@ -68,6 +55,12 @@ var Mesh = module.exports = function(){
 				mesh.normals = parameters.normals;
 				mesh.updateNormals();
 			}
+			if(parameters.indices) {
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
+			} else {
+				mesh.indexed = false;
+			}
 		}
 		return mesh;
 	};
@@ -78,10 +71,6 @@ var Mesh = module.exports = function(){
 		copy.indexed = mesh.indexed;
 		copy.renderMode = mesh.renderMode;
 		copy.boundingRadius = mesh.boundingRadius;
-		if(mesh.indices) {
-			copy.indices = mesh.indices.slice(0);
-			copy.updateIndexBuffer();
-		}
 		if(mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);
 			copy.updateVertices();
@@ -93,6 +82,10 @@ var Mesh = module.exports = function(){
 		if(mesh.normals) {
 			copy.normals = mesh.normals.slice(0);
 			copy.updateNormals();
+		}
+		if(mesh.indices) {
+			copy.indices = mesh.indices.slice(0);
+			copy.updateIndexBuffer();
 		}
 		
 		return copy;

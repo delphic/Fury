@@ -40,62 +40,7 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./input":3,"./mesh":4,"./material":5,"./renderer":6,"./scene":7,"./shader":8,"./transform":9}],2:[function(require,module,exports){
-// glMatrix assumed Global
-var Camera = module.exports = function() {
-	var exports = {};
-	var prototype = {
-		// Set Rotation from Euler
-		// Set Position x, y, z
-		// Note do not have enforced copy setters, the user is responsible for this
-		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
-				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
-				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
-			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
-		},
-		getProjectionMatrix: function(out) {
-			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
-			} else {
-				var left = - (this.height * this.ratio) / 2.0;
-				var right = - left;
-				var top = this.height / 2.0;
-				var bottom = -top;
-				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
-			}
-			return out;
-		}
-	};
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
-	};
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
-		if(camera.type == Type.Perspective) {
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
-
-		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
-		}
-		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
-
-		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
-
-		return camera;
-	};
-	return exports;
-}();
-},{}],3:[function(require,module,exports){
+},{"./camera":2,"./input":3,"./mesh":4,"./material":5,"./renderer":6,"./scene":7,"./shader":8,"./transform":9}],3:[function(require,module,exports){
 var Input = module.exports = function() {
 	var exports = {};
 	var mouseState = [], currentlyPressedKeys = [];
@@ -318,6 +263,61 @@ var Input = module.exports = function() {
 
 	return exports;
 }(); 
+},{}],2:[function(require,module,exports){
+// glMatrix assumed Global
+var Camera = module.exports = function() {
+	var exports = {};
+	var prototype = {
+		// Set Rotation from Euler
+		// Set Position x, y, z
+		// Note do not have enforced copy setters, the user is responsible for this
+		getDepth: function(object) {
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
+				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
+			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
+		},
+		getProjectionMatrix: function(out) {
+			if(this.type == Camera.Type.Perspective) {
+				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
+			} else {
+				var left = - (this.height * this.ratio) / 2.0;
+				var right = - left;
+				var top = this.height / 2.0;
+				var bottom = -top;
+				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
+			}
+			return out;
+		}
+	};
+	var Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
+	var create = exports.create = function(parameters) {
+		var camera = Object.create(prototype);
+		// TODO: Arguement Checking
+		camera.type = parameters.type ? parameters.type : Type.Perspective;
+		camera.near = parameters.near;
+		camera.far = parameters.far;
+		if(camera.type == Type.Perspective) {
+			camera.fov = parameters.fov;
+		} else if (camera.type == Type.Orthonormal) {
+			camera.height = parameters.height;
+
+		} else {
+			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+		}
+		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
+		camera.position = parameters.position ? parameters.position : vec3.create();
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
+
+		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
+
+		return camera;
+	};
+	return exports;
+}();
 },{}],5:[function(require,module,exports){
 var Material = module.exports = function(){
 	var exports = {};
@@ -706,17 +706,10 @@ var Mesh = module.exports = function(){
 		calculateBoundingRadius: function() {
 			var i, l, n, sqRadius = 0, v1, v2, v3;
 			n = this.renderMode == r.RenderMode.TriangleStrip ? 2 : 3;	// Would be 1 for triangle fan
-			l = this.indexed ? this.indices.length : this.vertices.length;
-			for(i = 0; i < l; i+=n) {
-				if(!this.indexed) {
-					v1 = this.vertices[i];
-					v2 = this.vertices[i+1];
-					v3 = this.vertices[i+2];
-				} else {
-					v1 = this.vertices[this.indices[i]];
-					v2 = this.vertices[this.indices[i+1]];
-					v3 = this.vertices[this.indices[i+2]];
-				}
+			for(i = 0, l = this.vertices.length; i < l; i+=n) {
+				v1 = this.vertices[i];
+				v2 = this.vertices[i+1];
+				v3 = this.vertices[i+2];
 				sqRadius = Math.max(sqRadius, v1*v1 + v2*v2 + v3*v3);
 			}
 			return Math.sqrt(sqRadius);
@@ -749,12 +742,6 @@ var Mesh = module.exports = function(){
 			} else {
 				mesh.renderMode = r.RenderMode.Triangles;
 			}
-			if(parameters.indices) {
-				mesh.indices = parameters.indices;
-				mesh.updateIndexBuffer();
-			} else {
-				mesh.indexed = false;
-			}
 			if(parameters.vertices) {
 				mesh.vertices = parameters.vertices;
 				mesh.updateVertices();
@@ -767,6 +754,12 @@ var Mesh = module.exports = function(){
 				mesh.normals = parameters.normals;
 				mesh.updateNormals();
 			}
+			if(parameters.indices) {
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
+			} else {
+				mesh.indexed = false;
+			}
 		}
 		return mesh;
 	};
@@ -777,10 +770,6 @@ var Mesh = module.exports = function(){
 		copy.indexed = mesh.indexed;
 		copy.renderMode = mesh.renderMode;
 		copy.boundingRadius = mesh.boundingRadius;
-		if(mesh.indices) {
-			copy.indices = mesh.indices.slice(0);
-			copy.updateIndexBuffer();
-		}
 		if(mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);
 			copy.updateVertices();
@@ -792,6 +781,10 @@ var Mesh = module.exports = function(){
 		if(mesh.normals) {
 			copy.normals = mesh.normals.slice(0);
 			copy.updateNormals();
+		}
+		if(mesh.indices) {
+			copy.indices = mesh.indices.slice(0);
+			copy.updateIndexBuffer();
 		}
 		
 		return copy;
@@ -1124,7 +1117,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./indexedMap":10,"./renderer":6,"./material":5,"./mesh":4,"./transform":9}],8:[function(require,module,exports){
+},{"./material":5,"./renderer":6,"./transform":9,"./mesh":4,"./indexedMap":10}],8:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 

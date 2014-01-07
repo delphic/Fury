@@ -45,7 +45,7 @@ var cubeJson = {
 	normals: [ 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0 ],
 	textureCoordinates: [ 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0 ],
 	indices: [ 0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23 ]
-};	
+};
 
 var shader = Fury.Shader.create({
 	vsSource: [
@@ -127,7 +127,6 @@ var rotateRate = Math.PI;
 var zoomRate = 16;	
 var initalRotation = quat.create();
 var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(0.0, 32.0, 128.0) });	
-// TODO: Add a "look at" camera change this demo to use that camera
 var scene = Fury.Scene.create({ camera: camera });
 var blocks = [];
 
@@ -152,10 +151,8 @@ var awake = function() {
 
 	// Add Blocks to Scene
 
-	// First up one noise function (equivilent to 0th Octave)
-	// will then try to use octaves where the octave integer is k you sample at x(2^k) and y(2^k) where 2^k is wavelength and naturally 1/(2^k) is frequency each octave needs a weighing
+	// Use octaves where the octave integer is k you sample at x(2^k) and y(2^k) where 2^k is wavelength and naturally 1/(2^k) is frequency each octave needs a weighing
 
-	// 2^5 chunk first
 	// Divide by m * (maxdepth + y) and adjust m as initial way to ensure air / ground distinction
 	// Try < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone
 	var getBlockType = function(value) {
@@ -189,7 +186,6 @@ var awake = function() {
 	}
 
 	// Determine block from noise function
-	// TODO: a seed rather than randomised function
 	for(i = 0; i < chunk.size; i++) {
 		for(j = 0; j < chunk.size; j++) {
 			y = j - Math.floor(chunk.size/2.0);
