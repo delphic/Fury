@@ -11,7 +11,8 @@
 		<body>
 			<canvas id="fury" width="800" height="600" oncontextmenu="return false;"></canvas>
 			<script src="voxelterrain.js"></script>
-			<frameset>
+			<p>WASD moves the camera and the arrow keys rotate the camera.</p>
+			<fieldset>
 				<form>
 					<div>
 						<label for="seed">Seed: </label><input id="seed" type="text" style="width: 500px" />
@@ -23,7 +24,7 @@
 						<div><input id="simplex" type="radio" name="noiseType" value="Simplex" /><label for="simplex">Simplex</label></div>
 					</div>
 					<div>
-						<label for="octaves">Octaves: </label><input id="octaves" type="range" step="1" min="1" max="8" /><span id="octavesDisplay">4</span>
+						<label for="octaves">Number of Octaves: </label><input id="octaves" type="range" step="1" min="1" max="8" /><span id="octavesDisplay">4</span>
 					</div>
 					<p>Octave weightings:</p>
 					<div id="weightingsContainer">
@@ -35,6 +36,7 @@
 						<input id="regen" type="button" value="Regenerate Terrain" />
 					</div>
 				</form>
-			</frameset>
+			</fieldset>
+			<p>Will add wavelength of 0th octave as a variable soon! Note each octave of noise is sampled every x(2^k) and y(2^k), where k is the octave integer.</p>
 		</body>
 </html>
