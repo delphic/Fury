@@ -107,10 +107,9 @@ var Scene = module.exports = function() {
 			// Should be adding a renderer component to said concept (?) 
 			object.transform = Transform.create(parameters);
 
-			var id = renderObjects.add(object);
-			object.sceneId = id;
+			object.sceneId = renderObjects.add(object);
 			object.remove = function() {
-				renderObjects.remove(this.id);
+				renderObjects.remove(this.sceneId);
 				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete 
 			}; // TODO: Move to prototype
 			return object;

@@ -40,13 +40,65 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./input":3,"./mesh":4,"./material":5,"./renderer":6,"./scene":7,"./shader":8,"./transform":9}],3:[function(require,module,exports){
+},{"./camera":2,"./input":3,"./material":4,"./mesh":5,"./renderer":6,"./scene":7,"./transform":8,"./shader":9}],2:[function(require,module,exports){
+// glMatrix assumed Global
+var Camera = module.exports = function() {
+	var exports = {};
+	var prototype = {
+		// Set Rotation from Euler
+		// Set Position x, y, z
+		// Note do not have enforced copy setters, the user is responsible for this
+		getDepth: function(object) {
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
+				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
+			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
+		},
+		getProjectionMatrix: function(out) {
+			if(this.type == Camera.Type.Perspective) {
+				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
+			} else {
+				var left = - (this.height * this.ratio) / 2.0;
+				var right = - left;
+				var top = this.height / 2.0;
+				var bottom = -top;
+				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
+			}
+			return out;
+		}
+	};
+	var Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
+	var create = exports.create = function(parameters) {
+		var camera = Object.create(prototype);
+		// TODO: Arguement Checking
+		camera.type = parameters.type ? parameters.type : Type.Perspective;
+		camera.near = parameters.near;
+		camera.far = parameters.far;
+		if(camera.type == Type.Perspective) {
+			camera.fov = parameters.fov;
+		} else if (camera.type == Type.Orthonormal) {
+			camera.height = parameters.height;
+
+		} else {
+			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+		}
+		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
+		camera.position = parameters.position ? parameters.position : vec3.create();
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
+
+		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
+
+		return camera;
+	};
+	return exports;
+}();
+},{}],3:[function(require,module,exports){
 var Input = module.exports = function() {
 	var exports = {};
 	var mouseState = [], currentlyPressedKeys = [];
-	// For now just helpful descriptions to key code maps
-	// Event binding can be handled in game code
-
 	var init = exports.init = function(canvas) {
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
@@ -263,110 +315,6 @@ var Input = module.exports = function() {
 
 	return exports;
 }(); 
-},{}],2:[function(require,module,exports){
-// glMatrix assumed Global
-var Camera = module.exports = function() {
-	var exports = {};
-	var prototype = {
-		// Set Rotation from Euler
-		// Set Position x, y, z
-		// Note do not have enforced copy setters, the user is responsible for this
-		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
-				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
-				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
-			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
-		},
-		getProjectionMatrix: function(out) {
-			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
-			} else {
-				var left = - (this.height * this.ratio) / 2.0;
-				var right = - left;
-				var top = this.height / 2.0;
-				var bottom = -top;
-				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
-			}
-			return out;
-		}
-	};
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
-	};
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
-		if(camera.type == Type.Perspective) {
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
-
-		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
-		}
-		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
-
-		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
-
-		return camera;
-	};
-	return exports;
-}();
-},{}],5:[function(require,module,exports){
-var Material = module.exports = function(){
-	var exports = {};
-	var prototype = {
-		blendEquation: "FUNC_ADD",
-		sourceBlendType: "SRC_ALPHA",
-		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
-	};
-
-	var create = exports.create = function(parameters) {
-		var material = Object.create(prototype);
-
-		if(!parameters.shader) {
-			throw new Error("Shader must be provided");
-		}
-		material.shader = parameters.shader;
-
-		material.textures = {};
-		if(parameters.textures) {
-			var textures = parameters.textures;
-			for(var i = 0, l = textures.length; i < l; i++) {
-				if(textures[i].uniformName && textures[i].texture) {
-					material.textures[textures[i].uniformName] = textures[i].texture;
-				} else {
-					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
-				}
-			}
-		}
-
-		return material;
-	};
-
-	var copy = exports.copy = function(material) {
-		var copy = Object.create(prototype);
-		copy.shader = material.shader;
-		copy.textures = {};
-		if(material.textures) {
-			var textures = material.textures;
-			for(var key in textures) {
-				if(textures.hasOwnProperty(key)) {
-					copy.textures[key] = textures[key];
-				}
-			}
-		}
-		return copy;
-	};
-
-	return exports;
-}();
 },{}],6:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
@@ -671,7 +619,56 @@ exports.draw = function(renderMode, count, indexed, offset) {
 			throw new Error("Unrecognised renderMode '"+renderMode+"'");
 	}
 };
-},{}],9:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+var Material = module.exports = function(){
+	var exports = {};
+	var prototype = {
+		blendEquation: "FUNC_ADD",
+		sourceBlendType: "SRC_ALPHA",
+		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
+	};
+
+	var create = exports.create = function(parameters) {
+		var material = Object.create(prototype);
+
+		if(!parameters.shader) {
+			throw new Error("Shader must be provided");
+		}
+		material.shader = parameters.shader;
+
+		material.textures = {};
+		if(parameters.textures) {
+			var textures = parameters.textures;
+			for(var i = 0, l = textures.length; i < l; i++) {
+				if(textures[i].uniformName && textures[i].texture) {
+					material.textures[textures[i].uniformName] = textures[i].texture;
+				} else {
+					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
+				}
+			}
+		}
+
+		return material;
+	};
+
+	var copy = exports.copy = function(material) {
+		var copy = Object.create(prototype);
+		copy.shader = material.shader;
+		copy.textures = {};
+		if(material.textures) {
+			var textures = material.textures;
+			for(var key in textures) {
+				if(textures.hasOwnProperty(key)) {
+					copy.textures[key] = textures[key];
+				}
+			}
+		}
+		return copy;
+	};
+
+	return exports;
+}();
+},{}],8:[function(require,module,exports){
 var Transform = module.exports = function() {
 	var exports = {};
 	var prototype = {};
@@ -696,7 +693,7 @@ var Transform = module.exports = function() {
 	};
 	return exports;
 }();
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 var r = require('./renderer');
 
 var Mesh = module.exports = function(){
@@ -894,17 +891,17 @@ var Scene = module.exports = function() {
 			
 			object.meshId = meshes.add(object.mesh);
 			object.materialId = materials.add(object.material);
-			object.material.shaderId = shaders.add(object.material.shader);	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+			object.shaderId = shaders.add(object.material.shader);
+			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
 			// Should be adding a renderer component to said concept (?) 
 			object.transform = Transform.create(parameters);
 
-			var id = renderObjects.add(object);
-			object.sceneId = id;
+			object.sceneId = renderObjects.add(object);
 			object.remove = function() {
-				renderObjects.remove(this.id);
+				renderObjects.remove(this.sceneId);
 				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete 
 			}; // TODO: Move to prototype
 			return object;
@@ -932,8 +929,9 @@ var Scene = module.exports = function() {
 					}
 				};
 				prefab.meshId = meshes.add(prefab.mesh);
-				prefab.materialId =  materials.add(prefab.material);
-				prefab.material.shaderId = shaders.add(prefab.material.shader);	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+				prefab.materialId = materials.add(prefab.material);
+				prefab.shaderId = shaders.add(prefab.material.shader);
+				prefab.material.shaderId = prefab.shaderId;
 				addTexturesToScene(prefab.material);
 				prefabs[parameters.name] = prefab;
 				prefabs.keys.push(parameters.name);
@@ -971,19 +969,21 @@ var Scene = module.exports = function() {
 			alphaRenderObjects.length = 0;
 			// Simple checks for now - no ordering
 
-			// TODO: Scene Graph 
-			// Batched first by Material
+			// TODO: Scene Graph  
+			// Batched first by Shader
+			// Then by Material
 			// Then by Mesh
 			// Then render each Mesh Instance
+			// An extension would be to batch materials such that shaders that textures used overlap
 
-			// Extension batch materials such that shaders and then textures used overlap
+			// This batching by shader / material / mesh may need to be combined with scene management techniques
+			// I.e. Scene graph would include things like frustrum culling
 
 			r.clear();
 
-			// TODO: Scene graph will provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
-			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching whilst providing a way to simple loop over all elements 
+			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
+			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements 
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
-				// TODO: Frustum Culling	
 				var renderObject = renderObjects[renderObjects.keys[i]];
 				if(renderObject.material.alpha) {
 					addToAlphaList(renderObject, camera.getDepth(renderObject));
@@ -994,7 +994,6 @@ var Scene = module.exports = function() {
 			for(i = 0, l = prefabs.keys.length; i < l; i++) {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
-					// TODO: Frustum Culling
 					var instance = instances[instances.keys[j]];
 					if(instance.material.alpha) {
 						addToAlphaList(instance, camera.getDepth(instance));
@@ -1021,7 +1020,7 @@ var Scene = module.exports = function() {
 			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case. (should probably be called forceRebind as it 'might' be rebound anyway)
 			// Having now determined that actually we don't need to rebind uniforms when switching shader programs, we'll need this flag whenever there's only one mesh or material using a given shader.
 
-			// TODO: When scene graph implemented - check material.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
+			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reording in the graph (as it's been changed). 
 
 			var shaderChanged = false;
@@ -1029,7 +1028,8 @@ var Scene = module.exports = function() {
 			if(!shader.id || shader.id != currentShaderId) {
 				shaderChanged = true;
 				if(!shader.id) {	// Shader was changed on the material since originally added to scene
-					material.shaderId = shaders.add(shader); 	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+					material.shaderId = shaders.add(shader);
+					object.shaderId = material.shaderId;
 				}
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
@@ -1117,7 +1117,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 })()
-},{"./material":5,"./renderer":6,"./transform":9,"./mesh":4,"./indexedMap":10}],8:[function(require,module,exports){
+},{"./renderer":6,"./indexedMap":10,"./material":4,"./mesh":5,"./transform":8}],9:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 
