@@ -99,7 +99,8 @@ var Scene = module.exports = function() {
 			
 			object.meshId = meshes.add(object.mesh);
 			object.materialId = materials.add(object.material);
-			object.material.shaderId = shaders.add(object.material.shader);	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+			object.shaderId = shaders.add(object.material.shader);
+			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
@@ -137,8 +138,9 @@ var Scene = module.exports = function() {
 					}
 				};
 				prefab.meshId = meshes.add(prefab.mesh);
-				prefab.materialId =  materials.add(prefab.material);
-				prefab.material.shaderId = shaders.add(prefab.material.shader);	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+				prefab.materialId = materials.add(prefab.material);
+				prefab.shaderId = shaders.add(prefab.material.shader);
+				prefab.material.shaderId = prefab.shaderId;
 				addTexturesToScene(prefab.material);
 				prefabs[parameters.name] = prefab;
 				prefabs.keys.push(parameters.name);
@@ -176,19 +178,21 @@ var Scene = module.exports = function() {
 			alphaRenderObjects.length = 0;
 			// Simple checks for now - no ordering
 
-			// TODO: Scene Graph 
-			// Batched first by Material
+			// TODO: Scene Graph  
+			// Batched first by Shader
+			// Then by Material
 			// Then by Mesh
 			// Then render each Mesh Instance
+			// An extension would be to batch materials such that shaders that textures used overlap
 
-			// Extension batch materials such that shaders and then textures used overlap
+			// This batching by shader / material / mesh may need to be combined with scene management techniques
+			// I.e. Scene graph would include things like frustrum culling
 
 			r.clear();
 
-			// TODO: Scene graph will provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
-			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching whilst providing a way to simple loop over all elements 
+			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
+			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements 
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
-				// TODO: Frustum Culling	
 				var renderObject = renderObjects[renderObjects.keys[i]];
 				if(renderObject.material.alpha) {
 					addToAlphaList(renderObject, camera.getDepth(renderObject));
@@ -199,7 +203,6 @@ var Scene = module.exports = function() {
 			for(i = 0, l = prefabs.keys.length; i < l; i++) {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
-					// TODO: Frustum Culling
 					var instance = instances[instances.keys[j]];
 					if(instance.material.alpha) {
 						addToAlphaList(instance, camera.getDepth(instance));
@@ -226,7 +229,7 @@ var Scene = module.exports = function() {
 			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case. (should probably be called forceRebind as it 'might' be rebound anyway)
 			// Having now determined that actually we don't need to rebind uniforms when switching shader programs, we'll need this flag whenever there's only one mesh or material using a given shader.
 
-			// TODO: When scene graph implemented - check material.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
+			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reording in the graph (as it's been changed). 
 
 			var shaderChanged = false;
@@ -234,7 +237,8 @@ var Scene = module.exports = function() {
 			if(!shader.id || shader.id != currentShaderId) {
 				shaderChanged = true;
 				if(!shader.id) {	// Shader was changed on the material since originally added to scene
-					material.shaderId = shaders.add(shader); 	// TODO: this Id doesn't belong on the material, it's a scene thing, either store a materialId -> shaderId in scene or add to renderObject
+					material.shaderId = shaders.add(shader);
+					object.shaderId = material.shaderId;
 				}
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);

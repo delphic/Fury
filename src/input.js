@@ -1,9 +1,6 @@
 var Input = module.exports = function() {
 	var exports = {};
 	var mouseState = [], currentlyPressedKeys = [];
-	// For now just helpful descriptions to key code maps
-	// Event binding can be handled in game code
-
 	var init = exports.init = function(canvas) {
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);

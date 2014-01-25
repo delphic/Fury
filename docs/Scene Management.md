@@ -26,3 +26,12 @@ possibility that updating the position in scene graph of all dynamic objects eac
 So we've got a number of options here, actual tests and code are going to be need to choose the best approach (I'm leaning towards a static / dynamic distinction and automatic adding to
 graph and update each frame of dynamic objects, atm). It is also imperitive that we include some level of profiling (FPS at the least!), so perhaps providing the awake / loop functions 
 within fury is the next step as this'll allow us to add at the very least a console.log of the FPS.
+
+## Further Thoughts
+
+The required data structure to perform the grouping as described in the Scene Class was more complex than I originally gave it credit for, this has made me want to re-evaluate the concept
+of two graphs, one for grouping by shader / material / mesh and another for determining visibility in the scene. I'm still erring towards two graphs because then each would have its own
+responsibility, but we should probably wait until we have some tools to test and compare performance before making that choice... we might be able to avoid looping over *every* object if 
+we use a single graph for both purposes (although with a single graph you've got to presume there with be some churn in the GC as you'd likely need to build the grouping graph each frame).
+
+Regardless, we still need to adjust the existing code for the faulty assumption that you always need rebind uniforms when switching back to a shaderprogram, perhaps we should do this first.  
