@@ -175,7 +175,7 @@ var loop = function(){
 	quat.rotateY(rotation, rotation, 0.005);
 	quat.rotateZ(rotation, rotation, 0.0025);
 	scene.render();
-	setTimeout(loop, 1);
+	window.requestAnimationFrame(loop);
 };
 
 // Create Texture

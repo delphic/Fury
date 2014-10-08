@@ -140,7 +140,7 @@ var loop = function(){
 	r.setUniformFloat("time", runningTime/1000);
 	r.clear();
 	r.drawTriangleStrip(quadBuffer.numItems);
-	setTimeout(loop, 1); // TODO: Use Request Animation Frame
+	window.requestAnimationFrame(loop);
 };
 
 // Create Texture 

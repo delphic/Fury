@@ -285,7 +285,7 @@ var loop = function(){
 	elapsed /= 1000;
 	handleInput(elapsed);
 	scene.render();
-	setTimeout(loop, 1);
+	window.requestAnimationFrame(loop);
 };
 
 var localx = vec3.create();
