@@ -22,6 +22,18 @@ var Camera = module.exports = function() {
 				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
 			}
 			return out;
+		},
+		viewportToWorld: function(out, viewPort, z) {
+			if(this.type == Camerea.Type.Orthonormal) {
+				// TODO: Actually test this...
+				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5) / 2.0;
+				out[1] = this.height * (viewPort[1] - 0.5) / 2.0;
+				out[2] = (z || 0);
+				vec3.transformQuat(out, out, this.rotation);
+				vec3.add(out, out, this.position);
+			} else {
+				throw new Error("viewportToWorld not implemented for perspective camera");
+			}
 		}
 	};
 	var Type = exports.Type = {

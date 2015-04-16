@@ -250,8 +250,12 @@ var Scene = module.exports = function() {
 				pMatrixRebound = true;
 			}
 
-			if(!material.id || material.id != currentMaterialId) {
-				materialChanged = true;
+			if(!material.id || material.id != currentMaterialId || material.dirty) {
+				if(!material.dirty) {
+					materialChanged = true;
+				} else {
+					material.dirty = false;
+				}
 				if(!material.id) {	// material was changed on object since originally added to scene
 					object.materialId = materials.add(material);
 				}
@@ -298,12 +302,13 @@ var Scene = module.exports = function() {
 				}
 			}
 			
-			if(!mesh.id || mesh.id != currentMeshId) {
+			if(!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
 				if(!mesh.id) {	// mesh was changed on object since originally added to scene
 					object.meshId = mesh.add(mesh);
 				}
 				currentMeshId = mesh.id;
 				shader.bindBuffers.call(r, mesh);
+				mesh.dirty = false;
 			}
 
 			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here

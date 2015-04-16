@@ -1,4 +1,70 @@
-;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+// glMatrix assumed Global
+var Camera = module.exports = function() {
+	var exports = {};
+	var prototype = {
+		// Set Rotation from Euler
+		// Set Position x, y, z
+		// Note do not have enforced copy setters, the user is responsible for this
+		getDepth: function(object) {
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
+				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
+			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
+		},
+		getProjectionMatrix: function(out) {
+			if(this.type == Camera.Type.Perspective) {
+				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
+			} else {
+				var left = - (this.height * this.ratio) / 2.0;
+				var right = - left;
+				var top = this.height / 2.0;
+				var bottom = -top;
+				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
+			}
+			return out;
+		},
+		viewportToWorld: function(out, viewPort, z) {
+			if(this.type == Camerea.Type.Orthonormal) {
+				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5) / 2.0;
+				out[1] = this.height * (viewPort[1] - 0.5) / 2.0;
+				out[2] = (z || 0);
+				vec3.transformQuat(out, out, this.rotation);
+				vec3.add(out, out, this.position);
+			} else {
+				throw new Error("viewportToWorld not implemented for perspective camera");
+			}
+		}
+	};
+	var Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
+	var create = exports.create = function(parameters) {
+		var camera = Object.create(prototype);
+		// TODO: Arguement Checking
+		camera.type = parameters.type ? parameters.type : Type.Perspective;
+		camera.near = parameters.near;
+		camera.far = parameters.far;
+		if(camera.type == Type.Perspective) {
+			camera.fov = parameters.fov;
+		} else if (camera.type == Type.Orthonormal) {
+			camera.height = parameters.height;
+
+		} else {
+			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+		}
+		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
+		camera.position = parameters.position ? parameters.position : vec3.create();
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
+
+		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
+
+		return camera;
+	};
+	return exports;
+}();
+},{}],2:[function(require,module,exports){
 var canvas;
 
 // Fury Global
@@ -40,62 +106,53 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":2,"./input":3,"./material":4,"./mesh":5,"./renderer":6,"./scene":7,"./transform":8,"./shader":9}],2:[function(require,module,exports){
-// glMatrix assumed Global
-var Camera = module.exports = function() {
+},{"./camera":1,"./input":4,"./material":5,"./mesh":6,"./renderer":7,"./scene":8,"./shader":9,"./transform":10}],3:[function(require,module,exports){
+var IndexedMap = module.exports = function(){
+	// This creates a dictionary that provides its own keys
+	// It also contains an array of keys for quick enumeration
+	// This does of course slow removal, so this structure should
+	// be used for arrays where you want to enumerate a lot and 
+	// also want references that do not go out of date when 
+	// you remove an item (which is hopefully rarely).
+
+	// Please note, again for purposes of speed and ease of use 
+	// this structure adds the key of the item to the id property on items added
+	// this eases checking for duplicates and if you have the only reference
+	// you can still remove it from the list or check if it is in the list. 
 	var exports = {};
+	var nextKey = 1;
+
 	var prototype = {
-		// Set Rotation from Euler
-		// Set Position x, y, z
-		// Note do not have enforced copy setters, the user is responsible for this
-		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
-				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
-				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
-			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
-		},
-		getProjectionMatrix: function(out) {
-			if(this.type == Camera.Type.Perspective) {
-				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
-			} else {
-				var left = - (this.height * this.ratio) / 2.0;
-				var right = - left;
-				var top = this.height / 2.0;
-				var bottom = -top;
-				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
+		add: function(item) {
+			if(!item.id) {
+				var key = (nextKey++).toString();
+				item.id = key;
+				this[key] = item;
+				this.keys.push(key);
 			}
-			return out;
+			return item.id;
+		},
+		remove: function(key) {
+			if(key != "keys" && this.hasOwnProperty(key)) {
+				delete this.key;
+				for(var i = 0, l = this.keys.length; i < l; i++) {
+					if(this.keys[i] == key) {
+						this.keys.splice(i,1);
+					}
+				}
+			}
 		}
 	};
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
+
+	var create = exports.create = function() {
+		var map = Object.create(prototype);
+		map.keys = [];
+		return map;
 	};
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
-		if(camera.type == Type.Perspective) {
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
 
-		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
-		}
-		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
-
-		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
-
-		return camera;
-	};
 	return exports;
 }();
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var Input = module.exports = function() {
 	var exports = {};
 	var mouseState = [], currentlyPressedKeys = [];
@@ -315,7 +372,152 @@ var Input = module.exports = function() {
 
 	return exports;
 }(); 
+},{}],5:[function(require,module,exports){
+var Material = module.exports = function(){
+	var exports = {};
+	var prototype = {
+		blendEquation: "FUNC_ADD",
+		sourceBlendType: "SRC_ALPHA",
+		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
+	};
+
+	var create = exports.create = function(parameters) {
+		var material = Object.create(prototype);
+
+		if(!parameters.shader) {
+			throw new Error("Shader must be provided");
+		}
+		material.shader = parameters.shader;
+
+		material.textures = {};
+		if(parameters.textures) {
+			var textures = parameters.textures;
+			for(var i = 0, l = textures.length; i < l; i++) {
+				if(textures[i].uniformName && textures[i].texture) {
+					material.textures[textures[i].uniformName] = textures[i].texture;
+				} else {
+					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
+				}
+			}
+		}
+
+		return material;
+	};
+
+	var copy = exports.copy = function(material) {
+		var copy = Object.create(prototype);
+		copy.shader = material.shader;
+		copy.textures = {};
+		if(material.textures) {
+			var textures = material.textures;
+			for(var key in textures) {
+				if(textures.hasOwnProperty(key)) {
+					copy.textures[key] = textures[key];
+				}
+			}
+		}
+		return copy;
+	};
+
+	return exports;
+}();
 },{}],6:[function(require,module,exports){
+var r = require('./renderer');
+
+var Mesh = module.exports = function(){
+	exports = {};
+
+	var prototype = {
+		calculateBoundingRadius: function() {
+			var i, l, n, sqRadius = 0, v1, v2, v3;
+			n = this.renderMode == r.RenderMode.TriangleStrip ? 2 : 3;	// Would be 1 for triangle fan
+			for(i = 0, l = this.vertices.length; i < l; i+=n) {
+				v1 = this.vertices[i];
+				v2 = this.vertices[i+1];
+				v3 = this.vertices[i+2];
+				sqRadius = Math.max(sqRadius, v1*v1 + v2*v2 + v3*v3);
+			}
+			return Math.sqrt(sqRadius);
+		},
+		calculateNormals: function() {
+			// TODO: Calculate Normals from Vertex information
+		},
+		updateVertices: function() {
+			this.boundingRadius = this.calculateBoundingRadius();
+			this.vertexBuffer = r.createBuffer(this.vertices, 3);
+		},
+		updateTextureCoordinates: function() {
+			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
+		},
+		updateNormals: function() {
+			this.normalBuffer = r.createBuffer(this.normals, 3);
+		},
+		updateIndexBuffer: function() {
+			this.indexBuffer = r.createBuffer(this.indices, 1, true);
+			this.indexed = true;
+		}
+	};
+
+	var create = exports.create = function(parameters) {
+		var mesh = Object.create(prototype);
+		mesh.boundingRadius = 0;
+		if(parameters) {
+			if(parameters.renderMode) {
+				mesh.renderMode = parameters.renderMode;
+			} else {
+				mesh.renderMode = r.RenderMode.Triangles;
+			}
+			if(parameters.vertices) {
+				mesh.vertices = parameters.vertices;
+				mesh.updateVertices();
+			}
+			if(parameters.textureCoordinates) {
+				mesh.textureCoordinates = parameters.textureCoordinates;
+				mesh.updateTextureCoordinates();
+			}
+			if(parameters.normals) {
+				mesh.normals = parameters.normals;
+				mesh.updateNormals();
+			}
+			if(parameters.indices) {
+				mesh.indices = parameters.indices;
+				mesh.updateIndexBuffer();
+			} else {
+				mesh.indexed = false;
+			}
+		}
+		return mesh;
+	};
+
+	var copy = exports.copy = function(mesh) {
+		var copy = Object.create(prototype);
+
+		copy.indexed = mesh.indexed;
+		copy.renderMode = mesh.renderMode;
+		copy.boundingRadius = mesh.boundingRadius;
+		if(mesh.vertices) {
+			copy.vertices = mesh.vertices.slice(0);
+			copy.updateVertices();
+		}
+		if(mesh.textureCoordinates) {
+			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
+			copy.updateTextureCoordinates();
+		}
+		if(mesh.normals) {
+			copy.normals = mesh.normals.slice(0);
+			copy.updateNormals();
+		}
+		if(mesh.indices) {
+			copy.indices = mesh.indices.slice(0);
+			copy.updateIndexBuffer();
+		}
+		
+		return copy;
+	};
+
+	return exports;
+}();
+},{"./renderer":7}],7:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -619,178 +821,8 @@ exports.draw = function(renderMode, count, indexed, offset) {
 			throw new Error("Unrecognised renderMode '"+renderMode+"'");
 	}
 };
-},{}],4:[function(require,module,exports){
-var Material = module.exports = function(){
-	var exports = {};
-	var prototype = {
-		blendEquation: "FUNC_ADD",
-		sourceBlendType: "SRC_ALPHA",
-		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
-	};
-
-	var create = exports.create = function(parameters) {
-		var material = Object.create(prototype);
-
-		if(!parameters.shader) {
-			throw new Error("Shader must be provided");
-		}
-		material.shader = parameters.shader;
-
-		material.textures = {};
-		if(parameters.textures) {
-			var textures = parameters.textures;
-			for(var i = 0, l = textures.length; i < l; i++) {
-				if(textures[i].uniformName && textures[i].texture) {
-					material.textures[textures[i].uniformName] = textures[i].texture;
-				} else {
-					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
-				}
-			}
-		}
-
-		return material;
-	};
-
-	var copy = exports.copy = function(material) {
-		var copy = Object.create(prototype);
-		copy.shader = material.shader;
-		copy.textures = {};
-		if(material.textures) {
-			var textures = material.textures;
-			for(var key in textures) {
-				if(textures.hasOwnProperty(key)) {
-					copy.textures[key] = textures[key];
-				}
-			}
-		}
-		return copy;
-	};
-
-	return exports;
-}();
 },{}],8:[function(require,module,exports){
-var Transform = module.exports = function() {
-	var exports = {};
-	var prototype = {};
-	exports.create = function(parameters) {
-		var transform = Object.create(prototype);
-		if(!parameters.position) {
-			transform.position = vec3.create();
-		}  else {
-			transform.position = parameters.position;
-		}
-		if(!parameters.rotation) {
-			transform.rotation = quat.create();
-		} else {
-			transform.rotation = parameters.rotation;
-		}
-		if(!parameters.scale) {
-			transform.scale = vec3.fromValues(1.0, 1.0, 1.0);
-		} else {
-			transform.scale = parameters.scale;
-		}
-		return transform;
-	};
-	return exports;
-}();
-},{}],5:[function(require,module,exports){
-var r = require('./renderer');
-
-var Mesh = module.exports = function(){
-	exports = {};
-
-	var prototype = {
-		calculateBoundingRadius: function() {
-			var i, l, n, sqRadius = 0, v1, v2, v3;
-			n = this.renderMode == r.RenderMode.TriangleStrip ? 2 : 3;	// Would be 1 for triangle fan
-			for(i = 0, l = this.vertices.length; i < l; i+=n) {
-				v1 = this.vertices[i];
-				v2 = this.vertices[i+1];
-				v3 = this.vertices[i+2];
-				sqRadius = Math.max(sqRadius, v1*v1 + v2*v2 + v3*v3);
-			}
-			return Math.sqrt(sqRadius);
-		},
-		calculateNormals: function() {
-			// TODO: Calculate Normals from Vertex information
-		},
-		updateVertices: function() {
-			this.boundingRadius = this.calculateBoundingRadius();
-			this.vertexBuffer = r.createBuffer(this.vertices, 3);
-		},
-		updateTextureCoordinates: function() {
-			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
-		},
-		updateNormals: function() {
-			this.normalBuffer = r.createBuffer(this.normals, 3);
-		},
-		updateIndexBuffer: function() {
-			this.indexBuffer = r.createBuffer(this.indices, 1, true);
-			this.indexed = true;
-		}
-	};
-
-	var create = exports.create = function(parameters) {
-		var mesh = Object.create(prototype);
-		mesh.boundingRadius = 0;
-		if(parameters) {
-			if(parameters.renderMode) {
-				mesh.renderMode = parameters.renderMode;
-			} else {
-				mesh.renderMode = r.RenderMode.Triangles;
-			}
-			if(parameters.vertices) {
-				mesh.vertices = parameters.vertices;
-				mesh.updateVertices();
-			}
-			if(parameters.textureCoordinates) {
-				mesh.textureCoordinates = parameters.textureCoordinates;
-				mesh.updateTextureCoordinates();
-			}
-			if(parameters.normals) {
-				mesh.normals = parameters.normals;
-				mesh.updateNormals();
-			}
-			if(parameters.indices) {
-				mesh.indices = parameters.indices;
-				mesh.updateIndexBuffer();
-			} else {
-				mesh.indexed = false;
-			}
-		}
-		return mesh;
-	};
-
-	var copy = exports.copy = function(mesh) {
-		var copy = Object.create(prototype);
-
-		copy.indexed = mesh.indexed;
-		copy.renderMode = mesh.renderMode;
-		copy.boundingRadius = mesh.boundingRadius;
-		if(mesh.vertices) {
-			copy.vertices = mesh.vertices.slice(0);
-			copy.updateVertices();
-		}
-		if(mesh.textureCoordinates) {
-			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
-			copy.updateTextureCoordinates();
-		}
-		if(mesh.normals) {
-			copy.normals = mesh.normals.slice(0);
-			copy.updateNormals();
-		}
-		if(mesh.indices) {
-			copy.indices = mesh.indices.slice(0);
-			copy.updateIndexBuffer();
-		}
-		
-		return copy;
-	};
-
-	return exports;
-}();
-},{"./renderer":6}],7:[function(require,module,exports){
-(function(){// glMatrix assumed global
+// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
 var Material = require('./material');
@@ -1042,8 +1074,12 @@ var Scene = module.exports = function() {
 				pMatrixRebound = true;
 			}
 
-			if(!material.id || material.id != currentMaterialId) {
-				materialChanged = true;
+			if(!material.id || material.id != currentMaterialId || material.dirty) {
+				if(!material.dirty) {
+					materialChanged = true;
+				} else {
+					material.dirty = false;
+				}
 				if(!material.id) {	// material was changed on object since originally added to scene
 					object.materialId = materials.add(material);
 				}
@@ -1090,12 +1126,13 @@ var Scene = module.exports = function() {
 				}
 			}
 			
-			if(!mesh.id || mesh.id != currentMeshId) {
+			if(!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
 				if(!mesh.id) {	// mesh was changed on object since originally added to scene
 					object.meshId = mesh.add(mesh);
 				}
 				currentMeshId = mesh.id;
 				shader.bindBuffers.call(r, mesh);
+				mesh.dirty = false;
 			}
 
 			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
@@ -1116,8 +1153,7 @@ var Scene = module.exports = function() {
 
 	return exports;
 }();
-})()
-},{"./renderer":6,"./indexedMap":10,"./material":4,"./mesh":5,"./transform":8}],9:[function(require,module,exports){
+},{"./indexedMap":3,"./material":5,"./mesh":6,"./renderer":7,"./transform":10}],9:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 
@@ -1182,51 +1218,29 @@ var Shader = module.exports = function() {
 
 	return exports;
 }();
-},{"./renderer":6}],10:[function(require,module,exports){
-var IndexedMap = module.exports = function(){
-	// This creates a dictionary that provides its own keys
-	// It also contains an array of keys for quick enumeration
-	// This does of course slow removal, so this structure should
-	// be used for arrays where you want to enumerate a lot and 
-	// also want references that do not go out of date when 
-	// you remove an item (which is hopefully rarely).
-
-	// Please note, again for purposes of speed and ease of use 
-	// this structure adds the key of the item to the id property on items added
-	// this eases checking for duplicates and if you have the only reference
-	// you can still remove it from the list or check if it is in the list. 
+},{"./renderer":7}],10:[function(require,module,exports){
+var Transform = module.exports = function() {
 	var exports = {};
-	var nextKey = 1;
-
-	var prototype = {
-		add: function(item) {
-			if(!item.id) {
-				var key = (nextKey++).toString();
-				item.id = key;
-				this[key] = item;
-				this.keys.push(key);
-			}
-			return item.id;
-		},
-		remove: function(key) {
-			if(key != "keys" && this.hasOwnProperty(key)) {
-				delete this.key;
-				for(var i = 0, l = this.keys.length; i < l; i++) {
-					if(this.keys[i] == key) {
-						this.keys.splice(i,1);
-					}
-				}
-			}
+	var prototype = {};
+	exports.create = function(parameters) {
+		var transform = Object.create(prototype);
+		if(!parameters.position) {
+			transform.position = vec3.create();
+		}  else {
+			transform.position = parameters.position;
 		}
+		if(!parameters.rotation) {
+			transform.rotation = quat.create();
+		} else {
+			transform.rotation = parameters.rotation;
+		}
+		if(!parameters.scale) {
+			transform.scale = vec3.fromValues(1.0, 1.0, 1.0);
+		} else {
+			transform.scale = parameters.scale;
+		}
+		return transform;
 	};
-
-	var create = exports.create = function() {
-		var map = Object.create(prototype);
-		map.keys = [];
-		return map;
-	};
-
 	return exports;
 }();
-},{}]},{},[1])
-;
+},{}]},{},[2]);
