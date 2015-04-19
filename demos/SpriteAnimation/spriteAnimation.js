@@ -178,7 +178,7 @@ var init = function() {
 			ctx = canvas.getContext("2d");	
 			renderSpriteToCanvas(spriteData, palleteData, 0);
 
-			var texture = Fury.Renderer.createTexture(canvas, "high", true);
+			var texture = Fury.Renderer.createTexture(canvas, "low", true);
 			material.textures["uSampler"] = texture;
 
 			lastTime = Date.now()/1000;
