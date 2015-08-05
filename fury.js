@@ -26,6 +26,7 @@ var Camera = module.exports = function() {
 		},
 		viewportToWorld: function(out, viewPort, z) {
 			if(this.type == Camerea.Type.Orthonormal) {
+				// TODO: Actually test this...
 				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5) / 2.0;
 				out[1] = this.height * (viewPort[1] - 0.5) / 2.0;
 				out[2] = (z || 0);
@@ -134,11 +135,14 @@ var IndexedMap = module.exports = function(){
 		},
 		remove: function(key) {
 			if(key != "keys" && this.hasOwnProperty(key)) {
-				delete this.key;
-				for(var i = 0, l = this.keys.length; i < l; i++) {
-					if(this.keys[i] == key) {
-						this.keys.splice(i,1);
+				if(delete this[key]) {
+					for(var i = 0, l = this.keys.length; i < l; i++) {
+						if(this.keys[i] == key) {
+							this.keys.splice(i,1);
+						}
 					}
+				} else {
+					console.log("failed to delte " + key);
 				}
 			}
 		}
