@@ -45,6 +45,14 @@ var cubeJson = {
 	textureCoordinates: [ 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0 ],
 	indices: [ 0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23 ]
 };
+var cubeFaces = {
+	front: 0,
+	back: 1,
+	top: 2,
+	bottom: 3,
+	right: 4,
+	left: 5
+};
 
 var shader = Fury.Shader.create({
 	vsSource: [
@@ -87,7 +95,7 @@ var shader = Fury.Shader.create({
 // Block Prefab Creation Helpers
 
 var adjustTextureCoords = function(textureArray, faceIndex, offset, divisor) {
-	for(var i = 8*faceIndex, l = i + 8; i < l; i+=2) {
+	for(var i = 8 * faceIndex, l = i + 8; i < l; i += 2) {
 		textureArray[i] = (textureArray[i] + offset[0]) / divisor[0];		// s
 		textureArray[i+1] = (textureArray[i+1] + (divisor[1] - offset[1] - 1)) / divisor[1]; 	// t
 	}
@@ -103,9 +111,9 @@ var createBlockPrefab = function(name, material, sideTile, topTile, bottomTile) 
 	// Adjust texture coordinates
 	// Order of sides are front, back, top, bottom, right, left
 	for(var i = 0; i < 6; i++) {
-		if(i == 2) {
+		if(i == cubeFaces.top) {
 			adjustTextureCoords(adjustedCube.textureCoordinates, i, topTile, atlasSize);
-		} else if (i == 3) {
+		} else if (i == cubeFaces.bottom) {
 			adjustTextureCoords(adjustedCube.textureCoordinates, i, bottomTile, atlasSize);
 		} else {
 			adjustTextureCoords(adjustedCube.textureCoordinates, i, sideTile, atlasSize);
@@ -140,6 +148,7 @@ var getGenerationVariables = function() {
 	adjustmentFactor = parseFloat($("#adjust").val());
 	baseWavelength = parseInt($("#baseWavelength").val(), 10);
 };
+
 $(document).ready(function(){ 
 	$("#octaves").change(function(event){
 		$("#octavesDisplay").html(this.value);
@@ -174,6 +183,13 @@ $(document).ready(function(){
 	$("#baseWavelength").val(baseWavelength);
 });
 
+var chunkBuildingMethod = {
+	prefabs: 0,
+	singleMesh: 1,
+	singleOptimisedMesh: 2
+};
+var selectedBuildingMethod = chunkBuildingMethod.singleMesh;
+
 // Create Camera & Scene 
 var rotateRate = Math.PI;
 var zoomRate = 16;	
@@ -181,14 +197,36 @@ var initalRotation = quat.create();
 var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(0.0, 32.0, 128.0) });	
 var scene = Fury.Scene.create({ camera: camera });
 var blocks = [];
+var bigMeshObject = null;
 
-createBlockPrefab("grass", atlasMaterial, [1,0], [0,0], [0,1]);
+createBlockPrefab("grass", atlasMaterial, [1,0], [0,0], [0,1]); // Arrays: Side, Top, Bottom
 createBlockPrefab("soil", atlasMaterial, [0,1], [0,1], [0,1]);
 createBlockPrefab("stone", atlasMaterial, [1,1], [1,1], [1,1]);
+
+var tileOffsets = {
+	grass: {
+		side: [1,0],
+		top: [0,0],
+		bottom: [0,1]
+	},
+	soil: {
+		side: [0,1],
+		top: [0,1],
+		bottom: [0,1]
+	},
+	stone: {
+		side: [1,1],
+		top: [1,1],
+		bottom: [1,1]
+	}
+};
 
 var lastTime = Date.now();
 
 var clear = function() {
+	if(bigMeshObject) {
+		bigMeshObject.remove();
+	}
 	for(var i = 0, l = blocks.length; i < l; i++) {
 		blocks[i].remove();
 	}
@@ -254,14 +292,57 @@ var awake = function() {
 			}
 		}
 	}
-	// Spawn just blocks on an edge
-	// Technically we should be itterating over chunks in a separate function, but you know get it working for a single chunk first
-	for(i = 0; i < chunk.size; i++) {
-		x = i - Math.floor(chunk.size/2.0);
-		for(j = 0; j < chunk.size; j++) {
-			y = j - Math.floor(chunk.size/2.0);
-			for(k = 0; k < chunk.size; k++) {
-				z = k - Math.floor(chunk.size/2.0);
+
+	switch(selectedBuildingMethod)
+	{
+		case chunkBuildingMethod.singleMesh:
+			var mesh = {
+				vertices: [],
+				normals: [],
+				textureCoordinates: [],
+				indices: []
+			};
+			forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
+				var block = chunk.getBlock(i,j,k);
+
+				// Exists?
+				if(!block) { return; }
+				if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
+					block = "grass";
+				}
+				// For Each Direction : Is Edge? Add quad to mesh!			
+				// Front
+				if(!chunk.getBlock(i,j,k+1)) {
+					addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
+				}
+				// Back
+				if(!chunk.getBlock(i,j,k-1)){
+					addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
+				}
+				// Top
+				if(!chunk.getBlock(i,j+1,k)){
+					addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
+				}
+				// Bottom
+				if(!chunk.getBlock(i,j-1,k)){
+					addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
+				}
+				// Right
+				if(!chunk.getBlock(i+1,j,k)){
+					addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
+				}
+				// Left
+				if(!chunk.getBlock(i-1,j,k)){
+					addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
+				}
+			});
+			bigMeshObject = scene.add({ mesh: Fury.Mesh.create(mesh), material: atlasMaterial });
+			break;
+		case chunkBuildingMethod.prefabs:
+		default:
+			// Spawn just blocks on an edge
+			// Technically we should be itterating over chunks in a separate function, but you know get it working for a single chunk first
+			forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
 				// Does Exist and is on any edge?
 				if(chunk.getBlock(i,j,k) 
 					&& ((!chunk.getBlock(i,j+1,k) || !chunk.getBlock(i,j-1,k) || !chunk.getBlock(i+1,j,k) || !chunk.getBlock(i-1,j,k) || !chunk.getBlock(i,j,k+1) || !chunk.getBlock(i,j,k-1)) 
@@ -273,16 +354,81 @@ var awake = function() {
 						blocks.push(scene.instantiate({ name: block, position: vec3.fromValues(x,y,z), scale: scale }));
 					}
 				}
-			}
-		}
+			});
+			break;
 	}
 	loop();
 };
+
+var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
+	var tile, offset, n = mesh.vertices.length;
+	var vertices, normals, textureCoordinates;
+
+	if(faceIndex == cubeFaces.top) {
+		tile = tileOffsets[block].top;
+	} else if (faceIndex == cubeFaces.bottom) {
+		tile = tileOffsets[block].bottom;
+	} else {
+		tile = tileOffsets[block].side;
+	}
+
+	offset = faceIndex * 12;
+	vertices = cubeJson.vertices.slice(offset, offset + 12);
+	for(var i = 0; i < 4; i++) {
+		vertices[3*i] = 0.5 * vertices[3*i] + x;
+		vertices[3*i + 1] = 0.5 * vertices[3*i +1] + y;
+		vertices[3*i + 2] = 0.5 * vertices[3*i + 2] + z;
+	}
+	
+	normals = cubeJson.normals.slice(offset, offset + 12);
+	
+	offset = faceIndex * 8;
+	textureCoordinates = cubeJson.textureCoordinates.slice(offset, offset + 8);
+	adjustTextureCoords(textureCoordinates, 0, tile, atlasSize);
+	
+	concat(mesh.vertices, vertices);
+	concat(mesh.normals, normals);
+	concat(mesh.textureCoordinates, textureCoordinates);
+	mesh.indices.push(n,n+1,n+2, n,n+2,n+3);
+};
+
+var concat = function(a, b) {
+	// GC efficient concat
+	for(var i = 0, l = b.length; i < l; i++) {
+		a.push(b[i]);
+	}
+};
+
+// delegate should be a function taking chunk, i, j, k, x, y, z
+var forEachBlock = function(chunk, delegate) {
+	for(i = 0; i < chunk.size; i++) {
+		x = i - Math.floor(chunk.size/2.0);
+		for(j = 0; j < chunk.size; j++) {
+			y = j - Math.floor(chunk.size/2.0);
+			for(k = 0; k < chunk.size; k++) {
+				z = k - Math.floor(chunk.size/2.0);
+				delegate(chunk, i, j, k, x, y, z);
+			}
+		}
+	}
+}
+
+var framesInLastSecond = 0;
+var timeSinceLastFrame = 0;
 
 var loop = function(){
 	var elapsed = Date.now() - lastTime;
 	lastTime += elapsed;
 	elapsed /= 1000;
+
+	timeSinceLastFrame += elapsed;
+	framesInLastSecond++;
+	if(timeSinceLastFrame >= 1)
+	{
+		console.log("FPS:" + framesInLastSecond);
+		framesInLastSecond = 0;
+		timeSinceLastFrame = 0;
+	}
 	handleInput(elapsed);
 	scene.render();
 	window.requestAnimationFrame(loop);
