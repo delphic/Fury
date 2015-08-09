@@ -264,6 +264,9 @@ var awake = function() {
 			this.blocks[i + this.size*j + this.size*this.size*k] = block;
 		},
 		getBlock: function(i,j,k) {
+			if(i < 0 || j < 0 || k < 0 || i >= this.size || j >= this.size || k >= this.size) {
+				return null;
+			}
 			return this.blocks[i + this.size*j + this.size*this.size*k];
 		}
 	};
@@ -304,7 +307,7 @@ var awake = function() {
 			};
 			forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
 				var block = chunk.getBlock(i,j,k);
-
+				
 				// Exists?
 				if(!block) { return; }
 				if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
@@ -361,7 +364,7 @@ var awake = function() {
 };
 
 var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
-	var tile, offset, n = mesh.vertices.length;
+	var tile, offset, n = mesh.vertices.length/3;
 	var vertices, normals, textureCoordinates;
 
 	if(faceIndex == cubeFaces.top) {
