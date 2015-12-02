@@ -58,6 +58,11 @@ exports.createShader = function(type, glsl) {
 	return shader;
 };
 
+exports.deleteShader = function(shader)
+{
+	gl.deleteShader(shader);
+};
+
 exports.createShaderProgram = function(vertexShader, fragmentShader) {
 	var program = gl.createProgram();
 	gl.attachShader(program, vertexShader);

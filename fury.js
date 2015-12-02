@@ -141,10 +141,10 @@ var IndexedMap = module.exports = function(){
 							this.keys.splice(i,1);
 						}
 					}
-				} else {
-					console.log("failed to delte " + key);
+					return true;
 				}
 			}
+			return false;
 		}
 	};
 
@@ -580,6 +580,11 @@ exports.createShader = function(type, glsl) {
 		throw new Error("Could not create shader " + gl.getShaderInfoLog(shader));
 	}
 	return shader;
+};
+
+exports.deleteShader = function(shader)
+{
+	gl.deleteShader(shader);
 };
 
 exports.createShaderProgram = function(vertexShader, fragmentShader) {
