@@ -1,45 +1,73 @@
 <!DOCTYPE html>
 <html>
-		<head>
-				<title>Voxel Terrain</title>
-				<script src="../../libs/gl-matrix.js"></script>
-				<script src="../../libs/jquery-2.0.2.js"></script>
-				<script src="../../fury.js"></script>
-				<script src="perlin.js"></script>
-				<script src="simplex.js"></script>
-		</head>
-		<body>
-			<canvas id="fury" width="800" height="600" oncontextmenu="return false;"></canvas>
-			<script src="voxelterrain.js"></script>
-			<p>WASD moves the camera and the arrow keys rotate the camera.</p>
-			<fieldset>
-				<form>
-					<div>
-						<label for="seed">Seed: </label><input id="seed" type="text" style="width: 500px" />
-					</div>
-					<div style="display: none">
-						<!-- Simplex seems buggy! Hide this for now -->
-						<p>Noise Type:</p>
-						<div><input id="perlin" type="radio" name="noiseType" value="Perlin" checked="checked"/><label for="perlin">Perlin</label></div>
-						<div><input id="simplex" type="radio" name="noiseType" value="Simplex" /><label for="simplex">Simplex</label></div>
-					</div>
-					<div>
-						<label for="octaves">Number of Octaves: </label><input id="octaves" type="range" step="1" min="1" max="16" /><span id="octavesDisplay">4</span>
-					</div>
-					<div>
-						<label for="wavelengthPower">Wavelength: (0th Octave) 2^</label><input id="wavelengthPower" type="number" step="1" /> = <input id="baseWavelength" disabled="disabled" />
-						<p>Note each octave of noise is sampled every x(2^k) and y(2^k), where k is the octave integer.</p>
-					</div>
-					<p>Octave weightings:</p>
-					<div id="weightingsContainer">
-					</div>
-					<div>
-						<p>Values from noise are divided by m * (maxdepth + y), where m is the adjustment factor, currently maxdepth is 32 and generated chunk is 64.</p>
-						<label for="adjust">Adjustment Factor</label><input id="adjust" type="number" />
-					<div>
-						<input id="regen" type="button" value="Regenerate Terrain" />
-					</div>
-				</form>
-			</fieldset>
-		</body>
+	<head>
+		<title>Voxel Terrain</title>
+		<script src="../../libs/gl-matrix.js"></script>
+		<script src="../../libs/jquery-2.0.2.js"></script>
+		<script src="../../fury.js"></script>
+		<script src="perlin.js"></script>
+		<script src="simplex.js"></script>
+		<style>
+body {
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+fieldset {
+	background-color: white;
+	font-family: monospace;
+	position: fixed;
+	top: 10px;
+	right: 0;
+	max-width: 550px;
+}
+fieldset div {
+	margin: 5px 0;
+}
+fieldset input {
+	width: 100px;
+}
+fieldset input.button {
+	width: auto;
+	margin: 5px 0;
+}
+		</style>
+	</head>
+	<body>
+		<canvas id="fury" width="1920" height="1080" oncontextmenu="return false;"></canvas>
+		<script src="voxelterrain.js"></script>
+		<fieldset>
+			<form>
+				<div>
+					<label for="seed">Seed: </label><input id="seed" type="text" style="width: 450px" />
+				</div>
+				<div>
+					<label for="extents">Area Extents </label><input id="extents" type="number" step="1" min="1" /> <label for="height">Area Height </label><input id="height" type="number" step="1" min="1" />
+				</div>
+				<div style="display: none">
+					<!-- Simplex seems buggy! Hide this for now -->
+					<p>Noise Type:</p>
+					<div><input id="perlin" type="radio" name="noiseType" value="Perlin" checked="checked"/><label for="perlin">Perlin</label></div>
+					<div><input id="simplex" type="radio" name="noiseType" value="Simplex" /><label for="simplex">Simplex</label></div>
+				</div>
+				<div>
+					<label for="octaves">Number of Octaves: </label><input id="octaves" type="range" step="1" min="1" max="16" /><span id="octavesDisplay">4</span>
+				</div>
+				<div>
+					<label for="wavelengthPower">Wavelength: (0th Octave) 2^</label><input id="wavelengthPower" type="number" step="1" /> = <input id="baseWavelength" disabled="disabled" />
+					<p>Note each octave of noise is sampled every x(2^k) and y(2^k), where k is the octave integer.</p>
+				</div>
+				<p>Octave weightings:</p>
+				<div id="weightingsContainer">
+				</div>
+				<div>
+					<p>Values from noise are divided by m * (maxdepth + y), where m is the adjustment factor, currently maxdepth is 32 and generated chunk is 32.</p>
+					<label for="adjust">Adjustment Factor </label><input id="adjust" type="number" step="0.001" min="0" max="0.05" />
+				</div>
+				<div>
+					<input id="regen" class="button" type="button" value="Regenerate Terrain" />
+				</div>
+			</form>
+		</fieldset>
+	</body>
 </html>

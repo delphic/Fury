@@ -3,7 +3,7 @@
 // Multiple Octaves of Perlin / Simplex noise -> Cubes
 
 // glMatrix extension, seems to work should probably fork the repo
-quat.rotate = (function() { 
+quat.rotate = (function() {
 	var i = quat.create();
 	return function(out, q, rad, axis) {
 		quat.setAxisAngle(i, axis, rad);
@@ -101,35 +101,13 @@ var adjustTextureCoords = function(textureArray, faceIndex, offset, divisor) {
 	}
 };
 
-var createBlockPrefab = function(name, material, sideTile, topTile, bottomTile) {
-	// Copy the cube JSON into a new JSON object for manipulation
-	var adjustedCube = {
-		vertices: cubeJson.vertices.slice(0),
-		textureCoordinates: cubeJson.textureCoordinates.slice(0),
-		indices: cubeJson.indices.slice(0)
-	};
-	// Adjust texture coordinates
-	// Order of sides are front, back, top, bottom, right, left
-	for(var i = 0; i < 6; i++) {
-		if(i == cubeFaces.top) {
-			adjustTextureCoords(adjustedCube.textureCoordinates, i, topTile, atlasSize);
-		} else if (i == cubeFaces.bottom) {
-			adjustTextureCoords(adjustedCube.textureCoordinates, i, bottomTile, atlasSize);
-		} else {
-			adjustTextureCoords(adjustedCube.textureCoordinates, i, sideTile, atlasSize);
-		}
-	}
-
-	var mesh = Fury.Mesh.create(adjustedCube);
-	Fury.createPrefab({ name: name, material: material, mesh: mesh });
-};
-
 // End Block Prefab Creation Helpers
 
 var atlasSize = [2, 2];
 var atlasMaterial = Fury.Material.create({ shader: shader });
 
 // Regeneration Variables and form details
+var areaHeight = 1, areaExtents = 2;
 var octaves = [], numOctaves = 4;
 var octaveWeightings = [ 0.5, 0.5, 0.25, 0.1 ];
 var perlin = true;
@@ -147,14 +125,16 @@ var getGenerationVariables = function() {
 	seedString = $("#seed").val();
 	adjustmentFactor = parseFloat($("#adjust").val());
 	baseWavelength = parseInt($("#baseWavelength").val(), 10);
+	areaExtents = parseInt($("#extents").val(), 10);
+	areaHeight = parseInt($("#height").val(), 10);
 };
 
-$(document).ready(function(){ 
+$(document).ready(function(){
 	$("#octaves").change(function(event){
 		$("#octavesDisplay").html(this.value);
 		var html = "";
 		for(var i = 0; i < this.value; i++) {
-			var value = i < octaveWeightings.length ? octaveWeightings[i] : 1 / (1 + i); 
+			var value = i < octaveWeightings.length ? octaveWeightings[i] : 1 / (1 + i);
 			html += "<input id=\"ow"+i+"\" type=\"number\" value=\"" + value + "\" />";
 		}
 		$("#weightingsContainer").html(html);
@@ -169,8 +149,6 @@ $(document).ready(function(){
 		awake();
 	});
 
-	// TODO: Should also really set the range over which the 1st octave works (aka Wavelength) settable, as having only 64 means anything more than 4 ovctaves just ends up messy.
-
 	// Set initial values
 	$("#octaves").val(numOctaves);
 	var html = "";
@@ -181,27 +159,17 @@ $(document).ready(function(){
 	$("#seed").val(seedString);
 	$("#adjust").val(adjustmentFactor);
 	$("#baseWavelength").val(baseWavelength);
+	$("#extents").val(areaExtents);
+	$("#height").val(areaHeight);
 });
 
-var chunkBuildingMethod = {
-	prefabs: 0,
-	singleMesh: 1,
-	singleOptimisedMesh: 2
-};
-var selectedBuildingMethod = chunkBuildingMethod.singleMesh;
-
-// Create Camera & Scene 
+// Create Camera & Scene
 var rotateRate = Math.PI;
-var zoomRate = 16;	
+var zoomRate = 16;
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(0.0, 32.0, 128.0) });	
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(0.0, 32.0, 128.0) });
 var scene = Fury.Scene.create({ camera: camera });
-var blocks = [];
-var bigMeshObject = null;
-
-createBlockPrefab("grass", atlasMaterial, [1,0], [0,0], [0,1]); // Arrays: Side, Top, Bottom
-createBlockPrefab("soil", atlasMaterial, [0,1], [0,1], [0,1]);
-createBlockPrefab("stone", atlasMaterial, [1,1], [1,1], [1,1]);
+var meshes = [];
 
 var tileOffsets = {
 	grass: {
@@ -224,13 +192,12 @@ var tileOffsets = {
 var lastTime = Date.now();
 
 var clear = function() {
-	if(bigMeshObject) {
-		bigMeshObject.remove();
+	if(meshes.length > 0) {
+		for(var i = 0, l = meshes.length; i < l; i++) {
+			meshes[i].remove();
+		}
+		meshes.length = 0;
 	}
-	for(var i = 0, l = blocks.length; i < l; i++) {
-		blocks[i].remove();
-	}
-	blocks.length = 0;
 };
 
 var awake = function() {
@@ -255,112 +222,113 @@ var awake = function() {
 		return "stone";
 	};
 
-	var maxDepth = 32, x, y, z, i, j, k, o, adjust;
-	var scale = vec3.fromValues(0.5,0.5,0.5);
-	var chunk = { 
-		blocks: [],
-		size: 64,
-		addBlock: function(i,j,k,block) {
-			this.blocks[i + this.size*j + this.size*this.size*k] = block;
-		},
-		getBlock: function(i,j,k) {
-			if(i < 0 || j < 0 || k < 0 || i >= this.size || j >= this.size || k >= this.size) {
-				return null;
-			}
-			return this.blocks[i + this.size*j + this.size*this.size*k];
-		}
-	};
+	var createChunk = function(offset) {
+		var maxDepth = 16, i, j, k, o, adjust;
 
-	for(o = 0; o < numOctaves; o++) {
-		// TODO: Flag for Simpelx versus Classical Noise
+		var chunk = {
+			blocks: [],
+			size: 32,
+			addBlock: function(i,j,k,block) {
+				this.blocks[i + this.size*j + this.size*this.size*k] = block;
+			},
+			getBlock: function(i,j,k) {
+				if(i < 0 || j < 0 || k < 0 || i >= this.size || j >= this.size || k >= this.size) {
+					return null;
+				}
+				return this.blocks[i + this.size*j + this.size*this.size*k];
+			}
+		};
+
+		// Determine blocks from noise function
+		for(i = 0; i < chunk.size; i++) {
+			for(j = 0; j < chunk.size; j++) {
+				y = j - Math.floor(chunk.size/2.0);
+				for(k = 0; k < chunk.size; k++) {
+					adjust = adjustmentFactor * (maxDepth + y + offset[1]);
+					var value = 0;
+					var totalWeight = 0;
+					for(o = 0; o < numOctaves; o++) {
+						var wavelength = Math.pow(2, o);
+						totalWeight += octaveWeightings[o];
+						value += octaveWeightings[o] * octaves[o].noise(wavelength*(i + offset[0])/baseWavelength, wavelength*(j + offset[1])/baseWavelength, wavelength*(k + offset[2])/baseWavelength);
+					}
+					value /= totalWeight;
+					var block = getBlockType(value / adjust);
+					chunk.addBlock(i,j,k,block)
+				}
+			}
+		}
+
+		return chunk;
+	}
+
+	for(var o = 0; o < numOctaves; o++) {
 		octaves.push(perlin ? new ClassicalNoise(createSeed(seedString)) : new SimplexNoise(createSeed(seedString)));
 	}
 
-	// Determine block from noise function
-	for(i = 0; i < chunk.size; i++) {
-		for(j = 0; j < chunk.size; j++) {
-			y = j - Math.floor(chunk.size/2.0);
-			for(k = 0; k < chunk.size; k++) {
-				adjust = adjustmentFactor * (maxDepth + y);
-				var value = 0;
-				var totalWeight = 0;
-				for(o = 0; o < numOctaves; o++) {
-					var wavelength = Math.pow(2, o);
-					totalWeight += octaveWeightings[o];
-					value += octaveWeightings[o] * octaves[o].noise(wavelength*i/baseWavelength, wavelength*j/baseWavelength, wavelength*k/baseWavelength);
-				}
-				value /= totalWeight;
-				var block = getBlockType(value / adjust);
-				chunk.addBlock(i,j,k,block)
+	var chunkOffset = vec3.create();
+	for(var i = -areaExtents; i <= areaExtents; i++) {
+		for (var j = -areaExtents; j <= areaExtents; j++) {
+			for(var k = 0; k < areaHeight; k++) {
+				chunkOffset[0] = i * 32;
+				chunkOffset[1] = k * 32;
+				chunkOffset[2] = j * 32;
+
+				var chunk = createChunk(chunkOffset);
+				var mesh = buildMesh(chunk);
+				var meshObject = scene.add({ mesh: Fury.Mesh.create(mesh), material: atlasMaterial });
+				meshes.push(meshObject);
+				vec3.add(meshObject.transform.position, meshObject.transform.position, chunkOffset);
 			}
 		}
 	}
 
-	switch(selectedBuildingMethod)
-	{
-		case chunkBuildingMethod.singleMesh:
-			var mesh = {
-				vertices: [],
-				normals: [],
-				textureCoordinates: [],
-				indices: []
-			};
-			forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
-				var block = chunk.getBlock(i,j,k);
-				
-				// Exists?
-				if(!block) { return; }
-				if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
-					block = "grass";
-				}
-				// For Each Direction : Is Edge? Add quad to mesh!			
-				// Front
-				if(!chunk.getBlock(i,j,k+1)) {
-					addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
-				}
-				// Back
-				if(!chunk.getBlock(i,j,k-1)){
-					addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
-				}
-				// Top
-				if(!chunk.getBlock(i,j+1,k)){
-					addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
-				}
-				// Bottom
-				if(!chunk.getBlock(i,j-1,k)){
-					addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
-				}
-				// Right
-				if(!chunk.getBlock(i+1,j,k)){
-					addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
-				}
-				// Left
-				if(!chunk.getBlock(i-1,j,k)){
-					addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
-				}
-			});
-			bigMeshObject = scene.add({ mesh: Fury.Mesh.create(mesh), material: atlasMaterial });
-			break;
-		case chunkBuildingMethod.prefabs:
-		default:
-			// Spawn just blocks on an edge
-			// Technically we should be itterating over chunks in a separate function, but you know get it working for a single chunk first
-			forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
-				// Does Exist and is on any edge?
-				if(chunk.getBlock(i,j,k) 
-					&& ((!chunk.getBlock(i,j+1,k) || !chunk.getBlock(i,j-1,k) || !chunk.getBlock(i+1,j,k) || !chunk.getBlock(i-1,j,k) || !chunk.getBlock(i,j,k+1) || !chunk.getBlock(i,j,k-1)) 
-						|| (j+1 >= chunk.size  || j-1 < 0 || i+1 >= chunk.size || i-1 < 0 || k+1 >= chunk.size || k-1 < 0))) { // Note the checks on index only apply when rendering a single chunk if rendering multiple chunks these checks should not be performed
-					var block = chunk.getBlock(i,j,k);
-					if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
-						blocks.push(scene.instantiate({ name: "grass", position: vec3.fromValues(x,y,z), scale: scale }));
-					} else {
-						blocks.push(scene.instantiate({ name: block, position: vec3.fromValues(x,y,z), scale: scale }));
-					}
-				}
-			});
-			break;
-	}
 	loop();
+};
+
+var buildMesh = function(chunk) {
+	var mesh = {
+		vertices: [],
+		normals: [],
+		textureCoordinates: [],
+		indices: []
+	};
+	forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
+		var block = chunk.getBlock(i,j,k);
+
+		// Exists?
+		if(!block) { return; }
+		if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
+			block = "grass";
+		}
+		// For Each Direction : Is Edge? Add quad to mesh!
+		// Front
+		if(!chunk.getBlock(i,j,k+1)) {
+			addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
+		}
+		// Back
+		if(!chunk.getBlock(i,j,k-1)){
+			addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
+		}
+		// Top
+		if(!chunk.getBlock(i,j+1,k)){
+			addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
+		}
+		// Bottom
+		if(!chunk.getBlock(i,j-1,k)){
+			addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
+		}
+		// Right
+		if(!chunk.getBlock(i+1,j,k)){
+			addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
+		}
+		// Left
+		if(!chunk.getBlock(i-1,j,k)){
+			addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
+		}
+	});
+
+	return mesh;
 };
 
 var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
@@ -382,13 +350,13 @@ var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
 		vertices[3*i + 1] = 0.5 * vertices[3*i +1] + y;
 		vertices[3*i + 2] = 0.5 * vertices[3*i + 2] + z;
 	}
-	
+
 	normals = cubeJson.normals.slice(offset, offset + 12);
-	
+
 	offset = faceIndex * 8;
 	textureCoordinates = cubeJson.textureCoordinates.slice(offset, offset + 8);
 	adjustTextureCoords(textureCoordinates, 0, tile, atlasSize);
-	
+
 	concat(mesh.vertices, vertices);
 	concat(mesh.normals, normals);
 	concat(mesh.textureCoordinates, textureCoordinates);
@@ -414,7 +382,7 @@ var forEachBlock = function(chunk, delegate) {
 			}
 		}
 	}
-}
+};
 
 var framesInLastSecond = 0;
 var timeSinceLastFrame = 0;
@@ -428,7 +396,7 @@ var loop = function(){
 	framesInLastSecond++;
 	if(timeSinceLastFrame >= 1)
 	{
-		console.log("FPS:" + framesInLastSecond);
+		//console.log("FPS:" + framesInLastSecond);
 		framesInLastSecond = 0;
 		timeSinceLastFrame = 0;
 	}
@@ -441,7 +409,9 @@ var localx = vec3.create();
 var localz = vec3.create();
 var unitx = vec3.fromValues(1,0,0);
 var unity = vec3.fromValues(0,1,0);
-var unitz = vec3.fromValues(0,0,1); 
+var unitz = vec3.fromValues(0,0,1);
+var prevX = 0;
+var prevY = 0
 
 var handleInput = function(elapsed) {
 	var q = camera.rotation;
@@ -449,18 +419,17 @@ var handleInput = function(elapsed) {
 	vec3.transformQuat(localx, unitx, q);
 	vec3.transformQuat(localz, unitz, q);
 
-	if(Input.keyDown("Left")) {
-		quat.rotate(q, q, rotateRate*elapsed, unity);
+	var mousePos = Input.MousePosition;
+	var deltaX = mousePos[0] - prevX;
+	var deltaY = mousePos[1] - prevY;
+	prevX = mousePos[0];
+	prevY = mousePos[1];
+
+	if (Input.mouseDown(2)) {
+		quat.rotate(q, q, -0.1*deltaX*rotateRate*elapsed, unity);
+		quat.rotateX(q, q, -0.1*deltaY*rotateRate*elapsed);
 	}
-	if(Input.keyDown("Right")) {
-		quat.rotate(q, q, -rotateRate*elapsed, unity);
-	}
-	if(Input.keyDown("Up")) {
-		quat.rotateX(q, q, rotateRate*elapsed);
-	}
-	if(Input.keyDown("Down")) {
-		quat.rotateX(q, q, -rotateRate*elapsed);
-	}
+
 	if(Input.keyDown("w")) {
 		vec3.scaleAndAdd(p, p, localz, -zoomRate*elapsed);
 	}
@@ -483,6 +452,3 @@ image.onload = function() {
 	awake();
 };
 image.src = "atlas.png";
-
-
-
