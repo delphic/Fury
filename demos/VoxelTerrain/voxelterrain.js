@@ -113,7 +113,7 @@ var octaveWeightings = [ 0.5, 0.5, 0.25, 0.1 ];
 var perlin = true;
 var seedString = "XUVNREAZOZJFPQMSAKEMSDJURTQPWEORHZMD";
 var adjustmentFactor = 0.01;
-var baseWavelength = 64;
+var baseWavelength = 128;
 var getGenerationVariables = function() {
 	octaves.length = 0;
 	octaveWeightings.length = 0;
@@ -158,6 +158,7 @@ $(document).ready(function(){
 	$("#weightingsContainer").html(html);
 	$("#seed").val(seedString);
 	$("#adjust").val(adjustmentFactor);
+	$("#wavelengthPower").val(7);
 	$("#baseWavelength").val(baseWavelength);
 	$("#extents").val(areaExtents);
 	$("#height").val(areaHeight);

@@ -51,7 +51,7 @@ var Input = module.exports = function() {
 	};
 
 	var handleMouseDown = function(event) {
-		mouseState[event.button] = true; 
+		mouseState[event.button] = true;
 		return false;
 	};
 
@@ -206,7 +206,7 @@ var Input = module.exports = function() {
 	var MouseButtonToDescription = exports.MouseButtonToDescription = {
 		0: "LeftMouseButton",
 		1: "MiddleMouseButton",
-		2: "RightMouseButton" 
+		2: "RightMouseButton"
 	};
 
 	var DescriptionToMouseButton = exports.DescriptionToMouseButton = {
@@ -216,4 +216,4 @@ var Input = module.exports = function() {
 	};
 
 	return exports;
-}(); 
+}();
