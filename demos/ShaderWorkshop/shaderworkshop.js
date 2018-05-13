@@ -50,7 +50,7 @@ var bindShaderProperties = function(){
 	r.setAttribute("aTextureCoordinates", textureBuffer);
 	r.setUniformMatrix4("modelViewMatrix", modelViewMatrix);
 	r.setUniformMatrix4("projectionMatrix", projectionMatrix);
-}
+};
 
 var bindEvents = function(){
 	// Events!
@@ -90,11 +90,11 @@ var bindEvents = function(){
 		event.preventDefault();
 		r.setUniformFloat2("mouse", 0, 0);
 	});
-}
+};
 
 var setupShaderProgram = function() {
 	try
-	{	
+	{
 		var vs = r.createShader("vertex", vsSource);
 		var fs = r.createShader("fragment", fsSource);
 		var shaderProgram = r.createShaderProgram(vs, fs);
@@ -108,7 +108,7 @@ var setupShaderProgram = function() {
 		r.initUniform(shaderProgram, "mouseLeft"); // bool
 		r.initUniform(shaderProgram, "tex0"); // sampler
 
-		r.useShaderProgram(shaderProgram);	
+		r.useShaderProgram(shaderProgram);
 
 		// r.deleteShader(vsSource);
 		// r.deleteShader(fsSource);
@@ -123,7 +123,7 @@ var setupShaderProgram = function() {
 	{
 
 	}
-}
+};
 
 // Camera
 var camera = Fury.Camera.create({
@@ -155,7 +155,7 @@ var loop = function(){
 	window.requestAnimationFrame(loop);
 };
 
-// Create Texture 
+// Create Texture
 // This is a bit syntaxically messy
 var texture, image = new Image();
 image.onload = function() {
