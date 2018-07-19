@@ -210,7 +210,7 @@ var Input = module.exports = function() {
 	};
 
 	var handleMouseDown = function(event) {
-		mouseState[event.button] = true; 
+		mouseState[event.button] = true;
 		return false;
 	};
 
@@ -365,7 +365,7 @@ var Input = module.exports = function() {
 	var MouseButtonToDescription = exports.MouseButtonToDescription = {
 		0: "LeftMouseButton",
 		1: "MiddleMouseButton",
-		2: "RightMouseButton" 
+		2: "RightMouseButton"
 	};
 
 	var DescriptionToMouseButton = exports.DescriptionToMouseButton = {
@@ -375,7 +375,8 @@ var Input = module.exports = function() {
 	};
 
 	return exports;
-}(); 
+}();
+
 },{}],5:[function(require,module,exports){
 var Material = module.exports = function(){
 	var exports = {};
@@ -525,8 +526,8 @@ var Mesh = module.exports = function(){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
-// mostly with the render functions, binding buffers before calling a function draw 
-var gl, currentShaderProgram;
+// mostly with the render functions, binding buffers before calling a function draw
+var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas) {
 	gl = canvas.getContext('webgl');
@@ -537,6 +538,11 @@ exports.init = function(canvas) {
 	gl.viewportHeight = canvas.height;
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
+
+	anisotropyExt = gl.getExtension("EXT_texture_filter_anisotropic");
+	if (anisotropyExt) {
+		maxAnisotropy = gl.getParameter(anisotropyExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+	}
 
 	// WebGL is supposed to have 32 texture locations but this seems to vary
 	// Now TextureLocations.length will tell you how many there are and provide
@@ -607,7 +613,7 @@ exports.useShaderProgram = function(shaderProgram) {
 
 exports.createBuffer = function(data, itemSize, indexed) {
 	var buffer = gl.createBuffer();
-	if(!indexed) {
+	if (!indexed) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
 	} else {
@@ -624,8 +630,10 @@ exports.createBuffer = function(data, itemSize, indexed) {
 var TextureLocations = exports.TextureLocations = [];
 
 var TextureQuality = exports.TextureQuality = {
-	High: "high",			// Uses Mips & Interp
-	Medium: "medium",		// Linear Interp 
+	Pixel: "pixel",		// Uses Mips and nearest pixel
+	Highest: "highest",	// Uses Mips & Interp (trilinear)
+	High: "high",			// Uses Mips & Interp (bilinear)
+	Medium: "medium",		// Linear Interp
 	Low: "low"				// Uses nearest pixel
 };
 
@@ -634,9 +642,30 @@ exports.createTexture = function(source, quality, clamp) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-	if(quality === TextureQuality.High) {
+
+	if (quality === TextureQuality.Pixel) {
+		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		if (anisotropyExt) {
+			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+		}
+		gl.generateMipmap(gl.TEXTURE_2D);
+	}
+	else if (quality === TextureQuality.Highest) {
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		if (anisotropyExt) {
+			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+		}
+		gl.generateMipmap(gl.TEXTURE_2D);
+	}
+	else if (quality === TextureQuality.High) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+		if (anisotropyExt) {
+			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
+		}
 		gl.generateMipmap(gl.TEXTURE_2D);
 	}
 	else if (quality === TextureQuality.Medium) {
@@ -745,7 +774,7 @@ exports.setUniformFloat3 = function(name, value1, value2, value3) {
 	gl.uniform3f(currentShaderProgram.uniformLocations[name], value);
 };
 exports.setUniformInteger = function(name, value) {
-	gl.uniform1i(currentShaderProgram.uniformLocations[name], value);	
+	gl.uniform1i(currentShaderProgram.uniformLocations[name], value);
 };
 exports.setUniformVector2 = function(name, value) {
 	gl.uniform2fv(currentShaderProgram.uniformLocations[name], value);
@@ -799,7 +828,7 @@ var drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
 exports.draw = function(renderMode, count, indexed, offset) {
 	switch(renderMode) {
 		case RenderMode.Triangles:
-			if(!indexed) { 
+			if(!indexed) {
 				drawTriangles(count);
 			} else {
 				drawIndexedTriangles(count, offset);
@@ -830,6 +859,7 @@ exports.draw = function(renderMode, count, indexed, offset) {
 			throw new Error("Unrecognised renderMode '"+renderMode+"'");
 	}
 };
+
 },{}],8:[function(require,module,exports){
 // glMatrix assumed global
 var r = require('./renderer');
