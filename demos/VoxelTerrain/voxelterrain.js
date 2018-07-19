@@ -38,7 +38,6 @@ Fury.init("fury");
 var Input = Fury.Input;
 
 // Basic Cube JSON
-// Note each cube type needs to have its own mesh with adjusted texture coordinates
 var cubeJson = {
 	vertices: [ -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0 ],
 	normals: [ 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0],
@@ -78,7 +77,7 @@ var shader = Fury.Shader.create({
 			"gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));",
 		"}"].join('\n'),
 		attributeNames: [ "aVertexPosition", "aTextureCoord" ],
-		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler"],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
 		textureUniformNames: [ "uSampler" ],
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
@@ -94,17 +93,30 @@ var shader = Fury.Shader.create({
 
 // Block Prefab Creation Helpers
 
-var adjustTextureCoords = function(textureArray, faceIndex, offset, divisor) {
+var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSize) {
+	var tileSize = atlasTileSize;
+	var tilePadding = atlasPadding;
 	for(var i = 8 * faceIndex, l = i + 8; i < l; i += 2) {
-		textureArray[i] = (textureArray[i] + offset[0]) / divisor[0];		// s
-		textureArray[i+1] = (textureArray[i+1] + (divisor[1] - offset[1] - 1)) / divisor[1]; 	// t
+		textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlasSize[0];		// s
+		var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
+		textureArray[i+1] = (tileSize * textureArray[i+1] + (atlasSize[1] - pixelsFromTop)) / atlasSize[1]; 	// t
 	}
 };
 
 // End Block Prefab Creation Helpers
 
-var atlasSize = [2, 2];
+var atlasSize = [64, 64];
 var atlasMaterial = Fury.Material.create({ shader: shader });
+var atlasSrc = "expanded_atlas_upscaled.png";
+var atlasPadding = 2;
+var atlasTileSize = 16;
+
+// TODO: Arguably should blend a nearest filtered texture with a mips textures
+// based on fragement depth (but we need to figure out how to sample depth, oh no!)
+// https://stackoverflow.com/questions/48601214/webgl-pixel-position-reconstruction-with-webgl-depth-texture
+// https://blog.tojicode.com/2012/07/using-webgldepthtexture.html
+// https://stackoverflow.com/questions/7327544/how-can-i-read-the-depth-buffer-in-webgl
+// For now have upscaled the base texture by 8x
 
 // Regeneration Variables and form details
 var areaHeight = 1, areaExtents = 2;
@@ -448,8 +460,8 @@ var handleInput = function(elapsed) {
 // Create Texture
 var image = new Image();
 image.onload = function() {
-	var texture = Fury.Renderer.createTexture(image, "low", true);
+	var texture = Fury.Renderer.createTexture(image, "pixel", true);
 	atlasMaterial.textures["uSampler"] = texture;
 	awake();
 };
-image.src = "atlas.png";
+image.src = atlasSrc;
