@@ -81,12 +81,19 @@ var shader = Fury.Shader.create({
 		textureUniformNames: [ "uSampler" ],
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
+		initialised: false,
 		bindMaterial: function(material) { },
 		bindBuffers: function(mesh) {
-			this.enableAttribute("aVertexPosition");
-			this.enableAttribute("aTextureCoord");
-			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
-			this.setAttribute("aTextureCoord", mesh.textureBuffer);
+			// Probably need to track if these need to be enabled better than this
+			// Switching shader program would probably mean these would need to be reset?
+			// TODO: Test this assumption
+			if (!this.initialised) {
+				this.enableAttribute("aVertexPosition");
+				this.enableAttribute("aTextureCoord");
+				this.initialised = true;
+			}
+			this.setAttribute("aVertexPosition", mesh.vertexBuffer);	// Is this definately the best way to set buffers?
+			this.setAttribute("aTextureCoord", mesh.textureBuffer);		// This would be unnecessary with a 'cube-voxel' shader
 			this.setIndexedAttribute(mesh.indexBuffer);
 		}
 });
@@ -279,16 +286,32 @@ var awake = function() {
 		octaves.push(perlin ? new ClassicalNoise(createSeed(seedString)) : new SimplexNoise(createSeed(seedString)));
 	}
 
+	var vorld = {
+		chunks: {},
+		addChunk: function(chunk, i, j, k) {
+			this.chunks[i+"_"+j+"_"+k] = chunk;
+		},
+		getChunk: function(i, j, k) {
+			var key = i+"_"+j+"_"+k;
+			if (this.chunks[key]) {
+					return this.chunks[key];
+			}
+			return null;
+		}
+	};
+
 	var chunkOffset = vec3.create();
 	for(var i = -areaExtents; i <= areaExtents; i++) {
 		for (var j = -areaExtents; j <= areaExtents; j++) {
-			for(var k = 0; k < areaHeight; k++) {
+			for(var k = areaHeight - 1; k >= 0; k--) {
 				chunkOffset[0] = i * 32;
 				chunkOffset[1] = k * 32;
 				chunkOffset[2] = j * 32;
 
+				// Should WebWorker this
 				var chunk = createChunk(chunkOffset);
-				var mesh = buildMesh(chunk);
+				vorld.addChunk(chunk, i, j, k);
+				var mesh = buildMesh(chunk, vorld.getChunk(i, j, k+1));
 				var meshObject = scene.add({ mesh: Fury.Mesh.create(mesh), material: atlasMaterial });
 				meshes.push(meshObject);
 				vec3.add(meshObject.transform.position, meshObject.transform.position, chunkOffset);
@@ -299,7 +322,7 @@ var awake = function() {
 	loop();
 };
 
-var buildMesh = function(chunk) {
+var buildMesh = function(chunk, chunkAbove) {
 	var mesh = {
 		vertices: [],
 		normals: [],
@@ -311,7 +334,7 @@ var buildMesh = function(chunk) {
 
 		// Exists?
 		if(!block) { return; }
-		if(block == "soil" && !chunk.getBlock(i,j+1,k)) {
+		if(block == "soil" && !chunk.getBlock(i,j+1,k) && (!chunkAbove || !chunkAbove.getBlock(i, 0, k))) {
 			block = "grass";
 		}
 		// For Each Direction : Is Edge? Add quad to mesh!
