@@ -13,6 +13,7 @@ exports.init = function(canvas) {
 	gl.viewportHeight = canvas.height;
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
+	gl.enable(gl.CULL_FACE);  // TODO: expose as method
 
 	anisotropyExt = gl.getExtension("EXT_texture_filter_anisotropic");
 	if (anisotropyExt) {

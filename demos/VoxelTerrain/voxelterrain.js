@@ -287,6 +287,7 @@ var awake = function() {
 	}
 
 	var vorld = {
+		chunkSize: 32,
 		chunks: {},
 		addChunk: function(chunk, i, j, k) {
 			this.chunks[i+"_"+j+"_"+k] = chunk;
@@ -297,21 +298,68 @@ var awake = function() {
 					return this.chunks[key];
 			}
 			return null;
+		},
+		getBlock: function(blockI, blockJ, blockK, chunkI, chunkJ, chunkK) {
+			// Assumes you won't go out by more than chunkSize
+			if (blockI >= this.chunkSize) {
+				blockI = blockI - this.chunkSize;
+				chunkI += 1;
+			} else if (blockI < 0) {
+				blockI = this.chunkSize + blockI;
+				chunkI -= 1;
+			}
+			// Due to some madness chunk k is y axis, and chunk j is z axis...
+			if (blockJ >= this.chunkSize) {
+				blockJ = blockJ - this.chunkSize;
+				chunkK += 1;
+			} else if (blockJ < 0) {
+				blockJ = this.chunkSize + blockJ;
+				chunkK -= 1;
+			}
+			if (blockK >= this.chunkSize) {
+				blockK = blockK - this.chunkSize;
+				chunkJ += 1;
+			} else if (blockK < 0) {
+				blockK = this.chunkSize + blockK;
+				chunkJ -= 1;
+			}
+
+			var chunk = this.getChunk(chunkI, chunkJ, chunkK);
+			if (chunk) {
+				// The lowest chunk seemed to be accessed 22000 times!?
+				// TODO: Check wtf that is doing
+				return chunk.getBlock(blockI, blockJ, blockK);
+			}
+			return null;
 		}
 	};
 
+	// World Generation (Should WebWorker this)
 	var chunkOffset = vec3.create();
+
+	// Generate Chunks
 	for(var i = -areaExtents; i <= areaExtents; i++) {
 		for (var j = -areaExtents; j <= areaExtents; j++) {
 			for(var k = areaHeight - 1; k >= 0; k--) {
-				chunkOffset[0] = i * 32;
-				chunkOffset[1] = k * 32;
-				chunkOffset[2] = j * 32;
+				chunkOffset[0] = i * vorld.chunkSize;
+				chunkOffset[1] = k * vorld.chunkSize;
+				chunkOffset[2] = j * vorld.chunkSize;
 
-				// Should WebWorker this
 				var chunk = createChunk(chunkOffset);
 				vorld.addChunk(chunk, i, j, k);
-				var mesh = buildMesh(chunk, vorld.getChunk(i, j, k+1));
+			}
+		}
+	}
+
+	// Create Meshes
+	for(var i = -areaExtents; i <= areaExtents; i++) {
+		for (var j = -areaExtents; j <= areaExtents; j++) {
+			for(var k = areaHeight - 1; k >= 0; k--) {
+				chunkOffset[0] = i * vorld.chunkSize;
+				chunkOffset[1] = k * vorld.chunkSize;
+				chunkOffset[2] = j * vorld.chunkSize;
+
+				var mesh = buildMesh(vorld, i, j, k);
 				var meshObject = scene.add({ mesh: Fury.Mesh.create(mesh), material: atlasMaterial });
 				meshes.push(meshObject);
 				vec3.add(meshObject.transform.position, meshObject.transform.position, chunkOffset);
@@ -322,44 +370,48 @@ var awake = function() {
 	loop();
 };
 
-var buildMesh = function(chunk, chunkAbove) {
+var buildMesh = function(vorld, chunkI, chunkJ, chunkK) {
 	var mesh = {
 		vertices: [],
 		normals: [],
 		textureCoordinates: [],
 		indices: []
 	};
+
+	var chunk = vorld.getChunk(chunkI, chunkJ, chunkK);
+
 	forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
 		var block = chunk.getBlock(i,j,k);
 
 		// Exists?
 		if(!block) { return; }
-		if(block == "soil" && !chunk.getBlock(i,j+1,k) && (!chunkAbove || !chunkAbove.getBlock(i, 0, k))) {
+
+		if(block == "soil" && !vorld.getBlock(i, j+1, k, chunkI, chunkJ, chunkK)) {
 			block = "grass";
 		}
 		// For Each Direction : Is Edge? Add quad to mesh!
 		// Front
-		if(!chunk.getBlock(i,j,k+1)) {
+		if(!vorld.getBlock(i, j, k+1, chunkI, chunkJ, chunkK)) {
 			addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
 		}
 		// Back
-		if(!chunk.getBlock(i,j,k-1)){
+		if(!vorld.getBlock(i, j, k-1, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
 		}
 		// Top
-		if(!chunk.getBlock(i,j+1,k)){
+		if(!vorld.getBlock(i, j+1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
 		}
 		// Bottom
-		if(!chunk.getBlock(i,j-1,k)){
+		if(!vorld.getBlock(i, j-1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
 		}
 		// Right
-		if(!chunk.getBlock(i+1,j,k)){
+		if(!vorld.getBlock(i+1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
 		}
 		// Left
-		if(!chunk.getBlock(i-1,j,k)){
+		if(!vorld.getBlock(i-1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
 		}
 	});

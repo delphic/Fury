@@ -7,8 +7,8 @@ var Camera = module.exports = function() {
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
 		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
-				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3],
 				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
 		},
@@ -57,7 +57,7 @@ var Camera = module.exports = function() {
 		}
 		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
 
 		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
 
@@ -112,14 +112,14 @@ var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
 	// This does of course slow removal, so this structure should
-	// be used for arrays where you want to enumerate a lot and 
-	// also want references that do not go out of date when 
+	// be used for arrays where you want to enumerate a lot and
+	// also want references that do not go out of date when
 	// you remove an item (which is hopefully rarely).
 
-	// Please note, again for purposes of speed and ease of use 
+	// Please note, again for purposes of speed and ease of use
 	// this structure adds the key of the item to the id property on items added
 	// this eases checking for duplicates and if you have the only reference
-	// you can still remove it from the list or check if it is in the list. 
+	// you can still remove it from the list or check if it is in the list.
 	var exports = {};
 	var nextKey = 1;
 
@@ -516,7 +516,7 @@ var Mesh = module.exports = function(){
 			copy.indices = mesh.indices.slice(0);
 			copy.updateIndexBuffer();
 		}
-		
+
 		return copy;
 	};
 
@@ -538,6 +538,7 @@ exports.init = function(canvas) {
 	gl.viewportHeight = canvas.height;
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
+	gl.enable(gl.CULL_FACE);  // TODO: expose as method
 
 	anisotropyExt = gl.getExtension("EXT_texture_filter_anisotropic");
 	if (anisotropyExt) {
@@ -879,7 +880,7 @@ var Scene = module.exports = function() {
 	var materials = indexedMap.create();
 	var shaders = indexedMap.create();
 	var textures = indexedMap.create();
-	
+
 	var create = exports.create = function(parameters) {
 		var sceneId = (nextSceneId++).toString();
 		var cameras = {};
@@ -907,7 +908,7 @@ var Scene = module.exports = function() {
 					textures.add(texture);
 					bindTextureToLocation(texture);
 				}
-				
+
 			}
 		};
 
@@ -949,7 +950,7 @@ var Scene = module.exports = function() {
 			}
 		};
 
-		// Add Object 
+		// Add Object
 		// TODO: RenderObject / Component should have its own class
 		scene.add = function(parameters) {
 			var object = {};
@@ -959,7 +960,7 @@ var Scene = module.exports = function() {
 
 			object.material = parameters.material;
 			object.mesh = parameters.mesh;
-			
+
 			object.meshId = meshes.add(object.mesh);
 			object.materialId = materials.add(object.material);
 			object.shaderId = shaders.add(object.material.shader);
@@ -967,13 +968,13 @@ var Scene = module.exports = function() {
 			addTexturesToScene(object.material);
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
-			// Should be adding a renderer component to said concept (?) 
+			// Should be adding a renderer component to said concept (?)
 			object.transform = Transform.create(parameters);
 
 			object.sceneId = renderObjects.add(object);
 			object.remove = function() {
 				renderObjects.remove(this.sceneId);
-				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete 
+				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
 			}; // TODO: Move to prototype
 			return object;
 		};
@@ -1040,7 +1041,7 @@ var Scene = module.exports = function() {
 			alphaRenderObjects.length = 0;
 			// Simple checks for now - no ordering
 
-			// TODO: Scene Graph  
+			// TODO: Scene Graph
 			// Batched first by Shader
 			// Then by Material
 			// Then by Mesh
@@ -1053,7 +1054,7 @@ var Scene = module.exports = function() {
 			r.clear();
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
-			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements 
+			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var renderObject = renderObjects[renderObjects.keys[i]];
 				if(renderObject.material.alpha) {
@@ -1086,13 +1087,13 @@ var Scene = module.exports = function() {
 			var shader = object.material.shader;
 			var material = object.material;
 			var mesh = object.mesh;
-			// BUG: 
+			// BUG:
 			// If there's only one material or one mesh in the scene real time changes to the material or mesh will not present themselves as the id will still match the currently bound
 			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case. (should probably be called forceRebind as it 'might' be rebound anyway)
 			// Having now determined that actually we don't need to rebind uniforms when switching shader programs, we'll need this flag whenever there's only one mesh or material using a given shader.
 
 			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
-			// as this indicates that this object needs reording in the graph (as it's been changed). 
+			// as this indicates that this object needs reording in the graph (as it's been changed).
 
 			var shaderChanged = false;
 			var materialChanged = false;
@@ -1127,14 +1128,14 @@ var Scene = module.exports = function() {
 			}
 
 			if(shaderChanged || materialChanged) {
-				// Texture Rebinding dependencies 
+				// Texture Rebinding dependencies
 				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniforms have changed since the shaderProgram was last used...
 					// NOTE Large Changes needed because of this
 					// I think we're just going to have to add a flag to materials and meshes to say "rebind" (because I've changed something)
-					// This also means we should move the "currentMeshId / currentMaterial id to the shader instead or keep a keyed list on shader the id 
+					// This also means we should move the "currentMeshId / currentMaterial id to the shader instead or keep a keyed list on shader the id
 					// Lets do this after we've done the texture binding though eh? so for now just rebind everything if shader or material changes (overkill but it'll work)
 				// If the material has changed textures may need rebinding
-				
+
 				// Check for gl location rebinds needed, if any needed and rebind all to make sure we don't replace a texture we're using
 				var locationRebindsNeeded = false;
 				for(var i = 0, l = shader.textureUniformNames.length; i < l; i++) {
@@ -1164,7 +1165,7 @@ var Scene = module.exports = function() {
 					}
 				}
 			}
-			
+
 			if(!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
 				if(!mesh.id) {	// mesh was changed on object since originally added to scene
 					object.meshId = mesh.add(mesh);
@@ -1179,7 +1180,7 @@ var Scene = module.exports = function() {
 			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
 			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
-				
+
 			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
 
@@ -1214,7 +1215,7 @@ var Shader = module.exports = function() {
 		if(!parameters.fsSource) {
 			throw new Error("No Fragment Shader Source 'fsSource'");
 		}
-		
+
 		shader.vs = r.createShader("vertex", parameters.vsSource);
 		shader.fs = r.createShader("fragment", parameters.fsSource);
 		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
