@@ -56,6 +56,7 @@ var cubeFaces = {
 var shader = Fury.Shader.create({
 	vsSource: [
 		"attribute vec3 aVertexPosition;",
+		"attribute vec3 aVertexNormal;",
 		"attribute vec2 aTextureCoord;",
 
 		"uniform mat4 uMVMatrix;",
@@ -76,23 +77,20 @@ var shader = Fury.Shader.create({
 		"void main(void) {",
 			"gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));",
 		"}"].join('\n'),
-		attributeNames: [ "aVertexPosition", "aTextureCoord" ],
+		attributeNames: [ "aVertexPosition", "aVertexNormal", "aTextureCoord" ],
 		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
 		textureUniformNames: [ "uSampler" ],
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
-		initialised: false,
-		bindMaterial: function(material) { },
+		bindMaterial: function(material) {
+			this.enableAttribute("aVertexPosition");
+			this.enableAttribute("aTextureCoord");
+		},
 		bindBuffers: function(mesh) {
-			// Probably need to track if these need to be enabled better than this
-			// Switching shader program would probably mean these would need to be reset?
-			// TODO: Test this assumption
-			if (!this.initialised) {
-				this.enableAttribute("aVertexPosition");
-				this.enableAttribute("aTextureCoord");
-				this.initialised = true;
-			}
 			this.setAttribute("aVertexPosition", mesh.vertexBuffer);	// Is this definately the best way to set buffers?
+			this.setAttribute("aVertexNormal", mesh.normalBuffer);
+			// TODO: To use this we need a new NMatrix too, going to nee dto add that to the Shader options in the same way as we have pMatrixUniformName as it's a special matrix
+			// to adjust for camera rotation. c.f. http://learningwebgl.com/blog/?p=684
 			this.setAttribute("aTextureCoord", mesh.textureBuffer);		// This would be unnecessary with a 'cube-voxel' shader
 			this.setIndexedAttribute(mesh.indexBuffer);
 		}
