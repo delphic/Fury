@@ -311,6 +311,7 @@ onmessage = function(e) {
 
         var chunk = createChunk(chunkOffset, octaves, e.data);
         vorld.addChunk(chunk, i, j, k);
+				// TODO: postMessage chunk generated
       }
     }
   }
@@ -319,11 +320,9 @@ onmessage = function(e) {
   for(var i = -areaExtents; i <= areaExtents; i++) {
     for (var j = -areaExtents; j <= areaExtents; j++) {
       for(var k = areaHeight - 1; k >= 0; k--) {
-        console.log("Creating Mesh " + i + "," + j + "," + k);
-
         var mesh = buildMesh(vorld, i, j, k);
         if (mesh.indices.length > 0) {
-          postMessage({ mesh: mesh, offset: [i * vorld.chunkSize, k * vorld.chunkSize, j * vorld.chunkSize] });          
+          postMessage({ mesh: mesh, offset: [i * vorld.chunkSize, k * vorld.chunkSize, j * vorld.chunkSize] });
         }
       }
     }

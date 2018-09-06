@@ -11,6 +11,17 @@ quat.rotate = (function() {
 	}
 })();
 
+var updateCanvasSize = function() {
+	// Remove any scaling of width / height as a result of using CSS to size the canvas
+	var glCanvas = document.getElementById("fury");
+	glCanvas.width = glCanvas.clientWidth;
+	glCanvas.height = glCanvas.clientHeight;
+}
+$(window).resize(function(){
+	updateCanvasSize();
+});
+updateCanvasSize();
+
 Fury.init("fury");
 var Input = Fury.Input;
 
