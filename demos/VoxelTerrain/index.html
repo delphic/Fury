@@ -14,12 +14,16 @@ body {
 	overflow: hidden;
 }
 fieldset {
+	display: none;
 	background-color: white;
 	font-family: monospace;
 	position: fixed;
 	top: 10px;
-	right: 0;
+	right: 10px;
 	max-width: 550px;
+}
+fieldset form {
+	display: none;
 }
 fieldset div {
 	margin: 5px 0;
@@ -35,13 +39,38 @@ fieldset input.button {
 	width: 100%;
 	height: 100vh;
 }
+#progressDisplay {
+	position: absolute;
+	width: 210px;
+	top: 10px;
+	right: 10px;
+	background-color: white;
+	border: 1px solid grey;
+	font-size: 10px;
+	font-family: sans-serif;
+}
+#progressStage {
+	margin: 10px auto;
+	text-align: center;
+}
+#progressBarOuter {
+	margin: 10px;
+	height: 20px;
+	border: 1px solid grey;
+}
+#progressBarInner {
+	height: 100%;
+	width: 0;
+	background-color: cornflowerblue;
+}
 		</style>
 	</head>
 	<body>
 		<canvas id="fury" oncontextmenu="return false;"></canvas>
 		<script src="voxelterrain.js"></script>
-		<fieldset>
-			<form>
+		<fieldset id="generationParameters">
+			<input id="showGenerationForm" class="button" type="button" value="Show Generation Parameters" />
+			<form id="generationForm">
 				<div>
 					<label for="seed">Seed: </label><input id="seed" type="text" style="width: 450px" />
 				</div>
@@ -70,8 +99,15 @@ fieldset input.button {
 				</div>
 				<div>
 					<input id="regen" class="button" type="button" value="Regenerate Terrain" />
+					<input id="hideGenerationForm" class="button" type="button" value="Hide Form" />
 				</div>
 			</form>
 		</fieldset>
+		<div id="progressDisplay">
+			<p id="progressStage">Generating Terrain</p>
+			<div id="progressBarOuter">
+				<div id="progressBarInner"></div>
+			</div>
+		</div>
 	</body>
 </html>

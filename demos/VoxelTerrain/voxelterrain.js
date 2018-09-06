@@ -1,8 +1,7 @@
-// Voxel Terrain
-// First Method to implement
-// Multiple Octaves of Perlin / Simplex noise -> Cubes
+// Voxel Terrain Generator
+// Multiple Octaves of Perlin Noise -> Cubes
 
-// glMatrix extension, seems to work should probably fork the repo
+// glMatrix extension
 quat.rotate = (function() {
 	var i = quat.create();
 	return function(out, q, rad, axis) {
@@ -28,7 +27,6 @@ var Input = Fury.Input;
 var shader = Fury.Shader.create({
 	vsSource: [
 		"attribute vec3 aVertexPosition;",
-		"attribute vec3 aVertexNormal;",
 		"attribute vec2 aTextureCoord;",
 
 		"uniform mat4 uMVMatrix;",
@@ -59,10 +57,7 @@ var shader = Fury.Shader.create({
 			this.enableAttribute("aTextureCoord");
 		},
 		bindBuffers: function(mesh) {
-			this.setAttribute("aVertexPosition", mesh.vertexBuffer);	// Is this definately the best way to set buffers?
-			this.setAttribute("aVertexNormal", mesh.normalBuffer);
-			// TODO: To use this we need a new NMatrix too, going to nee dto add that to the Shader options in the same way as we have pMatrixUniformName as it's a special matrix
-			// to adjust for camera rotation. c.f. http://learningwebgl.com/blog/?p=684
+			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
 			this.setAttribute("aTextureCoord", mesh.textureBuffer);		// This would be unnecessary with a 'cube-voxel' shader
 			this.setIndexedAttribute(mesh.indexBuffer);
 		}
@@ -70,13 +65,8 @@ var shader = Fury.Shader.create({
 
 var atlasMaterial = Fury.Material.create({ shader: shader });
 var atlasSrc = "expanded_atlas_upscaled.png";
-
-// TODO: Arguably should blend a nearest filtered texture with a mips textures
-// based on fragement depth (but we need to figure out how to sample depth, oh no!)
-// https://stackoverflow.com/questions/48601214/webgl-pixel-position-reconstruction-with-webgl-depth-texture
-// https://blog.tojicode.com/2012/07/using-webgldepthtexture.html
-// https://stackoverflow.com/questions/7327544/how-can-i-read-the-depth-buffer-in-webgl
-// For now have upscaled the base texture by 8x
+// Use upscaled texture to allow for reasonable resolution closeup
+// when using mipmaps to prevent artifacts at distance.
 
 // Regeneration Variables and form details
 var areaHeight = 1, areaExtents = 2;
@@ -102,6 +92,14 @@ var getGenerationVariables = function() {
 };
 
 $(document).ready(function(){
+	$("#showGenerationForm").click(function() {
+		$("#generationForm").show();
+		$("#showGenerationForm").hide();
+	});
+	$("#hideGenerationForm").click(function() {
+		$("#generationForm").hide();
+		$("#showGenerationForm").show();
+	});
 	$("#octaves").change(function(event){
 		$("#octavesDisplay").html(this.value);
 		var html = "";
@@ -116,6 +114,11 @@ $(document).ready(function(){
 		$("#baseWavelength").val(Math.pow(2, power));
 	});
 	$("#regen").click(function(event){
+		$("#generationForm").hide();
+		$("#showGenerationForm").show();
+		$("#progressDisplay").show();
+		$("#generationParameters").hide();
+
 		getGenerationVariables();
 		clear();
 		generateVorld();
@@ -167,10 +170,24 @@ var awake = function() {
 var generateVorld = function() {
 	var generator = new Worker('generator.js');
 	generator.onmessage = function(e) {
-		// TODO: Manage Chunk Generation Update Events
-		var meshObject = scene.add({ mesh: Fury.Mesh.create(e.data.mesh), material: atlasMaterial });
-		vec3.add(meshObject.transform.position, meshObject.transform.position, vec3.clone(e.data.offset));
-		meshes.push(meshObject);
+		if (e.data.stage) {
+			$("#progressStage").html(e.data.stage);
+		}
+
+		if (e.data.progress != undefined) {
+			$("#progressBarInner").width((e.data.progress * 100) + "%");
+		}
+
+		if (e.data.mesh) {
+			var meshObject = scene.add({ mesh: Fury.Mesh.create(e.data.mesh), material: atlasMaterial });
+			vec3.add(meshObject.transform.position, meshObject.transform.position, vec3.clone(e.data.offset));
+			meshes.push(meshObject);
+		}
+
+		if (e.data.complete) {
+			$("#progressDisplay").hide();
+			$("#generationParameters").show();
+		}
 	};
 
 	generator.postMessage({
@@ -197,7 +214,7 @@ var loop = function(){
 	framesInLastSecond++;
 	if(timeSinceLastFrame >= 1)
 	{
-		//console.log("FPS:" + framesInLastSecond);
+		// This is where you'd set the value in an FPS counter, if there was one
 		framesInLastSecond = 0;
 		timeSinceLastFrame = 0;
 	}

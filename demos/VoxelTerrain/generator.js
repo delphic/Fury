@@ -1,6 +1,23 @@
+// Voxel Terrain Generator
+
+// Creates voxel data using multiple octaves of noise where the octave integer is k
+// you sample at x(2^k) and y(2^k) where 2^k is wavelength and 1/(2^k) is frequency.
+// Each octave has a weighting for determining combination with others.
+// Generated value is further divided by adjustmentFactor * (maxdepth + y)
+// as a way to ensure air / ground distinction, this could be expanded to
+// a more general shaping function.
+
+// Data is meshed by adding quads for each visible voxel face to a mesh
+// One mesh per 32 cubic 'chunk' of voxels.
+// Uses texture coordinates and an atlas to allow for multiple voxel types in
+// a single texture.
+// An improvement would a be a shader that determined texture cordinates from
+// world position and did not require texture coordinates, this would open the
+// door for meshing optimisations, such as "greedy" meshing.
+
 importScripts('perlin.js', 'simplex.js');
 
-// Basic Cube JSON
+// Basic Cube Geometry JSON
 var cubeJson = {
 	vertices: [ -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0 ],
 	normals: [ 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0],
@@ -17,6 +34,11 @@ var cubeFaces = {
 	left: 5
 };
 
+// Atlas Info
+// TODO: Should be injected
+var atlasSize = [64, 64];
+var atlasPadding = 2;
+var atlasTileSize = 16;
 var tileOffsets = {
 	grass: {
 		side: [1,0],
@@ -35,13 +57,6 @@ var tileOffsets = {
 	}
 };
 
-// Block Prefab Creation Helpers
-
-// Should probably be passed in
-var atlasSize = [64, 64];
-var atlasPadding = 2;
-var atlasTileSize = 16;
-
 var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSize) {
 	var tileSize = atlasTileSize;
 	var tilePadding = atlasPadding;
@@ -52,9 +67,7 @@ var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSiz
 	}
 };
 
-// End Block Prefab Creation Helpers
-
-// Predicatable but kinda random numbers for seed based generation
+// Predicatable but kinda random numbers for string seed based generation
 var createSeed = function(seedValue) {
 	var minCode = seedValue.charCodeAt(0), maxCode = seedValue.charCodeAt(0), i = 0, j;
 	for(var n = 1, l = seedValue.length; n < l; n++) {
@@ -70,17 +83,13 @@ var createSeed = function(seedValue) {
 			var result = 0.5*(number(i) + number(j));
 			i+=1;
 			j+=2;
-			if(i>=seedValue.length) { i = 0; }
-			if(j>=seedValue.length) { j = j%seedValue.length; }
+			if (i >= seedValue.length) { i = 0; }
+			if (j >= seedValue.length) { j = j % seedValue.length; }
 			return result;
 		}
 	};
 };
 
-// Use octaves where the octave integer is k you sample at x(2^k) and y(2^k) where 2^k is wavelength and naturally 1/(2^k) is frequency each octave needs a weighing
-
-// Divide by adjustmentFactor * (maxdepth + y) and adjust m as initial way to ensure air / ground distinction
-// Try < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone
 var getBlockType = function(value) {
   if(value < 0.5) {
     return "";
@@ -92,7 +101,6 @@ var getBlockType = function(value) {
 };
 
 var createChunk = function(offset, octaves, generationArgs) {
-
   var maxDepth = 16, i, j, k, o, adjust;
   var numOctaves = octaves.length;
   var octaveWeightings = generationArgs.octaveWeightings;
@@ -117,8 +125,8 @@ var createChunk = function(offset, octaves, generationArgs) {
   for(i = 0; i < chunk.size; i++) {
     for(j = 0; j < chunk.size; j++) {
       y = j - Math.floor(chunk.size/2.0);
+      adjust = adjustmentFactor * (maxDepth + y + offset[1]);
       for(k = 0; k < chunk.size; k++) {
-        adjust = adjustmentFactor * (maxDepth + y + offset[1]);
         var value = 0;
         var totalWeight = 0;
         for(o = 0; o < numOctaves; o++) {
@@ -127,7 +135,7 @@ var createChunk = function(offset, octaves, generationArgs) {
           value += octaveWeightings[o] * octaves[o].noise(wavelength*(i + offset[0])/baseWavelength, wavelength*(j + offset[1])/baseWavelength, wavelength*(k + offset[2])/baseWavelength);
         }
         value /= totalWeight;
-        var block = getBlockType(value / adjust);
+        var block = getBlockType(value / adjust); // value < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone
         chunk.addBlock(i,j,k,block)
       }
     }
@@ -158,7 +166,7 @@ var vorld = {
       blockI = this.chunkSize + blockI;
       chunkI -= 1;
     }
-    // Due to some madness chunk k is y axis, and chunk j is z axis...
+    // Due to some madness, chunk k is y axis, and chunk j is z axis...
     if (blockJ >= this.chunkSize) {
       blockJ = blockJ - this.chunkSize;
       chunkK += 1;
@@ -176,8 +184,6 @@ var vorld = {
 
     var chunk = this.getChunk(chunkI, chunkJ, chunkK);
     if (chunk) {
-      // The lowest chunk seemed to be accessed 22000 times!?
-      // TODO: Check wtf that is doing
       return chunk.getBlock(blockI, blockJ, blockK);
     }
     return null;
@@ -288,7 +294,6 @@ var forEachBlock = function(chunk, delegate) {
 
 // World Generation
 onmessage = function(e) {
-
   var seedString = e.data.seed;
   var perlin = e.data.perlin;
   var numOctaves = e.data.numOctaves;
@@ -300,7 +305,12 @@ onmessage = function(e) {
   var areaExtents = e.data.areaExtents;
   var areaHeight = e.data.areaHeight;
 
+	postMessage({ stage: "Generating Voxel Data"});
+	postMessage({ progress: 0 });
+
   // Generate Chunks
+	var iteration = 0;
+	var totalIterations = (2 * areaExtents + 1) * (2 * areaExtents + 1) * areaHeight;
   var chunkOffset = [];
   for(var i = -areaExtents; i <= areaExtents; i++) {
     for (var j = -areaExtents; j <= areaExtents; j++) {
@@ -311,20 +321,35 @@ onmessage = function(e) {
 
         var chunk = createChunk(chunkOffset, octaves, e.data);
         vorld.addChunk(chunk, i, j, k);
-				// TODO: postMessage chunk generated
+
+				iteration++;
+				postMessage({ progress: iteration / totalIterations });
       }
     }
   }
 
+	postMessage({ stage: "Generating Meshes"});
+	postMessage({ progress: 0 });
+
+	iteration = 0;
   // Create Meshes
   for(var i = -areaExtents; i <= areaExtents; i++) {
     for (var j = -areaExtents; j <= areaExtents; j++) {
       for(var k = areaHeight - 1; k >= 0; k--) {
         var mesh = buildMesh(vorld, i, j, k);
+				iteration++;
         if (mesh.indices.length > 0) {
-          postMessage({ mesh: mesh, offset: [i * vorld.chunkSize, k * vorld.chunkSize, j * vorld.chunkSize] });
-        }
+          postMessage({
+						mesh: mesh,
+						offset: [i * vorld.chunkSize, k * vorld.chunkSize, j * vorld.chunkSize],
+						progress: iteration / totalIterations
+					});
+        } else {
+					postMessage({ progress: iteration / totalIterations });
+				}
       }
     }
   }
+
+	postMessage({ complete: true });
 };
