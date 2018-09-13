@@ -7,65 +7,10 @@
 // as a way to ensure air / ground distinction, this could be expanded to
 // a more general shaping function.
 
-// Data is meshed by adding quads for each visible voxel face to a mesh
-// One mesh per 32 cubic 'chunk' of voxels.
-// Uses texture coordinates and an atlas to allow for multiple voxel types in
-// a single texture.
-// An improvement would a be a shader that determined texture cordinates from
-// world position and did not require texture coordinates, this would open the
-// door for meshing optimisations, such as "greedy" meshing.
+// TODO: Separate generation logic from worker logic (so that can be done sync or async)
+importScripts('perlin.js', 'simplex.js', 'vorld.js');
 
-importScripts('perlin.js', 'simplex.js');
-
-// Basic Cube Geometry JSON
-var cubeJson = {
-	vertices: [ -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0 ],
-	normals: [ 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0],
-	textureCoordinates: [ 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0 ],
-	indices: [ 0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23 ]
-};
-
-var cubeFaces = {
-	front: 0,
-	back: 1,
-	top: 2,
-	bottom: 3,
-	right: 4,
-	left: 5
-};
-
-// Atlas Info
-// TODO: Should be injected
-var atlasSize = [64, 64];
-var atlasPadding = 2;
-var atlasTileSize = 16;
-var tileOffsets = {
-	grass: {
-		side: [1,0],
-		top: [0,0],
-		bottom: [0,1]
-	},
-	soil: {
-		side: [0,1],
-		top: [0,1],
-		bottom: [0,1]
-	},
-	stone: {
-		side: [1,1],
-		top: [1,1],
-		bottom: [1,1]
-	}
-};
-
-var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSize) {
-	var tileSize = atlasTileSize;
-	var tilePadding = atlasPadding;
-	for(var i = 8 * faceIndex, l = i + 8; i < l; i += 2) {
-		textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlasSize[0];		// s
-		var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
-		textureArray[i+1] = (tileSize * textureArray[i+1] + (atlasSize[1] - pixelsFromTop)) / atlasSize[1]; 	// t
-	}
-};
+var vorld = Vorld.create({ chunkSize: 32 });
 
 // Predicatable but kinda random numbers for string seed based generation
 var createSeed = function(seedValue) {
@@ -92,7 +37,7 @@ var createSeed = function(seedValue) {
 
 var getBlockType = function(value) {
   if(value < 0.5) {
-    return "";
+		return "";
   }
   if(value < 0.8) {
     return "soil";
@@ -107,19 +52,7 @@ var createChunk = function(offset, octaves, generationArgs) {
   var baseWavelength = generationArgs.baseWavelength;
   var adjustmentFactor = generationArgs.adjustmentFactor;
 
-  var chunk = {
-    blocks: [],
-    size: 32,
-    addBlock: function(i, j, k, block) {
-      this.blocks[i + this.size*j + this.size*this.size*k] = block;
-    },
-    getBlock: function(i, j, k) {
-      if(i < 0 || j < 0 || k < 0 || i >= this.size || j >= this.size || k >= this.size) {
-        return null;
-      }
-      return this.blocks[i + this.size*j + this.size*this.size*k];
-    }
-  };
+	var chunk = Chunk.create({ size: 32 });
 
   // Determine blocks from noise function
   for(i = 0; i < chunk.size; i++) {
@@ -144,160 +77,12 @@ var createChunk = function(offset, octaves, generationArgs) {
   return chunk;
 }
 
-var vorld = {
-  chunkSize: 32,
-  chunks: {},
-  addChunk: function(chunk, i, j, k) {
-    this.chunks[i+"_"+j+"_"+k] = chunk;
-  },
-  getChunk: function(i, j, k) {
-    var key = i+"_"+j+"_"+k;
-    if (this.chunks[key]) {
-        return this.chunks[key];
-    }
-    return null;
-  },
-  getBlock: function(blockI, blockJ, blockK, chunkI, chunkJ, chunkK) {
-    // Assumes you won't go out by more than chunkSize
-    if (blockI >= this.chunkSize) {
-      blockI = blockI - this.chunkSize;
-      chunkI += 1;
-    } else if (blockI < 0) {
-      blockI = this.chunkSize + blockI;
-      chunkI -= 1;
-    }
-    // Due to some madness, chunk k is y axis, and chunk j is z axis...
-    if (blockJ >= this.chunkSize) {
-      blockJ = blockJ - this.chunkSize;
-      chunkK += 1;
-    } else if (blockJ < 0) {
-      blockJ = this.chunkSize + blockJ;
-      chunkK -= 1;
-    }
-    if (blockK >= this.chunkSize) {
-      blockK = blockK - this.chunkSize;
-      chunkJ += 1;
-    } else if (blockK < 0) {
-      blockK = this.chunkSize + blockK;
-      chunkJ -= 1;
-    }
-
-    var chunk = this.getChunk(chunkI, chunkJ, chunkK);
-    if (chunk) {
-      return chunk.getBlock(blockI, blockJ, blockK);
-    }
-    return null;
-  }
-};
-
-var buildMesh = function(vorld, chunkI, chunkJ, chunkK) {
-	var mesh = {
-		vertices: [],
-		normals: [],
-		textureCoordinates: [],
-		indices: []
-	};
-
-	var chunk = vorld.getChunk(chunkI, chunkJ, chunkK);
-
-	forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
-		var block = chunk.getBlock(i,j,k);
-
-		// Exists?
-		if(!block) { return; }
-
-		if(block == "soil" && !vorld.getBlock(i, j+1, k, chunkI, chunkJ, chunkK)) {
-			block = "grass";
-		}
-		// For Each Direction : Is Edge? Add quad to mesh!
-		// Front
-		if(!vorld.getBlock(i, j, k+1, chunkI, chunkJ, chunkK)) {
-			addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
-		}
-		// Back
-		if(!vorld.getBlock(i, j, k-1, chunkI, chunkJ, chunkK)){
-			addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
-		}
-		// Top
-		if(!vorld.getBlock(i, j+1, k, chunkI, chunkJ, chunkK)){
-			addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
-		}
-		// Bottom
-		if(!vorld.getBlock(i, j-1, k, chunkI, chunkJ, chunkK)){
-			addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
-		}
-		// Right
-		if(!vorld.getBlock(i+1, j, k, chunkI, chunkJ, chunkK)){
-			addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
-		}
-		// Left
-		if(!vorld.getBlock(i-1, j, k, chunkI, chunkJ, chunkK)){
-			addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
-		}
-	});
-
-	return mesh;
-};
-
-var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
-	var tile, offset, n = mesh.vertices.length/3;
-	var vertices, normals, textureCoordinates;
-
-	if(faceIndex == cubeFaces.top) {
-		tile = tileOffsets[block].top;
-	} else if (faceIndex == cubeFaces.bottom) {
-		tile = tileOffsets[block].bottom;
-	} else {
-		tile = tileOffsets[block].side;
-	}
-
-	offset = faceIndex * 12;
-	vertices = cubeJson.vertices.slice(offset, offset + 12);
-	for(var i = 0; i < 4; i++) {
-		vertices[3*i] = 0.5 * vertices[3*i] + x;
-		vertices[3*i + 1] = 0.5 * vertices[3*i +1] + y;
-		vertices[3*i + 2] = 0.5 * vertices[3*i + 2] + z;
-	}
-
-	normals = cubeJson.normals.slice(offset, offset + 12);
-
-	offset = faceIndex * 8;
-	textureCoordinates = cubeJson.textureCoordinates.slice(offset, offset + 8);
-	adjustTextureCoords(textureCoordinates, 0, tile, atlasSize);
-
-	concat(mesh.vertices, vertices);
-	concat(mesh.normals, normals);
-	concat(mesh.textureCoordinates, textureCoordinates);
-	mesh.indices.push(n,n+1,n+2, n,n+2,n+3);
-};
-
-var concat = function(a, b) {
-	// GC efficient concat
-	for(var i = 0, l = b.length; i < l; i++) {
-		a.push(b[i]);
-	}
-};
-
-// delegate should be a function taking chunk, i, j, k, x, y, z
-var forEachBlock = function(chunk, delegate) {
-	for(i = 0; i < chunk.size; i++) {
-		x = i - Math.floor(chunk.size/2.0);
-		for(j = 0; j < chunk.size; j++) {
-			y = j - Math.floor(chunk.size/2.0);
-			for(k = 0; k < chunk.size; k++) {
-				z = k - Math.floor(chunk.size/2.0);
-				delegate(chunk, i, j, k, x, y, z);
-			}
-		}
-	}
-};
-
 // World Generation
 onmessage = function(e) {
   var seedString = e.data.seed;
   var perlin = e.data.perlin;
   var numOctaves = e.data.numOctaves;
-  var octaves = [];
+  var octaves = [];1
   for(var o = 0; o < numOctaves; o++) {
     octaves.push(perlin ? new ClassicalNoise(createSeed(seedString)) : new SimplexNoise(createSeed(seedString)));
   }
@@ -331,25 +116,15 @@ onmessage = function(e) {
 	postMessage({ stage: "Generating Meshes"});
 	postMessage({ progress: 0 });
 
-	iteration = 0;
-  // Create Meshes
-  for(var i = -areaExtents; i <= areaExtents; i++) {
-    for (var j = -areaExtents; j <= areaExtents; j++) {
-      for(var k = areaHeight - 1; k >= 0; k--) {
-        var mesh = buildMesh(vorld, i, j, k);
-				iteration++;
-        if (mesh.indices.length > 0) {
-          postMessage({
-						mesh: mesh,
-						offset: [i * vorld.chunkSize, k * vorld.chunkSize, j * vorld.chunkSize],
-						progress: iteration / totalIterations
-					});
-        } else {
-					postMessage({ progress: iteration / totalIterations });
-				}
-      }
-    }
-  }
+	var mesher = new Worker('mesher.js');
+	mesher.onmessage = function(e) {
+		postMessage(e.data);
+	};
 
-	postMessage({ complete: true });
+ 	var chunkData = vorld.getChunkData();
+	mesher.postMessage({
+		areaExtents: areaExtents,
+		areaHeight: areaHeight,
+		chunkData: chunkData
+	});
 };
