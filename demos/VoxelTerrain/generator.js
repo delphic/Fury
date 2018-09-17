@@ -69,7 +69,7 @@ var createChunk = function(offset, octaves, generationArgs) {
         }
         value /= totalWeight;
         var block = getBlockType(value / adjust); // value < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone
-        chunk.addBlock(i,j,k,block)
+        Chunk.addBlock(chunk, i, j, k, block)
       }
     }
   }
@@ -105,7 +105,7 @@ onmessage = function(e) {
         chunkOffset[2] = j * vorld.chunkSize;
 
         var chunk = createChunk(chunkOffset, octaves, e.data);
-        vorld.addChunk(chunk, i, j, k);
+        Vorld.addChunk(vorld, chunk, i, j, k);
 
 				iteration++;
 				postMessage({ progress: iteration / totalIterations });
@@ -121,10 +121,9 @@ onmessage = function(e) {
 		postMessage(e.data);
 	};
 
- 	var chunkData = vorld.getChunkData();
 	mesher.postMessage({
 		areaExtents: areaExtents,
 		areaHeight: areaHeight,
-		chunkData: chunkData
+		chunkData: vorld
 	});
 };

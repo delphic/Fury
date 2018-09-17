@@ -89,40 +89,40 @@ var buildMesh = function(vorld, chunkI, chunkJ, chunkK) {
 		indices: []
 	};
 
-	var chunk = vorld.getChunk(chunkI, chunkJ, chunkK);
+	var chunk = Vorld.getChunk(vorld, chunkI, chunkJ, chunkK);
 
 	forEachBlock(chunk, function(chunk, i, j, k, x, y, z) {
-		var block = chunk.getBlock(i,j,k);
+		var block = Chunk.getBlock(chunk, i, j, k);
 
 		// Exists?
 		if(!block) { return; }
 
-		if(block == "soil" && !vorld.getBlock(i, j+1, k, chunkI, chunkJ, chunkK)) {
+		if(block == "soil" && !Vorld.getBlock(vorld, i, j+1, k, chunkI, chunkJ, chunkK)) {
 			block = "grass";
 		}
 		// For Each Direction : Is Edge? Add quad to mesh!
 		// Front
-		if(!vorld.getBlock(i, j, k+1, chunkI, chunkJ, chunkK)) {
+		if(!Vorld.getBlock(vorld, i, j, k+1, chunkI, chunkJ, chunkK)) {
 			addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
 		}
 		// Back
-		if(!vorld.getBlock(i, j, k-1, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlock(vorld, i, j, k-1, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
 		}
 		// Top
-		if(!vorld.getBlock(i, j+1, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlock(vorld, i, j+1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
 		}
 		// Bottom
-		if(!vorld.getBlock(i, j-1, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlock(vorld, i, j-1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
 		}
 		// Right
-		if(!vorld.getBlock(i+1, j, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlock(vorld, i+1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
 		}
 		// Left
-		if(!vorld.getBlock(i-1, j, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlock(vorld, i-1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
 		}
 	});
@@ -186,7 +186,7 @@ var forEachBlock = function(chunk, delegate) {
 onmessage = function(e) {
   var areaExtents = e.data.areaExtents;
   var areaHeight = e.data.areaHeight;
-  var vorld = Vorld.create(e.data.chunkData);
+  var vorld = e.data.chunkData;
 
 	var totalIterations = (2 * areaExtents + 1) * (2 * areaExtents + 1) * areaHeight;
   iteration = 0;
