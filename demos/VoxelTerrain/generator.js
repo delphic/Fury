@@ -90,7 +90,7 @@ onmessage = function(e) {
   var areaExtents = e.data.areaExtents;
   var areaHeight = e.data.areaHeight;
 
-	postMessage({ stage: "Generating Voxel Data"});
+	postMessage({ stage: ""});
 	postMessage({ progress: 0 });
 
   // Generate Chunks
@@ -112,18 +112,5 @@ onmessage = function(e) {
       }
     }
   }
-
-	postMessage({ stage: "Generating Meshes"});
-	postMessage({ progress: 0 });
-
-	var mesher = new Worker('mesher.js');
-	mesher.onmessage = function(e) {
-		postMessage(e.data);
-	};
-
-	mesher.postMessage({
-		areaExtents: areaExtents,
-		areaHeight: areaHeight,
-		chunkData: vorld
-	});
+	postMessage({ complete: true, vorld: vorld });
 };

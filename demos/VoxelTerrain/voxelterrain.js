@@ -168,6 +168,9 @@ var awake = function() {
 };
 
 var generateVorld = function() {
+	$("#progressStage").html("Generating Voxel Data");
+	$("#progressBarInner").width("0%");
+
 	var generator = new Worker('generator.js');
 	generator.onmessage = function(e) {
 		if (e.data.stage) {
@@ -178,15 +181,8 @@ var generateVorld = function() {
 			$("#progressBarInner").width((e.data.progress * 100) + "%");
 		}
 
-		if (e.data.mesh) {
-			var meshObject = scene.add({ mesh: Fury.Mesh.create(e.data.mesh), material: atlasMaterial });
-			vec3.add(meshObject.transform.position, meshObject.transform.position, vec3.clone(e.data.offset));
-			meshes.push(meshObject);
-		}
-
 		if (e.data.complete) {
-			$("#progressDisplay").hide();
-			$("#generationParameters").show();
+			generateMeshes(e.data.vorld);
 		}
 	};
 
@@ -201,6 +197,32 @@ var generateVorld = function() {
 		adjustmentFactor: adjustmentFactor
 	});
 };
+
+var generateMeshes = function(vorld) {
+	$("#progressStage").html("Generating Meshes");
+	$("#progressBarInner").width("0%");
+
+	var mesher = new Worker('mesher.js');
+	mesher.onmessage = function(e) {
+		if (e.data.mesh) {
+			var meshObject = scene.add({ mesh: Fury.Mesh.create(e.data.mesh), material: atlasMaterial });
+			vec3.add(meshObject.transform.position, meshObject.transform.position, vec3.clone(e.data.offset));
+			meshes.push(meshObject);
+		}
+		if (e.data.progress != undefined) {
+			$("#progressBarInner").width((e.data.progress * 100) + "%");
+		}
+		if (e.data.complete) {
+			$("#progressDisplay").hide();
+			$("#generationParameters").show();
+		}
+	};
+	mesher.postMessage({
+		areaExtents: areaExtents,
+		areaHeight: areaHeight,
+		chunkData: vorld
+	});
+}
 
 var framesInLastSecond = 0;
 var timeSinceLastFrame = 0;
