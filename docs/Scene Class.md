@@ -2,7 +2,7 @@
 
 The purpose of the scene class is to store objects which need rendering, apply the appropriate render state changes, upload relevant data to the render and minimise these render state changes where possible.
 
-Scene management - e.g. Octrees, BSP, frustrum culling, i.e. visibility handling - is outside this scope and should be handled by a scene graph which the scene class can consume, this will be covered in a separate document.
+Scene management - e.g. Octrees, BSP, frustum culling, i.e. visibility handling - is outside this scope and should be handled by a scene graph which the scene class can consume, this will be covered in a separate document.
 
 ## Data Structures
 
@@ -14,17 +14,17 @@ Note that we’re going to need to a sorting operation every frame / render or a
 
 ## Minimising Render State Changes
 
-Stage 1: 
+Stage 1:
 
 The render loop checks if rebind of information, change of state is necessary (i.e. store current Shader / Material / Mesh Id for the shaderProgram)
 
-Stage 2:	
+Stage 2:
 
 i) Order the render objects when created so they are rendered in an order that minimises rebinds (the most basic of which is by materials and within that by mesh)
 
 ii) Store the materialId / meshId on the render object and check for changes compared to object.material.id, if it changes add it to a list for re-ordering
 
-iii) Take list of items to be reordered and put them back into the correct place in the scene groupings 
+iii) Take list of items to be reordered and put them back into the correct place in the scene groupings
 
 ## Note on Alpha:
 Depth testing only needs to be disabled if there are back faces... simple way to solve this, no back faces allowed.
@@ -37,7 +37,7 @@ Note each individual shader can only use the maximum number of bound shaders, wh
 	E.g. you might find all but on texture was bound, but then when you then bound the last texture you have to make sure you don't replace another texture you needed!
 
 ## Note on ordering:
-The simplest grouping as by having the same material and the same mesh. 
+The simplest grouping as by having the same material and the same mesh.
 
 We can do better!
 	Group materials with the same shaders.
