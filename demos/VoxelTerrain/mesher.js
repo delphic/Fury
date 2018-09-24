@@ -29,55 +29,15 @@ var cubeFaces = {
 };
 
 // Atlas Info
-// TODO: Should be injected
-var atlasSize = [64, 64];
-var atlasPadding = 2;
-var atlasTileSize = 16;
-var tileOffsets = {
-	grass: {
-		side: [1,0],
-		top: [0,0],
-		bottom: [0,1]
-	},
-	soil: {
-		side: [0,1],
-		top: [0,1],
-		bottom: [0,1]
-	},
-	stone: {
-		side: [1,1],
-		top: [1,1],
-		bottom: [1,1]
-	},
-	wood: {
-		side: [1,2],
-		top: [0,2],
-		bottom: [0,2]
-	},
-	leaves: {
-		side: [2,0],
-		top: [2,0],
-		bottom: [2,0]
-	},
-	water: {
-		side: [2,1],
-		top: [2,1],
-		bottom: [2,1]
-	},
-	bedrock: {
-		side: [2,2],
-		top: [2,2],
-		bottom: [2,2],
-	}
-};
+var atlas = VorldConfig.getAtlasInfo();
 
 var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSize) {
-	var tileSize = atlasTileSize;
-	var tilePadding = atlasPadding;
+	var tileSize = atlas.tileSize;
+	var tilePadding = atlas.padding;
 	for(var i = 8 * faceIndex, l = i + 8; i < l; i += 2) {
-		textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlasSize[0];		// s
+		textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlas.size[0];		// s
 		var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
-		textureArray[i+1] = (tileSize * textureArray[i+1] + (atlasSize[1] - pixelsFromTop)) / atlasSize[1]; 	// t
+		textureArray[i+1] = (tileSize * textureArray[i+1] + (atlas.size[1] - pixelsFromTop)) / atlas.size[1]; 	// t
 	}
 };
 
@@ -97,6 +57,8 @@ var buildMesh = function(vorld, chunkI, chunkJ, chunkK) {
 		// Exists?
 		if(!block) { return; }
 
+		// TODO: Change to transformation function
+		// TODO: Move to second pass on world generation for encapulsation?
 		if(block == "soil" && !Vorld.getBlock(vorld, i, j+1, k, chunkI, chunkJ, chunkK)) {
 			block = "grass";
 		}
@@ -135,11 +97,11 @@ var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
 	var vertices, normals, textureCoordinates;
 
 	if(faceIndex == cubeFaces.top) {
-		tile = tileOffsets[block].top;
+		tile = atlas.tileOffsets[block].top;
 	} else if (faceIndex == cubeFaces.bottom) {
-		tile = tileOffsets[block].bottom;
+		tile = atlas.tileOffsets[block].bottom;
 	} else {
-		tile = tileOffsets[block].side;
+		tile = atlas.tileOffsets[block].side;
 	}
 
 	offset = faceIndex * 12;
@@ -154,7 +116,7 @@ var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
 
 	offset = faceIndex * 8;
 	textureCoordinates = cubeJson.textureCoordinates.slice(offset, offset + 8);
-	adjustTextureCoords(textureCoordinates, 0, tile, atlasSize);
+	adjustTextureCoords(textureCoordinates, 0, tile, atlas.size);
 
 	concat(mesh.vertices, vertices);
 	concat(mesh.normals, normals);

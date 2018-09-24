@@ -87,3 +87,69 @@ var Chunk = (function() {
   };
   return exports;
 })();
+
+var VorldConfig = (function() {
+  var exports = {};
+  exports.getBlockType = function(config, value) {
+    // TODO: Return id instead of string
+    if(value < config.thresholds[0]) {
+  		return "";
+    }
+    if(value < config.thresholds[1]) {
+      return "soil";
+    }
+    return "stone";
+  };
+  exports.getShapingFunction = function(config) {
+    // TODO: Switch on requested shaping function type
+    return function(x, y, z) {
+  		return 1 / (config.adjustmentFactor * (y + config.yOffset));
+  	};
+  };
+  exports.getAtlasInfo = function() {
+    // TODO: Build from parameters, perhaps an init from other methods
+    atlas = {};
+    atlas.size = [64, 64];
+    atlas.padding = 2;
+    atlas.tileSize = 16;
+    atlas.tileOffsets = { // TODO: Will need to switch to id look up
+    	grass: {
+    		side: [1,0],
+    		top: [0,0],
+    		bottom: [0,1]
+    	},
+    	soil: {
+    		side: [0,1],
+    		top: [0,1],
+    		bottom: [0,1]
+    	},
+    	stone: {
+    		side: [1,1],
+    		top: [1,1],
+    		bottom: [1,1]
+    	},
+    	wood: {
+    		side: [1,2],
+    		top: [0,2],
+    		bottom: [0,2]
+    	},
+    	leaves: {
+    		side: [2,0],
+    		top: [2,0],
+    		bottom: [2,0]
+    	},
+    	water: {
+    		side: [2,1],
+    		top: [2,1],
+    		bottom: [2,1]
+    	},
+    	bedrock: {
+    		side: [2,2],
+    		top: [2,2],
+    		bottom: [2,2],
+    	}
+    };
+    return atlas;
+  };
+  return exports;
+})();
