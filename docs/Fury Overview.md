@@ -14,7 +14,7 @@ Modular, Testable Code is a strong focus. (Check out [https://ci.testling.com/](
 
 Using a dependency manager browserify, the resulting file(s) should be importable as dependencies themselves.
 
-De Facto Standards or GTFO - This means WebGL and Web Audio API (without fall backs)
+Standards or GTFO - This means WebGL and Web Audio API (without fall backs).
 
 Documentation, Documentation, Documentation
 * Would like a code documentation generation system
@@ -22,9 +22,7 @@ Documentation, Documentation, Documentation
 
 A single vector implementation across rendering, physics and game logic - use glMatrix.
 
-Focus fast JavaScript, low GC (e.g. parameter objects only on init functions (or memoised), avoid creating objects or vectors in frame), without fubaring readability.
-
-_Initial focus will be on the renderer_.
+Focus fast JavaScript, low GC (e.g. parameter objects only on init functions (or memoised), avoid creating objects or vectors in frame), whilst maintaining readability.
 
 
 ## Feature Overview
@@ -36,10 +34,10 @@ _Initial focus will be on the renderer_.
 	* Per Pixel Lighting
 
 ### Targets over Gremlin:
-* The separation of Shader set up code (which requires the gl object) and GLSL code from the rest of the renderer.  The glsl files need to be able to be saved as separate files. The possibility of shader code reuse be kept in mind.
-* A stack of objects to render minimising the number of texture assignments
-* Alpha transparency (and the ordering to allow this properly)
-* Basic scene management (Fustrum Culling)
+* ✓ The separation of Shader set up code (which requires the gl object) and GLSL code from the rest of the renderer.  The glsl files need to be able to be saved as separate files. The possibility of shader code reuse be kept in mind.
+* ✓ A stack of objects to render minimising the number of texture assignments
+* ✓ Alpha transparency (and the ordering to allow this properly)
+* Basic scene management (Frustum Culling)
 * Multi-texturing
 * Specular mapping
 * Normal mapping
@@ -49,27 +47,25 @@ _Initial focus will be on the renderer_.
 * Render to texture
 * Text rendering in WebGL
 
-## Physics
-To be defined...
-
-## Input
-To be defined... (Use of frameworks is acceptable if they don't violate the guiding principles of this project, [GamePad.js](https://github.com/sgraham/gamepad.js/), also see [W3C Gamepad Working Draft](http://www.w3.org/TR/gamepad/))
-
-## Sound
-To be defined... ([Web Audio API](http://www.html5rocks.com/en/tutorials/webaudio/intro/))
+## Physics, Input & Sound
+[Web Audio API](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
+[W3C Gamepad Working Draft](http://www.w3.org/TR/gamepad/)
+_Primary focus is on the renderer_. Physics, Input and Sound helpers may be added as optional modules, will assess as needed by demos / use).
+(Use of libraries is acceptable if they don't violate the guiding principles of this project, e.g. [GamePad.js](https://github.com/sgraham/gamepad.js/)).
 
 ## Demos
-* Arbitary shader demo
-* Simple spinning create demo
-* Instancing / prefab demo
-* Voxel based terrain - minecraft style
-* Voxel based terrain - marching cubes
+[Completed Demos](http://delphic.me.uk/Fury/demos/)
+* ✓ Arbitrary shader demo
+* ✓ Simple spinning create demo
+* ✓ Instancing / prefab demo
+* ✓ Voxel based terrain - MineCraft style
+* Voxel based terrain - surface nets
 * Lighting demo
 * Toon shading demo
 * HTML overlay demo
 * Particles demo
 * Animation demo
-* Partial Minecraft clone - walk around on the generated terrain
+* MineCraft style game - walk around on the generated terrain
 * Texture blending demo - single mesh / patchwork mesh terrain with multiple textures
 
 We'll create separate demo for each set of features, essentially integration tests.
@@ -89,12 +85,12 @@ Try to keep class members public and rely on people using their head (i.e. don't
 
 Avoid the new keyword where-ever possible, use literals, class format is designed accordingly.
 
-Readable variable names, everywhere, no shorthands / abbreviations, avoid Jargon where possible. Only indices are allowed to be single letter.
-* Only exceptions are: extremely oftenly used variables, eg the webGraphicsLibraryContext -> 'gl'; abbreviations which are extremely well known jargon, eg 'fov'
+Readable variable names, everywhere, no short-hands / abbreviations, avoid Jargon where possible. Only indices are allowed to be single letter.
+* Only exceptions are: variables which are used extremely often; e.g. the webGraphicsLibraryContext -> 'gl', and abbreviations which are extremely well known jargon, e.g. 'fov'
 
-No prefixs, that includes private variables with an underscore. If it has an exports assignment or is part of a literal declaration it's public, if not, it's not. Also no prefixing of type, if you want to give the type put the word at the end of the variable name.
+No prefixes, that includes private variables with an underscore. If it has an exports assignment or is part of a literal declaration it's public, if not, it's not. Also no prefixing of type, if you want to give the type put the word at the end of the variable name.
 
-## Class Format
+## Example Class Format
 
 	var Class = module.exports = function() {
 		var exports = {};

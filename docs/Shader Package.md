@@ -8,7 +8,7 @@ Each shader is given by a single .js file which can be imported on build. The JS
 
 Question: Whilst providing the bind function might make our life slightly easier (don't have to remember the gl function to call), it doesn't solve the fundamental problem of requiring different data for each shader and having to retrieve it from somewhere. Because this has to be standardised is there any real benefit to this... there's no real decoupling, the structure of the bind function is always going to be strongly couple to the representation of data in the engine. We can specify how this data is stored and try not to vary it... but I don't think there's anyway around this.
 
-The Real Question: Do we prefer this coupling in the shader setup code or in the renderer? The former I think, so are we justing to pass an object containing everything (bad, GC! Unless these objects are stored) or pass many args (then there's a dependency on the order we pass the data, arguably might as well be an object).
+The Real Question: Do we prefer this coupling in the shader setup code or in the renderer? The former I think, so are we just going to pass an object containing everything (bad, GC! Unless these objects are stored) or pass many args (then there's a dependency on the order we pass the data, arguably might as well be an object).
 
 Structure of Render Object:
 {
@@ -30,16 +30,16 @@ So pretty much how the shader was specified but with values instead of bind func
 > Update - this isn't practical as the structure of the render object should be uniform across different shaders, so the first one should work better and other custom uniforms will need to be event / material driven for bindings
 
 
-This is all very nice, but it's quite literal, we may have to redesign when we try to optimise (e.g. geometry instances, grouping by texture) rather than just binding everything, everytime, every object. Let's cross that bridge when we come to it eh?
+This is all very nice, but it's quite literal, we may have to redesign when we try to optimise (e.g. geometry instances, grouping by texture) rather than just binding everything, every time, every object. Let's cross that bridge when we come to it eh?
 
-Also are we not giving attributes the extra specialness they deserve? Whilst just referencing by name is all very good and generic, the concept of vertex / normals / texture Coords are pretty static. Let's go with the generic and see how it goes, I have a hunch separating them from attributes is sufficient distinction.  
+Also are we not giving attributes the extra specialness they deserve? Whilst just referencing by name is all very good and generic, the concept of vertex / normals / texture coords are pretty static. Let's go with the generic and see how it goes, I have a hunch separating them from attributes is sufficient distinction.
 
 
 ## Which Shaders and How to configure?
 
-Which shaders should we initially include? How many lights do we support (Source doesn't do more than 4) (non-deferred)? 
+Which shaders should we initially include? How many lights do we support (Source doesn't do more than 4) (non-deferred)?
 
-THREE.js & Unity uses materials to specify shader (well unity defo does), in three it chooses to displaying normals / change lighting types (Lamber, Phong), requires investigation to see if it determines shader from material, probably does though, especially given "ShaderMaterial". We should likely emulate, then the material can pass through to the configuration how to specify the various uniforms / attributes, this is where a GUI / game editor would be ideal, keep this in mind when designing, however for now we want a flexible system that should allow us to quickly experiment with shaders.
+THREE.js & Unity uses materials to specify shader (well unity definitely does), in three it chooses to displaying normals / change lighting types (Lamber, Phong), requires investigation to see if it determines shader from material, probably does though, especially given "ShaderMaterial". We should likely emulate, then the material can pass through to the configuration how to specify the various uniforms / attributes, this is where a GUI / game editor would be ideal, keep this in mind when designing, however for now we want a flexible system that should allow us to quickly experiment with shaders.
 
 Start with a textured pixel lit, limit to ambient + directional lights for now (i.e. the ZeroG shader with spot and point lights removed.)
 
@@ -50,11 +50,11 @@ Start with a textured pixel lit, limit to ambient + directional lights for now (
 * Pixel Lit Tinted Textured
 * Mesh Normals
 * (Coloured) Wireframe
-* (Coloured) Point Cloud 
+* (Coloured) Point Cloud
 
 ### Some more advanced Shaders
 
-* Specular 
+* Specular
 * Specular Map
 * Bump/Normal Map
 
@@ -86,4 +86,4 @@ There is possible overlap in our thoughts between 2 and 5 here, in that 2 feels 
 Thought: is the material an instance of the shader program? Or could it be? We should check the question of needing to rebind if you use one program then another.
 If it is an instance of the shader program (1) is not really usable and would have to be grouped with (2)... still you'd hope the total number of materials might be low? That said if we're doing this procedurally there's no reason for that to be true, unless we make it true.
 
-Presumably event driven uniforms should have their update functions attached to the shaderProgram. Arguably we should attach all these functions to the shaderProgram object. 
+Presumably event driven uniforms should have their update functions attached to the shaderProgram. Arguably we should attach all these functions to the shaderProgram object.
