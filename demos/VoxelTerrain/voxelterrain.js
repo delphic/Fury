@@ -69,9 +69,9 @@ var atlasSrc = "expanded_atlas_upscaled.png";
 // when using mipmaps to prevent artifacts at distance.
 
 // Regeneration Variables and form details
-var areaHeight = 1, areaExtents = 2;
+var areaHeight = 2, areaExtents = 3;
 var octaves = [], numOctaves = 4;
-var octaveWeightings = [ 0.5, 0.5, 0.25, 0.1 ];
+var octaveWeightings = [ 0.5, 0.5, 1, 0.1 ];
 var perlin = true;
 var seedString = "XUVNREAZOZJFPQMSAKEMSDJURTQPWEORHZMD";
 var adjustmentFactor = 0.01;
@@ -99,6 +99,9 @@ $(document).ready(function(){
 	$("#hideGenerationForm").click(function() {
 		$("#generationForm").hide();
 		$("#showGenerationForm").show();
+	});
+	$("#hideControls").click(function() {
+		$("#controls").hide();
 	});
 	$("#octaves").change(function(event){
 		$("#octavesDisplay").html(this.value);
@@ -143,7 +146,7 @@ $(document).ready(function(){
 var rotateRate = Math.PI;
 var zoomRate = 16;
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(0.0, 32.0, 128.0) });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
 var scene = Fury.Scene.create({ camera: camera });
 var meshes = [];
 

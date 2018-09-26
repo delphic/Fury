@@ -61,11 +61,25 @@ fieldset input.button {
 	width: 0;
 	background-color: cornflowerblue;
 }
+#controls {
+	display: block;
+	left: 10px;
+	width: 300px;
+}
+
+#controls p {
+	margin: 0.5em 0;
+}
 		</style>
 	</head>
 	<body>
 		<canvas id="fury" oncontextmenu="return false;"></canvas>
 		<script src="voxelterrain.js"></script>
+		<fieldset id="controls">
+				<p>Use WASD to move the camera, and right click and drag to rotate it.</p>
+				<input id="hideControls" class="button" type="button" value="Understood" />
+		</fieldset>
+		<!-- TODO: Hidable Controls -->
 		<fieldset id="generationParameters">
 			<input id="showGenerationForm" class="button" type="button" value="Show Generation Parameters" />
 			<form id="generationForm">

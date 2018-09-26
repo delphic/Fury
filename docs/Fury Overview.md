@@ -48,13 +48,16 @@ Focus fast JavaScript, low GC (e.g. parameter objects only on init functions (or
 * Text rendering in WebGL
 
 ## Physics, Input & Sound
-[Web Audio API](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
-[W3C Gamepad Working Draft](http://www.w3.org/TR/gamepad/)
 _Primary focus is on the renderer_. Physics, Input and Sound helpers may be added as optional modules, will assess as needed by demos / use).
+
+[Web Audio API](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
+
+[W3C Gamepad Working Draft](http://www.w3.org/TR/gamepad/)
+
 (Use of libraries is acceptable if they don't violate the guiding principles of this project, e.g. [GamePad.js](https://github.com/sgraham/gamepad.js/)).
 
 ## Demos
-[Completed Demos](http://delphic.me.uk/Fury/demos/)
+[View Completed Demos](http://delphic.me.uk/Fury/demos/)
 * ✓ Arbitrary shader demo
 * ✓ Simple spinning create demo
 * ✓ Instancing / prefab demo
