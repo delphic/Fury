@@ -35,40 +35,39 @@ var createSeed = function(seedValue) {
 	};
 };
 
-var getBlockType = function(value) {
-  if(value < 0.5) {
-		return "";
-  }
-  if(value < 0.8) {
-    return "soil";
-  }
-  return "stone";
-};
-
 var createChunk = function(offset, octaves, generationArgs) {
   var maxDepth = 16, i, j, k, o, adjust;
   var numOctaves = octaves.length;
   var octaveWeightings = generationArgs.octaveWeightings;
   var baseWavelength = generationArgs.baseWavelength;
-  var adjustmentFactor = generationArgs.adjustmentFactor;
+
+	var vorldConfig = {
+		thresholds: [ 0.5, 0.8 ],
+		adjustmentFactor: generationArgs.adjustmentFactor,
+		yOffset: 0 // This was being calculated as a constant value minus half chunk size, but it comes out as zero
+	};
+	var shapingFunction = VorldConfig.getShapingFunction(vorldConfig);
 
 	var chunk = Chunk.create({ size: 32 });
 
   // Determine blocks from noise function
   for(i = 0; i < chunk.size; i++) {
     for(j = 0; j < chunk.size; j++) {
-      y = j - Math.floor(chunk.size/2.0);
-      adjust = adjustmentFactor * (maxDepth + y + offset[1]);
       for(k = 0; k < chunk.size; k++) {
         var value = 0;
         var totalWeight = 0;
+				var x = i + offset[0], y = j + offset[1], z = k + offset[2];
         for(o = 0; o < numOctaves; o++) {
           var wavelength = Math.pow(2, o);
           totalWeight += octaveWeightings[o];
-          value += octaveWeightings[o] * octaves[o].noise(wavelength*(i + offset[0])/baseWavelength, wavelength*(j + offset[1])/baseWavelength, wavelength*(k + offset[2])/baseWavelength);
+          value += octaveWeightings[o] * octaves[o].noise(
+						wavelength * x / baseWavelength,
+						wavelength * y / baseWavelength,
+						wavelength * z / baseWavelength);
         }
         value /= totalWeight;
-        var block = getBlockType(value / adjust); // value < 0.5 Air, 0.5 - 0.8 Soil, 0.8 - 1.0 Stone
+				value = shapingFunction(x, y, z) * value;
+        var block = VorldConfig.getBlockType(vorldConfig, value);
         Chunk.addBlock(chunk, i, j, k, block)
       }
     }
@@ -90,7 +89,7 @@ onmessage = function(e) {
   var areaExtents = e.data.areaExtents;
   var areaHeight = e.data.areaHeight;
 
-	postMessage({ stage: ""});
+	postMessage({ stage: "" });
 	postMessage({ progress: 0 });
 
   // Generate Chunks
