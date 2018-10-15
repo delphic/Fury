@@ -100,6 +100,12 @@ var VorldConfig = (function() {
     }
     return "stone";
   };
+  exports.getTransformedBlockType = function(block, verticallyAdjacent) {
+    if(block == "soil" && !verticallyAdjacent) {
+      return "grass";
+    }
+    return block;
+  };
   exports.getShapingFunction = function(config) {
     // TODO: Switch on requested shaping function type
     return function(x, y, z) {

@@ -57,11 +57,6 @@ var buildMesh = function(vorld, chunkI, chunkJ, chunkK) {
 		// Exists?
 		if(!block) { return; }
 
-		// TODO: Change to transformation function
-		// TODO: Move to second pass on world generation for encapulsation?
-		if(block == "soil" && !Vorld.getBlock(vorld, i, j+1, k, chunkI, chunkJ, chunkK)) {
-			block = "grass";
-		}
 		// For Each Direction : Is Edge? Add quad to mesh!
 		// Front
 		if(!Vorld.getBlock(vorld, i, j, k+1, chunkI, chunkJ, chunkK)) {
