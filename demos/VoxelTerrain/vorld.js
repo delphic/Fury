@@ -19,20 +19,19 @@ var Vorld = (function() {
       blockI = vorld.chunkSize + blockI;
       chunkI -= 1;
     }
-    // Due to some madness, chunk k is y axis, and chunk j is z axis...
     if (blockJ >= vorld.chunkSize) {
       blockJ = blockJ - vorld.chunkSize;
-      chunkK += 1;
+      chunkJ += 1;
     } else if (blockJ < 0) {
       blockJ = vorld.chunkSize + blockJ;
-      chunkK -= 1;
+      chunkJ -= 1;
     }
     if (blockK >= vorld.chunkSize) {
       blockK = blockK - vorld.chunkSize;
-      chunkJ += 1;
+      chunkK += 1;
     } else if (blockK < 0) {
       blockK = vorld.chunkSize + blockK;
-      chunkJ -= 1;
+      chunkK -= 1;
     }
 
     var chunk = Vorld.getChunk(vorld, chunkI, chunkJ, chunkK);

@@ -82,8 +82,7 @@ var runAdjacenyTransformations = function(vorld, chunk, offset) {
 		for(j = 0; j < chunk.size; j++) {
 			for(k = 0; k < chunk.size; k++) {
 				var block = Chunk.getBlock(chunk, i, j, k);
-				// More j / k madness
-				var verticallyAdjacent = Vorld.getBlock(vorld, i, j+1, k, offset[0], offset[2], offset[1]);
+				var verticallyAdjacent = Vorld.getBlock(vorld, i, j+1, k, offset[0], offset[1], offset[2]);
 				block = VorldConfig.getTransformedBlockType(block, verticallyAdjacent);
 				Chunk.addBlock(chunk, i, j, k, block);
 			}
@@ -112,11 +111,11 @@ onmessage = function(e) {
 	var totalIterations = (2 * areaExtents + 1) * (2 * areaExtents + 1) * areaHeight;
   var chunkOffset = [];
   for(var i = -areaExtents; i <= areaExtents; i++) {
-    for (var j = -areaExtents; j <= areaExtents; j++) {
-      for(var k = areaHeight - 1; k >= 0; k--) {
+    for (var k = -areaExtents; k <= areaExtents; k++) {
+      for(var j = areaHeight - 1; j >= 0; j--) {
         chunkOffset[0] = i;
-        chunkOffset[1] = k;
-        chunkOffset[2] = j;
+        chunkOffset[1] = j;
+        chunkOffset[2] = k;
 
         var chunk = createChunk(vorld, chunkOffset, octaves, e.data);
         Vorld.addChunk(vorld, chunk, i, j, k);

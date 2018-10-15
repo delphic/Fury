@@ -149,14 +149,14 @@ onmessage = function(e) {
   iteration = 0;
   // Create Meshes
   for(var i = -areaExtents; i <= areaExtents; i++) {
-    for (var j = -areaExtents; j <= areaExtents; j++) {
-      for(var k = areaHeight - 1; k >= 0; k--) {
+    for (var k = -areaExtents; k <= areaExtents; k++) {
+      for(var j = areaHeight - 1; j >= 0; j--) {
         var mesh = buildMesh(vorld, i, j, k);
         iteration++;
         if (mesh.indices.length > 0) {
           postMessage({
             mesh: mesh,
-            offset: [i * vorld.chunkSize, k * vorld.chunkSize, j * vorld.chunkSize],
+            offset: [i * vorld.chunkSize, j * vorld.chunkSize, k * vorld.chunkSize],
             progress: iteration / totalIterations
           });
         } else {
