@@ -45,6 +45,7 @@ var shader = Fury.Shader.create({
 			"vNormal = aVertexNormal;",
 			// HACK: boxes aren't axis aligned, so offset by half
 			"vWorldPosition = uMMatrix * vec4(aVertexPosition + vec3(0.5,0.5,0.5), 1.0);",
+			// ^^ May not even need world Matrix as it's all axis aligned anyway
 			"vLightWeight = 0.5 + 0.5 * max(dot(aVertexNormal, normalize(vec3(-1.0, 2.0, 1.0))), 0.0);",
 		"}"].join('\n'),
 	fsSource: [
@@ -60,20 +61,19 @@ var shader = Fury.Shader.create({
 // Atlas is 64 by 64 padding of 2 tile size of 16
 
 		"void main(void) {",
+				// World Space Lookup
+				"vec3 pos = fract(vWorldPosition.xyz);",
+
 				// World Position Visualisation
-				// "gl_FragColor = vec4(fract(vWorldPosition.xyz), 1.0);",
+				// "gl_FragColor = vec4(pos, 1.0);",
 
 				// World Normal Visualisation
 				// "gl_FragColor = vec4(abs(vNormal), 1.0);",
 
-				// World Space Lookup
-				"vec3 pos = fract(vWorldPosition.xyz);",
 
 				// So I think this fract is causing issues with the mipmaps
 				// as the samples wrap so pick too small a mipmap,
-				// I wonder if it's possible to adjust the world coordinates in the vertex shader
-				// so don't need to fract then it doesn't wrap and can sample negatively
-
+				// can't not use fract without breaking use with larger quads
 				// May still need to generate own mipmaps to prevent bleeding in the mipmaps
 				// https://0fps.net/2013/07/09/texture-atlases-wrapping-and-mip-mapping/
 				// Don't know how well this'll interact with the anisotropic filtering ext
