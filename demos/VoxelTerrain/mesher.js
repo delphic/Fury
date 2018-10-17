@@ -35,9 +35,13 @@ var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSiz
 	var tileSize = atlas.tileSize;
 	var tilePadding = atlas.padding;
 	for(var i = 8 * faceIndex, l = i + 8; i < l; i += 2) {
+		// uv mapping
 		textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlas.size[0];		// s
 		var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
 		textureArray[i+1] = (tileSize * textureArray[i+1] + (atlas.size[1] - pixelsFromTop)) / atlas.size[1]; 	// t
+		// tile lookup
+		// textureArray[i] = tileOffset[0] + 0.5;
+		// textureArray[i+1] = tileOffset[1] + 0.5;
 	}
 };
 

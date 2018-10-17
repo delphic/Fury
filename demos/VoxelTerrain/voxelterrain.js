@@ -28,37 +28,96 @@ var shader = Fury.Shader.create({
 	vsSource: [
 		"attribute vec3 aVertexPosition;",
 		"attribute vec2 aTextureCoord;",
+		"attribute vec3 aVertexNormal;",
 
 		"uniform mat4 uMVMatrix;",
 		"uniform mat4 uPMatrix;",
+		"uniform mat4 uMMatrix;",
 
 		"varying vec2 vTextureCoord;",
+		"varying vec4 vWorldPosition;",
+		"varying vec3 vNormal;",
+		"varying float vLightWeight;",
+
 		"void main(void) {",
 			"gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
 			"vTextureCoord = aTextureCoord;",
+			"vNormal = aVertexNormal;",
+			// HACK: boxes aren't axis aligned, so offset by half
+			"vWorldPosition = uMMatrix * vec4(aVertexPosition + vec3(0.5,0.5,0.5), 1.0);",
+			"vLightWeight = 0.5 + 0.5 * max(dot(aVertexNormal, normalize(vec3(-1.0, 2.0, 1.0))), 0.0);",
 		"}"].join('\n'),
 	fsSource: [
 		"precision mediump float;",
 
 		"varying vec2 vTextureCoord;",
+		"varying vec4 vWorldPosition;",
+		"varying vec3 vNormal;",
+		"varying float vLightWeight;",
 
 		"uniform sampler2D uSampler;",
 
+// Atlas is 64 by 64 padding of 2 tile size of 16
+
 		"void main(void) {",
-			"gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));",
+				// World Position Visualisation
+				// "gl_FragColor = vec4(fract(vWorldPosition.xyz), 1.0);",
+
+				// World Normal Visualisation
+				// "gl_FragColor = vec4(abs(vNormal), 1.0);",
+
+				// World Space Lookup
+				"vec3 pos = fract(vWorldPosition.xyz);",
+
+				// So I think this fract is causing issues with the mipmaps
+				// as the samples wrap so pick too small a mipmap,
+				// I wonder if it's possible to adjust the world coordinates in the vertex shader
+				// so don't need to fract then it doesn't wrap and can sample negatively
+
+				// May still need to generate own mipmaps to prevent bleeding in the mipmaps
+				// https://0fps.net/2013/07/09/texture-atlases-wrapping-and-mip-mapping/
+				// Don't know how well this'll interact with the anisotropic filtering ext
+
+				// 0FPS' technique, doesn't appear to orentiate correctly
+				//"vec2 lookup = fract(vec2(dot(vNormal.zxy, vWorldPosition.xyz), dot(vNormal.yzx, vWorldPosition.xyz)));",
+
+				"vec2 lookup = abs(vNormal.x) * pos.zy + abs(vNormal.y) * pos.xz + abs(vNormal.z) * pos.xy;",
+				"float tileX = floor(vTextureCoord.s);",
+				"float tileY = floor(vTextureCoord.t);",
+
+				// Old tile lookup
+				//"float tileX = floor(vTextureCoord.s * 64.0/18.0);",
+				//"float tileY = floor(64.0/18.0 * (1.0 - vTextureCoord.t));",
+				// This caused seams in tile lookup visualisation, so have adjusted uv generation to pick tile
+
+				// Tile Lookup Visualisation
+				//"vec4 color = vec4(tileX,tileY,0.0,1.0);",
+
+				// Texture lookup from tile (hardcoded altas size + padding)
+				"float s = ((16.0 + 2.0) * tileX + (16.0 * lookup.x))/64.0;",
+				"float t = (64.0 - ((16.0 + 2.0) * tileY + (16.0 * (1.0 - lookup.y)) ) )/64.0;",
+				// "vec4 color = texture2D(uSampler, vec2(s, t));",
+
+				// Direct UV lookup
+				"vec4 color = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));",
+
+				"gl_FragColor = vec4(vLightWeight * color.rgb, color.a);",
 		"}"].join('\n'),
 		attributeNames: [ "aVertexPosition", "aVertexNormal", "aTextureCoord" ],
-		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uMMatrix", "uSampler" ],
 		textureUniformNames: [ "uSampler" ],
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
+		mMatrixUniformName: "uMMatrix",
 		bindMaterial: function(material) {
 			this.enableAttribute("aVertexPosition");
 			this.enableAttribute("aTextureCoord");
+			this.enableAttribute("aVertexNormal");
 		},
 		bindBuffers: function(mesh) {
 			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
 			this.setAttribute("aTextureCoord", mesh.textureBuffer);		// This would be unnecessary with a 'cube-voxel' shader
+			this.setAttribute("aVertexNormal", mesh.normalBuffer);
 			this.setIndexedAttribute(mesh.indexBuffer);
 		}
 });
