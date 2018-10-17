@@ -6,7 +6,7 @@ var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas) {
 	gl = canvas.getContext('webgl');
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);	// TODO: Make configurable
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
 	gl.enable(gl.CULL_FACE);  // TODO: expose as method
 
