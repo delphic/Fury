@@ -4,9 +4,7 @@
 // One mesh per 32 cubic 'chunk' of voxels.
 // Uses texture coordinates and an atlas to allow for multiple voxel types in
 // a single texture.
-// An improvement would a be a shader that determined texture cordinates from
-// world position and did not require texture coordinates, this would open the
-// door for meshing optimisations, such as "greedy" meshing.
+// Has option of outputing texture coordinates as a tile lookup rather than uv mapping
 
 // TODO: Separate Mesher logic from worker logic (so that can be done sync or async)
 importScripts('vorld.js');
@@ -31,17 +29,21 @@ var cubeFaces = {
 // Atlas Info
 var atlas = VorldConfig.getAtlasInfo();
 
-var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSize) {
+var adjustTextureCoords = function(textureArray, faceIndex, tileOffset) {
 	var tileSize = atlas.tileSize;
 	var tilePadding = atlas.padding;
 	for(var i = 8 * faceIndex, l = i + 8; i < l; i += 2) {
-		// uv mapping
-		textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlas.size[0];		// s
-		var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
-		textureArray[i+1] = (tileSize * textureArray[i+1] + (atlas.size[1] - pixelsFromTop)) / atlas.size[1]; 	// t
-		// tile lookup
-		// textureArray[i] = tileOffset[0] + 0.5;
-		// textureArray[i+1] = tileOffset[1] + 0.5;
+		if (atlas.greedy) {
+			// tile lookup
+			textureArray[i] = tileOffset[0] + 0.5;
+			textureArray[i+1] = tileOffset[1] + 0.5;
+
+		} else {
+			// uv mapping
+			textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlas.size[0];		// s
+			var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
+			textureArray[i+1] = (tileSize * textureArray[i+1] + (atlas.size[1] - pixelsFromTop)) / atlas.size[1]; 	// t
+		}
 	}
 };
 
@@ -115,7 +117,7 @@ var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
 
 	offset = faceIndex * 8;
 	textureCoordinates = cubeJson.textureCoordinates.slice(offset, offset + 8);
-	adjustTextureCoords(textureCoordinates, 0, tile, atlas.size);
+	adjustTextureCoords(textureCoordinates, 0, tile);
 
 	concat(mesh.vertices, vertices);
 	concat(mesh.normals, normals);

@@ -114,6 +114,7 @@ var VorldConfig = (function() {
   exports.getAtlasInfo = function() {
     // TODO: Build from parameters, perhaps an init from other methods
     atlas = {};
+    atlas.greedy = false;
     atlas.size = [64, 64];
     atlas.padding = 2;
     atlas.tileSize = 16;
