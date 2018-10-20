@@ -10,7 +10,31 @@ var Vorld = (function() {
     }
     return null;
   };
-  exports.getBlock = function(vorld, blockI, blockJ, blockK, chunkI, chunkJ, chunkK) {
+  exports.addBlock = function(vorld, x, y, z, block) {
+    var size = vorld.chunkSize;
+    var chunkI = Math.floor(x / size),
+      chunkJ = Math.floor(y / size),
+      chunkK = Math.floor(z / size);
+    var blockI = x - (chunkI * size),
+      blockJ = y - (chunkJ * size),
+      blockK = z - (chunkK * size);
+    var chunk = exports.getChunk(vorld, chunkI, chunkJ, chunkK);
+    if (!chunk) {
+      chunk = Chunk.create({ size: vorld.chunkSize });
+    }
+    Chunk.addBlock(chunk, blockI, blockJ, blockK, block);
+  };
+  exports.getBlock = function(vorld, x, y, z) {
+    var size = vorld.chunkSize;
+    var chunkI = Math.floor(x / size),
+      chunkJ = Math.floor(y / size),
+      chunkK = Math.floor(z / size);
+    var blockI = x - (chunkI * size),
+      blockJ = y - (chunkJ * size),
+      blockK = z - (chunkK * size);
+    return exports.getBlock(vorld, blockI, blockJ, blockK, chunkI, chunkJ, chunkK);
+  };
+  exports.getBlockByIndex = function(vorld, blockI, blockJ, blockK, chunkI, chunkJ, chunkK) {
     // Assumes you won't go out by more than chunkSize
     if (blockI >= vorld.chunkSize) {
       blockI = blockI - vorld.chunkSize;

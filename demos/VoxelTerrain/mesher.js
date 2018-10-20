@@ -65,27 +65,27 @@ var buildMesh = function(vorld, chunkI, chunkJ, chunkK) {
 
 		// For Each Direction : Is Edge? Add quad to mesh!
 		// Front
-		if(!Vorld.getBlock(vorld, i, j, k+1, chunkI, chunkJ, chunkK)) {
+		if(!Vorld.getBlockByIndex(vorld, i, j, k+1, chunkI, chunkJ, chunkK)) {
 			addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
 		}
 		// Back
-		if(!Vorld.getBlock(vorld, i, j, k-1, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i, j, k-1, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
 		}
 		// Top
-		if(!Vorld.getBlock(vorld, i, j+1, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i, j+1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
 		}
 		// Bottom
-		if(!Vorld.getBlock(vorld, i, j-1, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i, j-1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
 		}
 		// Right
-		if(!Vorld.getBlock(vorld, i+1, j, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i+1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
 		}
 		// Left
-		if(!Vorld.getBlock(vorld, i-1, j, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i-1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
 		}
 	});

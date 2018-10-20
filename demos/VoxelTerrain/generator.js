@@ -82,7 +82,7 @@ var runAdjacenyTransformations = function(vorld, chunk, offset) {
 		for(j = 0; j < chunk.size; j++) {
 			for(k = 0; k < chunk.size; k++) {
 				var block = Chunk.getBlock(chunk, i, j, k);
-				var verticallyAdjacent = Vorld.getBlock(vorld, i, j+1, k, offset[0], offset[1], offset[2]);
+				var verticallyAdjacent = Vorld.getBlockByIndex(vorld, i, j+1, k, offset[0], offset[1], offset[2]);
 				block = VorldConfig.getTransformedBlockType(block, verticallyAdjacent);
 				Chunk.addBlock(chunk, i, j, k, block);
 			}
