@@ -147,30 +147,23 @@ var forEachBlock = function(chunk, delegate) {
 };
 
 onmessage = function(e) {
-  var areaExtents = e.data.areaExtents;
-  var areaHeight = e.data.areaHeight;
   var vorld = e.data.chunkData;
 
-	var totalIterations = (2 * areaExtents + 1) * (2 * areaExtents + 1) * areaHeight;
-  iteration = 0;
   // Create Meshes
-  for(var i = -areaExtents; i <= areaExtents; i++) {
-    for (var k = -areaExtents; k <= areaExtents; k++) {
-      for(var j = areaHeight - 1; j >= 0; j--) {
-        var mesh = buildMesh(vorld, i, j, k);
-        iteration++;
-        if (mesh.indices.length > 0) {
-          postMessage({
-            mesh: mesh,
-            offset: [i * vorld.chunkSize, j * vorld.chunkSize, k * vorld.chunkSize],
-            progress: iteration / totalIterations
-          });
-        } else {
-          postMessage({ progress: iteration / totalIterations });
-        }
-      }
-    }
-  }
+	var keys = Object.keys(vorld.chunks);
+	for(var i = 0, l = keys.length; i < l; i++) {
+		var indices = vorld.chunks[keys[i]].indices;
+		var mesh = buildMesh(vorld, indices[0], indices[1], indices[2]);
+		if (mesh.indices.length > 0) {
+			postMessage({
+				mesh: mesh,
+				offset: [indices[0] * vorld.chunkSize, indices[1] * vorld.chunkSize, indices[2] * vorld.chunkSize],
+				progress: i / l
+			});
+		} else {
+			postMessage({ progress: i / l });
+		}
+	}
 
   postMessage({ complete: true });
 };

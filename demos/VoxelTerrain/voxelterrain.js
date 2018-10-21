@@ -188,8 +188,6 @@ var generateMeshes = function(vorld) {
 		}
 	};
 	mesher.postMessage({
-		areaExtents: areaExtents,
-		areaHeight: areaHeight,
 		chunkData: vorld
 	});
 }
