@@ -85,6 +85,8 @@ var VoxelShader = (function() {
             // https://0fps.net/2013/07/09/texture-atlases-wrapping-and-mip-mapping/
             // Don't know how well this'll interact with the anisotropic filtering ext
 
+            // Would this extension be helpful https://developer.mozilla.org/en-US/docs/Web/API/EXT_shader_texture_lod
+
             "vec2 lookup = abs(vNormal.x) * pos.zy + abs(vNormal.y) * pos.xz + abs(vNormal.z) * pos.xy;",
             "float tileX = floor(vTextureCoord.s);",
             "float tileY = floor(vTextureCoord.t);",
