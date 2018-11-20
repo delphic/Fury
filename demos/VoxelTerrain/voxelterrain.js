@@ -24,49 +24,16 @@ updateCanvasSize();
 Fury.init("fury");
 var Input = Fury.Input;
 
-var shader = Fury.Shader.create({
-	vsSource: [
-		"attribute vec3 aVertexPosition;",
-		"attribute vec2 aTextureCoord;",
-
-		"uniform mat4 uMVMatrix;",
-		"uniform mat4 uPMatrix;",
-
-		"varying vec2 vTextureCoord;",
-		"void main(void) {",
-			"gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
-			"vTextureCoord = aTextureCoord;",
-		"}"].join('\n'),
-	fsSource: [
-		"precision mediump float;",
-
-		"varying vec2 vTextureCoord;",
-
-		"uniform sampler2D uSampler;",
-
-		"void main(void) {",
-			"gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));",
-		"}"].join('\n'),
-		attributeNames: [ "aVertexPosition", "aVertexNormal", "aTextureCoord" ],
-		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
-		textureUniformNames: [ "uSampler" ],
-		pMatrixUniformName: "uPMatrix",
-		mvMatrixUniformName: "uMVMatrix",
-		bindMaterial: function(material) {
-			this.enableAttribute("aVertexPosition");
-			this.enableAttribute("aTextureCoord");
-		},
-		bindBuffers: function(mesh) {
-			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
-			this.setAttribute("aTextureCoord", mesh.textureBuffer);		// This would be unnecessary with a 'cube-voxel' shader
-			this.setIndexedAttribute(mesh.indexBuffer);
-		}
-});
+var atlas = VorldConfig.getAtlasInfo();
+var shader = Fury.Shader.create(VoxelShader.create(atlas));
 
 var atlasMaterial = Fury.Material.create({ shader: shader });
 var atlasSrc = "expanded_atlas_upscaled.png";
 // Use upscaled texture to allow for reasonable resolution closeup
 // when using mipmaps to prevent artifacts at distance.
+
+// TODO: Ideally take minimal sized atlas with no padding then use canvas2D
+// to generate atlas upscaled + padded as demanded by atlas config
 
 // Regeneration Variables and form details
 var areaHeight = 2, areaExtents = 3;
@@ -221,8 +188,6 @@ var generateMeshes = function(vorld) {
 		}
 	};
 	mesher.postMessage({
-		areaExtents: areaExtents,
-		areaHeight: areaHeight,
 		chunkData: vorld
 	});
 }

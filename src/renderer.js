@@ -6,7 +6,7 @@ var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas) {
 	gl = canvas.getContext('webgl');
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);	// TODO: Make configurable
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
 	gl.enable(gl.CULL_FACE);  // TODO: expose as method
 
@@ -114,8 +114,17 @@ exports.createTexture = function(source, quality, clamp) {
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 
+	// To manually create levels need to add more gl.texImage2D using more levels
+	// May also need to texParameteri gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0
+	// and texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, <whatever the max is here>
+	// Q are the consts here correct? and what should the max be?
+	// Could just check if source is an array and if it is run several textures levels
+	// Should check out the 0fps implementation
+
 	if (quality === TextureQuality.Pixel) {
 		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
+		// Might be able to use dFdx / dFdy to determine MIPMAP level and use two textures
+		// and blend the samples based of if it'd be mipmap level 0 or not
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 		if (anisotropyExt) {

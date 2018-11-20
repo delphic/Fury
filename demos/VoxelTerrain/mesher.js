@@ -4,9 +4,7 @@
 // One mesh per 32 cubic 'chunk' of voxels.
 // Uses texture coordinates and an atlas to allow for multiple voxel types in
 // a single texture.
-// An improvement would a be a shader that determined texture cordinates from
-// world position and did not require texture coordinates, this would open the
-// door for meshing optimisations, such as "greedy" meshing.
+// Has option of outputing texture coordinates as a tile lookup rather than uv mapping
 
 // TODO: Separate Mesher logic from worker logic (so that can be done sync or async)
 importScripts('vorld.js');
@@ -31,13 +29,21 @@ var cubeFaces = {
 // Atlas Info
 var atlas = VorldConfig.getAtlasInfo();
 
-var adjustTextureCoords = function(textureArray, faceIndex, tileOffset, atlasSize) {
+var adjustTextureCoords = function(textureArray, faceIndex, tileOffset) {
 	var tileSize = atlas.tileSize;
 	var tilePadding = atlas.padding;
 	for(var i = 8 * faceIndex, l = i + 8; i < l; i += 2) {
-		textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlas.size[0];		// s
-		var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
-		textureArray[i+1] = (tileSize * textureArray[i+1] + (atlas.size[1] - pixelsFromTop)) / atlas.size[1]; 	// t
+		if (atlas.greedy) {
+			// tile lookup
+			textureArray[i] = tileOffset[0] + 0.5;
+			textureArray[i+1] = tileOffset[1] + 0.5;
+
+		} else {
+			// uv mapping
+			textureArray[i] = (tileSize * (textureArray[i] + tileOffset[0]) + tilePadding * tileOffset[0])  / atlas.size[0];		// s
+			var pixelsFromTop = tileSize * (tileOffset[1] + 1) + tilePadding * tileOffset[1];
+			textureArray[i+1] = (tileSize * textureArray[i+1] + (atlas.size[1] - pixelsFromTop)) / atlas.size[1]; 	// t
+		}
 	}
 };
 
@@ -57,34 +63,29 @@ var buildMesh = function(vorld, chunkI, chunkJ, chunkK) {
 		// Exists?
 		if(!block) { return; }
 
-		// TODO: Change to transformation function
-		// TODO: Move to second pass on world generation for encapulsation?
-		if(block == "soil" && !Vorld.getBlock(vorld, i, j+1, k, chunkI, chunkJ, chunkK)) {
-			block = "grass";
-		}
 		// For Each Direction : Is Edge? Add quad to mesh!
 		// Front
-		if(!Vorld.getBlock(vorld, i, j, k+1, chunkI, chunkJ, chunkK)) {
+		if(!Vorld.getBlockByIndex(vorld, i, j, k+1, chunkI, chunkJ, chunkK)) {
 			addQuadToMesh(mesh, block, cubeFaces.front, x, y, z);
 		}
 		// Back
-		if(!Vorld.getBlock(vorld, i, j, k-1, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i, j, k-1, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.back, x, y, z);
 		}
 		// Top
-		if(!Vorld.getBlock(vorld, i, j+1, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i, j+1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.top, x, y, z);
 		}
 		// Bottom
-		if(!Vorld.getBlock(vorld, i, j-1, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i, j-1, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.bottom, x, y, z);
 		}
 		// Right
-		if(!Vorld.getBlock(vorld, i+1, j, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i+1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.right, x, y, z);
 		}
 		// Left
-		if(!Vorld.getBlock(vorld, i-1, j, k, chunkI, chunkJ, chunkK)){
+		if(!Vorld.getBlockByIndex(vorld, i-1, j, k, chunkI, chunkJ, chunkK)){
 			addQuadToMesh(mesh, block, cubeFaces.left, x, y, z);
 		}
 	});
@@ -116,7 +117,7 @@ var addQuadToMesh = function(mesh, block, faceIndex, x, y, z) {
 
 	offset = faceIndex * 8;
 	textureCoordinates = cubeJson.textureCoordinates.slice(offset, offset + 8);
-	adjustTextureCoords(textureCoordinates, 0, tile, atlas.size);
+	adjustTextureCoords(textureCoordinates, 0, tile);
 
 	concat(mesh.vertices, vertices);
 	concat(mesh.normals, normals);
@@ -146,30 +147,23 @@ var forEachBlock = function(chunk, delegate) {
 };
 
 onmessage = function(e) {
-  var areaExtents = e.data.areaExtents;
-  var areaHeight = e.data.areaHeight;
   var vorld = e.data.chunkData;
 
-	var totalIterations = (2 * areaExtents + 1) * (2 * areaExtents + 1) * areaHeight;
-  iteration = 0;
   // Create Meshes
-  for(var i = -areaExtents; i <= areaExtents; i++) {
-    for (var j = -areaExtents; j <= areaExtents; j++) {
-      for(var k = areaHeight - 1; k >= 0; k--) {
-        var mesh = buildMesh(vorld, i, j, k);
-        iteration++;
-        if (mesh.indices.length > 0) {
-          postMessage({
-            mesh: mesh,
-            offset: [i * vorld.chunkSize, k * vorld.chunkSize, j * vorld.chunkSize],
-            progress: iteration / totalIterations
-          });
-        } else {
-          postMessage({ progress: iteration / totalIterations });
-        }
-      }
-    }
-  }
+	var keys = Object.keys(vorld.chunks);
+	for(var i = 0, l = keys.length; i < l; i++) {
+		var indices = vorld.chunks[keys[i]].indices;
+		var mesh = buildMesh(vorld, indices[0], indices[1], indices[2]);
+		if (mesh.indices.length > 0) {
+			postMessage({
+				mesh: mesh,
+				offset: [indices[0] * vorld.chunkSize, indices[1] * vorld.chunkSize, indices[2] * vorld.chunkSize],
+				progress: i / l
+			});
+		} else {
+			postMessage({ progress: i / l });
+		}
+	}
 
   postMessage({ complete: true });
 };

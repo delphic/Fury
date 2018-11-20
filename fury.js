@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 // glMatrix assumed Global
 var Camera = module.exports = function() {
 	var exports = {};
@@ -7,8 +7,8 @@ var Camera = module.exports = function() {
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
 		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
-				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3],
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
 				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
 		},
@@ -57,7 +57,7 @@ var Camera = module.exports = function() {
 		}
 		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
 
 		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
 
@@ -112,14 +112,14 @@ var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
 	// This does of course slow removal, so this structure should
-	// be used for arrays where you want to enumerate a lot and
-	// also want references that do not go out of date when
+	// be used for arrays where you want to enumerate a lot and 
+	// also want references that do not go out of date when 
 	// you remove an item (which is hopefully rarely).
 
-	// Please note, again for purposes of speed and ease of use
+	// Please note, again for purposes of speed and ease of use 
 	// this structure adds the key of the item to the id property on items added
 	// this eases checking for duplicates and if you have the only reference
-	// you can still remove it from the list or check if it is in the list.
+	// you can still remove it from the list or check if it is in the list. 
 	var exports = {};
 	var nextKey = 1;
 
@@ -516,7 +516,7 @@ var Mesh = module.exports = function(){
 			copy.indices = mesh.indices.slice(0);
 			copy.updateIndexBuffer();
 		}
-
+		
 		return copy;
 	};
 
@@ -531,7 +531,7 @@ var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas) {
 	gl = canvas.getContext('webgl');
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);	// TODO: Make configurable
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
 	gl.enable(gl.CULL_FACE);  // TODO: expose as method
 
@@ -882,7 +882,7 @@ var Scene = module.exports = function() {
 		var cameraNames = [];
 		var mainCameraName = "main";
 		// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
-		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
+		var pMatrix = mat4.create(), mvMatrix = mat4.create(), nMatrix = mat3.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
 		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 		var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
@@ -1173,8 +1173,17 @@ var Scene = module.exports = function() {
 			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 			mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
 			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
+			if (shader.mMatrixUniformName) {
+				// TODO: Arguably should send either MV Matrix or M and V Matrices
+				r.setUniformMatrix4(shader.mMatrixUniformName, mvMatrix);
+			}
 			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
+
+			if (shader.nMatrixUniformName) {
+				mat3.normalFromMat4(mvMatrix, nMatrix);
+				r.setUniformMatrix3(shader.nMatrixUniformName, nMatrix);
+			}
 
 			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
@@ -1188,6 +1197,7 @@ var Scene = module.exports = function() {
 
 	return exports;
 }();
+
 },{"./indexedMap":3,"./material":5,"./mesh":6,"./renderer":7,"./transform":10}],9:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
@@ -1245,6 +1255,8 @@ var Shader = module.exports = function() {
 
 		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
 		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
+		shader.nMatrixUniformName = parameters.nMatrixUniformName;
+		shader.mMatrixUniformName = parameters.mMatrixUniformName;
 
 		// TODO: decide how to deal with non-standard uniforms
 
@@ -1253,6 +1265,7 @@ var Shader = module.exports = function() {
 
 	return exports;
 }();
+
 },{"./renderer":7}],10:[function(require,module,exports){
 var Transform = module.exports = function() {
 	var exports = {};

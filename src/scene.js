@@ -16,14 +16,14 @@ var Scene = module.exports = function() {
 	var materials = indexedMap.create();
 	var shaders = indexedMap.create();
 	var textures = indexedMap.create();
-	
+
 	var create = exports.create = function(parameters) {
 		var sceneId = (nextSceneId++).toString();
 		var cameras = {};
 		var cameraNames = [];
 		var mainCameraName = "main";
 		// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
-		var pMatrix = mat4.create(), mvMatrix = mat4.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
+		var pMatrix = mat4.create(), mvMatrix = mat4.create(), nMatrix = mat3.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
 		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 		var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
@@ -44,7 +44,7 @@ var Scene = module.exports = function() {
 					textures.add(texture);
 					bindTextureToLocation(texture);
 				}
-				
+
 			}
 		};
 
@@ -86,7 +86,7 @@ var Scene = module.exports = function() {
 			}
 		};
 
-		// Add Object 
+		// Add Object
 		// TODO: RenderObject / Component should have its own class
 		scene.add = function(parameters) {
 			var object = {};
@@ -96,7 +96,7 @@ var Scene = module.exports = function() {
 
 			object.material = parameters.material;
 			object.mesh = parameters.mesh;
-			
+
 			object.meshId = meshes.add(object.mesh);
 			object.materialId = materials.add(object.material);
 			object.shaderId = shaders.add(object.material.shader);
@@ -104,13 +104,13 @@ var Scene = module.exports = function() {
 			addTexturesToScene(object.material);
 
 			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
-			// Should be adding a renderer component to said concept (?) 
+			// Should be adding a renderer component to said concept (?)
 			object.transform = Transform.create(parameters);
 
 			object.sceneId = renderObjects.add(object);
 			object.remove = function() {
 				renderObjects.remove(this.sceneId);
-				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete 
+				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
 			}; // TODO: Move to prototype
 			return object;
 		};
@@ -177,7 +177,7 @@ var Scene = module.exports = function() {
 			alphaRenderObjects.length = 0;
 			// Simple checks for now - no ordering
 
-			// TODO: Scene Graph  
+			// TODO: Scene Graph
 			// Batched first by Shader
 			// Then by Material
 			// Then by Mesh
@@ -190,7 +190,7 @@ var Scene = module.exports = function() {
 			r.clear();
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
-			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements 
+			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var renderObject = renderObjects[renderObjects.keys[i]];
 				if(renderObject.material.alpha) {
@@ -223,13 +223,13 @@ var Scene = module.exports = function() {
 			var shader = object.material.shader;
 			var material = object.material;
 			var mesh = object.mesh;
-			// BUG: 
+			// BUG:
 			// If there's only one material or one mesh in the scene real time changes to the material or mesh will not present themselves as the id will still match the currently bound
 			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case. (should probably be called forceRebind as it 'might' be rebound anyway)
 			// Having now determined that actually we don't need to rebind uniforms when switching shader programs, we'll need this flag whenever there's only one mesh or material using a given shader.
 
 			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
-			// as this indicates that this object needs reording in the graph (as it's been changed). 
+			// as this indicates that this object needs reording in the graph (as it's been changed).
 
 			var shaderChanged = false;
 			var materialChanged = false;
@@ -264,14 +264,14 @@ var Scene = module.exports = function() {
 			}
 
 			if(shaderChanged || materialChanged) {
-				// Texture Rebinding dependencies 
+				// Texture Rebinding dependencies
 				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniforms have changed since the shaderProgram was last used...
 					// NOTE Large Changes needed because of this
 					// I think we're just going to have to add a flag to materials and meshes to say "rebind" (because I've changed something)
-					// This also means we should move the "currentMeshId / currentMaterial id to the shader instead or keep a keyed list on shader the id 
+					// This also means we should move the "currentMeshId / currentMaterial id to the shader instead or keep a keyed list on shader the id
 					// Lets do this after we've done the texture binding though eh? so for now just rebind everything if shader or material changes (overkill but it'll work)
 				// If the material has changed textures may need rebinding
-				
+
 				// Check for gl location rebinds needed, if any needed and rebind all to make sure we don't replace a texture we're using
 				var locationRebindsNeeded = false;
 				for(var i = 0, l = shader.textureUniformNames.length; i < l; i++) {
@@ -301,7 +301,7 @@ var Scene = module.exports = function() {
 					}
 				}
 			}
-			
+
 			if(!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
 				if(!mesh.id) {	// mesh was changed on object since originally added to scene
 					object.meshId = mesh.add(mesh);
@@ -314,9 +314,18 @@ var Scene = module.exports = function() {
 			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
 			mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
 			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
+			if (shader.mMatrixUniformName) {
+				// TODO: Arguably should send either MV Matrix or M and V Matrices
+				r.setUniformMatrix4(shader.mMatrixUniformName, mvMatrix);
+			}
 			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
-				
+
+			if (shader.nMatrixUniformName) {
+				mat3.normalFromMat4(mvMatrix, nMatrix);
+				r.setUniformMatrix3(shader.nMatrixUniformName, nMatrix);
+			}
+
 			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
 

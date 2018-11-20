@@ -19,7 +19,7 @@ var Shader = module.exports = function() {
 		if(!parameters.fsSource) {
 			throw new Error("No Fragment Shader Source 'fsSource'");
 		}
-		
+
 		shader.vs = r.createShader("vertex", parameters.vsSource);
 		shader.fs = r.createShader("fragment", parameters.fsSource);
 		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
@@ -54,6 +54,8 @@ var Shader = module.exports = function() {
 
 		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
 		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
+		shader.nMatrixUniformName = parameters.nMatrixUniformName;
+		shader.mMatrixUniformName = parameters.mMatrixUniformName;
 
 		// TODO: decide how to deal with non-standard uniforms
 

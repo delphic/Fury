@@ -2,6 +2,7 @@ var Vorld = (function() {
   var exports = {};
   exports.addChunk = function(vorld, chunk, i, j, k) {
     vorld.chunks[i+"_"+j+"_"+k] = chunk;
+    chunk.indices = [i, j, k];
   };
   exports.getChunk = function(vorld, i, j, k) {
     var key = i+"_"+j+"_"+k;
@@ -10,7 +11,32 @@ var Vorld = (function() {
     }
     return null;
   };
-  exports.getBlock = function(vorld, blockI, blockJ, blockK, chunkI, chunkJ, chunkK) {
+  exports.addBlock = function(vorld, x, y, z, block) {
+    var size = vorld.chunkSize;
+    var chunkI = Math.floor(x / size),
+      chunkJ = Math.floor(y / size),
+      chunkK = Math.floor(z / size);
+    var blockI = x - (chunkI * size),
+      blockJ = y - (chunkJ * size),
+      blockK = z - (chunkK * size);
+    var chunk = exports.getChunk(vorld, chunkI, chunkJ, chunkK);
+    if (!chunk) {
+      chunk = Chunk.create({ size: vorld.chunkSize });
+      Vorld.addChunk(vorld, chunk, chunkI, chunkJ, chunkK);
+    }
+    Chunk.addBlock(chunk, blockI, blockJ, blockK, block);
+  };
+  exports.getBlock = function(vorld, x, y, z) {
+    var size = vorld.chunkSize;
+    var chunkI = Math.floor(x / size),
+      chunkJ = Math.floor(y / size),
+      chunkK = Math.floor(z / size);
+    var blockI = x - (chunkI * size),
+      blockJ = y - (chunkJ * size),
+      blockK = z - (chunkK * size);
+    return exports.getBlockByIndex(vorld, blockI, blockJ, blockK, chunkI, chunkJ, chunkK);
+  };
+  exports.getBlockByIndex = function(vorld, blockI, blockJ, blockK, chunkI, chunkJ, chunkK) {
     // Assumes you won't go out by more than chunkSize
     if (blockI >= vorld.chunkSize) {
       blockI = blockI - vorld.chunkSize;
@@ -19,20 +45,19 @@ var Vorld = (function() {
       blockI = vorld.chunkSize + blockI;
       chunkI -= 1;
     }
-    // Due to some madness, chunk k is y axis, and chunk j is z axis...
     if (blockJ >= vorld.chunkSize) {
       blockJ = blockJ - vorld.chunkSize;
-      chunkK += 1;
+      chunkJ += 1;
     } else if (blockJ < 0) {
       blockJ = vorld.chunkSize + blockJ;
-      chunkK -= 1;
+      chunkJ -= 1;
     }
     if (blockK >= vorld.chunkSize) {
       blockK = blockK - vorld.chunkSize;
-      chunkJ += 1;
+      chunkK += 1;
     } else if (blockK < 0) {
       blockK = vorld.chunkSize + blockK;
-      chunkJ -= 1;
+      chunkK -= 1;
     }
 
     var chunk = Vorld.getChunk(vorld, chunkI, chunkJ, chunkK);
@@ -100,6 +125,12 @@ var VorldConfig = (function() {
     }
     return "stone";
   };
+  exports.getTransformedBlockType = function(block, verticallyAdjacent) {
+    if(block == "soil" && !verticallyAdjacent) {
+      return "grass";
+    }
+    return block;
+  };
   exports.getShapingFunction = function(config) {
     // TODO: Switch on requested shaping function type
     return function(x, y, z) {
@@ -109,6 +140,7 @@ var VorldConfig = (function() {
   exports.getAtlasInfo = function() {
     // TODO: Build from parameters, perhaps an init from other methods
     atlas = {};
+    atlas.greedy = false;
     atlas.size = [64, 64];
     atlas.padding = 2;
     atlas.tileSize = 16;
