@@ -18,12 +18,13 @@ quat.rotate = (function() {
 	}
 })();
 
+var resolutionFactor = 1; // Lower this for low-spec devices
 var updateCanvasSize = function() {
 	// Remove any scaling of width / height as a result of using CSS to size the canvas
 	var glCanvas = document.getElementById("fury");
-	glCanvas.width = glCanvas.clientWidth;
-	glCanvas.height = glCanvas.clientHeight;
-}
+	glCanvas.width = resolutionFactor * glCanvas.clientWidth;
+	glCanvas.height = resolutionFactor * glCanvas.clientHeight;
+};
 $(window).resize(function(){
 	updateCanvasSize();
 });
@@ -234,7 +235,9 @@ var getRoll = function(q) {
     // Note: glMatrix is x,y,z,w where as wiki assumes w,x,y,z!
     let sinr_cosp = 2 * (q[3] * q[0] + q[1] * q[2]);
     let cosr_cosp = 1 - 2 * (q[0] * q[0] + q[1] * q[1]);
-    return Math.atan2(sinr_cosp, cosr_cosp);
+    return Math.atan(sinr_cosp / cosr_cosp);
+    // If you want to know sector you need atan2(sinr_cosp, cosr_cosp)
+    // but we don't in this case.
 };
 
 var handleInput = function(elapsed) {
