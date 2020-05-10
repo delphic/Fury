@@ -36,45 +36,62 @@ var createSeed = function(seedValue) {
 };
 
 var createChunk = function(vorld, offset, octaves, generationArgs) {
-  var maxDepth = 16, i, j, k, o, adjust;
-  var numOctaves = octaves.length;
-  var octaveWeightings = generationArgs.octaveWeightings;
-  var baseWavelength = generationArgs.baseWavelength;
+    var maxDepth = 16, i, j, k, o, adjust;
+    var numOctaves = octaves.length;
+    var octaveWeightings = generationArgs.octaveWeightings;
+    var baseWavelength = generationArgs.baseWavelength;
+    var neutralNoise = generationArgs.neutralNoise; // i.e. do we want noise to be between -0.5 and +0.5
 
 	var vorldConfig = {
-		thresholds: [ 0.5, 0.8 ],
+		thresholds: [ 0.5, 0.8 ], // 0.5, 0.8
+		shapingFunction: generationArgs.shapingFunction,
 		adjustmentFactor: generationArgs.adjustmentFactor,
-		yOffset: 0 // This was being calculated as a constant value minus half chunk size, but it comes out as zero
+		yOffset: generationArgs.yOffset,
+		yDenominator: generationArgs.yDenominator,
+		amplitude: generationArgs.amplitude,
+		sdx: generationArgs.sdx,
+		sdz: generationArgs.sdz
 	};
 	var shapingFunction = VorldConfig.getShapingFunction(vorldConfig);
 
 	var size = vorld.chunkSize;
 	var chunk = Chunk.create({ size: size });
+	var noiseOffset = neutralNoise ? 0 : 0.5;
 
-  // Determine blocks from noise function
-  for(i = 0; i < chunk.size; i++) {
-    for(j = 0; j < chunk.size; j++) {
-      for(k = 0; k < chunk.size; k++) {
-        var value = 0;
-        var totalWeight = 0;
-        var x = i + size * offset[0], y = j + size * offset[1], z = k + size * offset[2];
-        for(o = 0; o < numOctaves; o++) {
-          var wavelength = Math.pow(2, o);
-          totalWeight += octaveWeightings[o];
-          value += octaveWeightings[o] * octaves[o].noise(
-              wavelength * x / baseWavelength,
-              wavelength * y / baseWavelength,
-              wavelength * z / baseWavelength);
+    // Determine blocks from noise function
+    for(i = 0; i < chunk.size; i++) {
+        for(j = 0; j < chunk.size; j++) {
+            for(k = 0; k < chunk.size; k++) {
+                var value = 0;
+                var totalWeight = 0;
+                var x = i + size * offset[0],
+                    y = j + size * offset[1],
+                    z = k + size * offset[2];
+                
+                adjust = shapingFunction(x, y, z);
+                // If noise is between 0 - 1, we don't have to calculate blocks when
+                // the shaping function is below the minimum threshold
+                if (neutralNoise || adjust > vorldConfig.thresholds[0]) {
+                    for(o = 0; o < numOctaves; o++) {
+                        var wavelength = Math.pow(2, o);
+                        totalWeight += octaveWeightings[o];
+                        let noiseValue = octaves[o].noise(
+                            wavelength * x / baseWavelength,
+                            wavelength * y / baseWavelength,
+                            wavelength * z / baseWavelength);
+                        value += octaveWeightings[o] * (noiseOffset + noiseValue);
+                    }
+                    value /= totalWeight;
+                }
+                value = adjust * value;
+        
+                var block = VorldConfig.getBlockType(vorldConfig, value);
+                Chunk.addBlock(chunk, i, j, k, block);
+            }
         }
-        value /= totalWeight;
-        value = shapingFunction(x, y, z) * value;
-        var block = VorldConfig.getBlockType(vorldConfig, value);
-        Chunk.addBlock(chunk, i, j, k, block);
-      }
     }
-  }
 
-  return chunk;
+    return chunk;
 };
 
 var runAdjacenyTransformations = function(vorld, chunk, offset) {

@@ -50,12 +50,17 @@ var atlasSrc = "expanded_atlas_upscaled.png";
 // to generate atlas upscaled + padded as demanded by atlas config
 
 // Regeneration Variables and form details
+var neutralNoise = true; // Is noise between -0.5 and +0.5 or between 0 and 1
 var areaHeight = 2, areaExtents = 3;
 var octaves = [], numOctaves = 4;
 var octaveWeightings = [ 0.5, 0.5, 1, 0.1 ];
 var perlin = true;
 var seedString = "XUVNREAZOZJFPQMSAKEMSDJURTQPWEORHZMD";
-var adjustmentFactor = 0.01;
+
+var shapingFunction = "inverse_y";
+var adjustmentFactor = 0.01, yOffset = 0; // Shaping Function
+var amplitude = 64, sdx = 64, sdz = 64, yDenominator = 16.0;
+
 var baseWavelength = 128;
 var getGenerationVariables = function() {
 	octaves.length = 0;
@@ -66,10 +71,19 @@ var getGenerationVariables = function() {
 	}
 	perlin = $("input[name='noiseType']:checked").val() == "Perlin";
 	seedString = $("#seed").val();
-	adjustmentFactor = parseFloat($("#adjust").val());
+    neutralNoise = $("#neutralNoise").val() == "neutral";
+	
 	baseWavelength = parseInt($("#baseWavelength").val(), 10);
 	areaExtents = parseInt($("#extents").val(), 10);
 	areaHeight = parseInt($("#height").val(), 10);
+	
+	shapingFunction = $("#shapingFunction").val();
+	yOffset = parseFloat($("#yOffset").val());
+	adjustmentFactor = parseFloat($("#adjust").val());
+	yDenominator = parseFloat($("#yDenominator").val());
+	amplitude = parseFloat($("#amplitude").val());
+	sdx = parseFloat($("#sdx").val());
+	sdz = parseFloat($("#sdz").val());
 };
 
 $(document).ready(function(){
@@ -116,11 +130,21 @@ $(document).ready(function(){
 	}
 	$("#weightingsContainer").html(html);
 	$("#seed").val(seedString);
-	$("#adjust").val(adjustmentFactor);
+	
+    $("#neutralNoise").val(neutralNoise ? "netural": "sane");
+	
 	$("#wavelengthPower").val(7);
 	$("#baseWavelength").val(baseWavelength);
 	$("#extents").val(areaExtents);
 	$("#height").val(areaHeight);
+	
+	$("#shapingFunction").val(shapingFunction);
+	$("#yOffset").val(yOffset);
+	$("#adjust").val(adjustmentFactor);
+	$("#yDenominator").val(yDenominator);
+	$("#amplitude").val(amplitude);
+	$("#sdx").val(sdx);
+	$("#sdz").val(sdz);
 });
 
 // Create Camera & Scene
@@ -178,7 +202,14 @@ var generateVorld = function() {
 		baseWavelength: baseWavelength,
 		areaExtents: areaExtents,
 		areaHeight: areaHeight,
-		adjustmentFactor: adjustmentFactor
+		shapingFunction: shapingFunction,
+		adjustmentFactor: adjustmentFactor,
+		yOffset: yOffset,
+		amplitude: amplitude,
+		sdx: sdx,
+		sdz: sdz,
+		yDenominator: yDenominator,
+		neutralNoise: neutralNoise
 	});
 };
 

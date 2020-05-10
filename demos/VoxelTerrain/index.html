@@ -108,8 +108,44 @@ fieldset input.button {
 				<div id="weightingsContainer">
 				</div>
 				<div>
-					<p>Values from noise are divided by m * (maxdepth + y), where m is the adjustment factor, currently maxdepth is 32 and generated chunk is 32.</p>
-					<label for="adjust">Adjustment Factor </label><input id="adjust" type="number" step="0.001" min="0" max="0.05" />
+				    <label for="shapingFunction">Shaping Function</label>
+				    <select id="shapingFunction">
+				        <option value="inverse_y">Inverse Y</option>
+				        <option value="negative_y">Negative Y</option>
+				        <option value="gaussian">Gaussian</option>
+				        <option value="none">None</option>
+				    </select>
+				</div>
+				<div>
+				    <label for="neutralNoise">Noise Range</label>
+				    <select id="neutralNoise">
+				        <option value="netural">-0.5 to +0.5</option>
+				        <option value="sane">0 to 1</option>
+				    </select>
+				</div>
+				<div>
+					<p>Values from noise are multiplied by the result of the shaping function</p>
+					<p>Inverse Y: 1 / m * (y + yOffset)</p>
+					<p>Negative Y: (yOffset - y) / yDenominator</p>
+					<p>Guassian: 1 + (peak * exp { (x*x)/(2*sdx*sdx) + (z*z)/(2*sdz*sdz) } - y) / yDenominator</p>
+					<div>
+    					<label for="adjust">m</label><input id="adjust" type="number" step="0.001" min="0" max="0.025" />
+					</div>
+					<div>
+    					<label for="yOffset">yOffset</label><input id="yOffset" type="number" step="8" min="-32" max="32" />
+    				</div>
+					<div>
+    					<label for="yDenominator">yDenominator</label><input id="yDenominator" type="number" step=8 min="8" max="128" />
+    				</div>
+					<div>
+    					<label for="amplitude">peak</label><input id="amplitude" type="number" step="8" min="8" max="128" />
+    				</div>
+					<div>
+					    <label for="sdx">sdx</label><input id="sdx" type="number" step="8" min="8" max="128" />
+				    </div>
+					<div>
+    					<label for="sdz">sdz</label><input id="sdz" type="number" step="8" min="8" max="128" />
+					</div>
 				</div>
 				<div>
 					<input id="regen" class="button" type="button" value="Regenerate Terrain" />

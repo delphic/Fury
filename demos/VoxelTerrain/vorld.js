@@ -146,10 +146,26 @@ var VorldConfig = (function() {
     return block;
   };
   exports.getShapingFunction = function(config) {
-    // TODO: Switch on requested shaping function type
-    return function(x, y, z) {
-  		return 1 / (config.adjustmentFactor * (y + config.yOffset));
-  	};
+    // Would be cute to take a string you could just eval
+    if (config.shapingFunction == "gaussian") {
+        let a = config.amplitude, sdx = config.sdx, sdz = config.sdz, x0 = 0, z0 = 0;
+        return function(x, y, z) {
+            let fxy = a * Math.exp(-((((x - x0) * (x - x0)) / (2 * sdx * sdx)) + (((z -z0) * (z - z0)) / (2 * sdz * sdz))));
+            return 1 + (fxy - y) / config.yDenominator;
+        };
+    } else if (config.shapingFunction == "negative_y") {
+        return function(x, y, z) {
+            return (config.yOffset - y) / config.yDenominator;
+        };
+    } else if (config.shapingFunction == "inverse_y") {
+        return function(x, y, z) {
+            return 1 / (config.adjustmentFactor * (y + config.yOffset));
+        };
+    } else {
+        return function(x, y, z) {
+            return 1;
+        };
+    }
   };
   exports.getAtlasInfo = function() {
     // TODO: Build from parameters, perhaps an init from other methods
