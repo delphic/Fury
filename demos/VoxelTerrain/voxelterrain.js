@@ -15,15 +15,21 @@ quat.rotate = (function() {
 	return function(out, q, rad, axis) {
 		quat.setAxisAngle(i, axis, rad);
 		return quat.multiply(out, i, q);
-	}
+	};
 })();
 
 var resolutionFactor = 1; // Lower this for low-spec devices
+var cameraRatio = 16 / 9;
 var updateCanvasSize = function() {
 	// Remove any scaling of width / height as a result of using CSS to size the canvas
 	var glCanvas = document.getElementById("fury");
 	glCanvas.width = resolutionFactor * glCanvas.clientWidth;
 	glCanvas.height = resolutionFactor * glCanvas.clientHeight;
+	//cameraRatio = glCanvas.clientWidth / glCanvas.clientHeight;
+	if (camera && camera.ratio) {
+	    // Well everything goes black if we do this
+    	// camera.ratio = cameraRatio;
+	}
 };
 $(window).resize(function(){
 	updateCanvasSize();
@@ -119,10 +125,10 @@ $(document).ready(function(){
 });
 
 // Create Camera & Scene
-var rotateRate = 0.1 * Math.PI, maxRotatePerFrame = 0.1 * rotateRate;
+var rotateRate = 0.1 * Math.PI, maxRotatePerFrame = 0.2 * rotateRate;
 var zoomRate = 16;
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: cameraRatio, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
 var scene = Fury.Scene.create({ camera: camera });
 var meshes = [];
 
@@ -265,7 +271,7 @@ var handleInput = function(elapsed) {
 
 		let roll = getRoll(q);
 		let clampAngle = 10 * Math.PI/180;
-	    if (Math.abs(roll - yRotation) < 0.5*Math.PI - clampAngle) {
+	    if (Math.sign(roll) == Math.sign(yRotation) || Math.abs(roll - yRotation) < 0.5*Math.PI - clampAngle) {
     		quat.rotateX(q, q, -yRotation);
 	    }
 	}
