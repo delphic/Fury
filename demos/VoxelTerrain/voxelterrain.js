@@ -1,3 +1,11 @@
+"use strict";
+var vec3 = window.vec3;
+var quat = window.quat;
+var $ = window.$;
+var Fury = window.Fury;
+var VorldConfig = window.VorldConfig;
+var VoxelShader = window.VoxelShader;
+
 // Voxel Terrain Generator
 // Multiple Octaves of Perlin Noise -> Cubes
 
@@ -110,7 +118,7 @@ $(document).ready(function(){
 });
 
 // Create Camera & Scene
-var rotateRate = Math.PI;
+var rotateRate = 0.1 * Math.PI, maxRotatePerFrame = 0.1 * rotateRate;
 var zoomRate = 16;
 var initalRotation = quat.create();
 var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 4/3, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
@@ -219,7 +227,15 @@ var unitx = vec3.fromValues(1,0,0);
 var unity = vec3.fromValues(0,1,0);
 var unitz = vec3.fromValues(0,0,1);
 var prevX = 0;
-var prevY = 0
+var prevY = 0;
+
+// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+var getRoll = function(q) {
+    // Note: glMatrix is x,y,z,w where as wiki assumes w,x,y,z!
+    let sinr_cosp = 2 * (q[3] * q[0] + q[1] * q[2]);
+    let cosr_cosp = 1 - 2 * (q[0] * q[0] + q[1] * q[1]);
+    return Math.atan2(sinr_cosp, cosr_cosp);
+};
 
 var handleInput = function(elapsed) {
 	var q = camera.rotation;
@@ -234,8 +250,21 @@ var handleInput = function(elapsed) {
 	prevY = mousePos[1];
 
 	if (Input.mouseDown(2)) {
-		quat.rotate(q, q, -0.1*deltaX*rotateRate*elapsed, unity);
-		quat.rotateX(q, q, -0.1*deltaY*rotateRate*elapsed);
+	    let xRotation = deltaX*rotateRate*elapsed;
+	    if (Math.abs(xRotation) > maxRotatePerFrame) {
+            xRotation = Math.sign(xRotation) * maxRotatePerFrame;
+	    }
+	    let yRotation = deltaY*rotateRate*elapsed;
+	    if (Math.abs(yRotation) > maxRotatePerFrame) {
+	        yRotation = Math.sign(yRotation) * maxRotatePerFrame;
+	    }
+		quat.rotate(q, q, -xRotation, unity);
+
+		let roll = getRoll(q);
+		let clampAngle = 10 * Math.PI/180;
+	    if (Math.abs(roll - yRotation) < 0.5*Math.PI - clampAngle) {
+    		quat.rotateX(q, q, -yRotation);
+	    }
 	}
 
 	if(Input.keyDown("w")) {
