@@ -1,3 +1,5 @@
+"use strict";
+
 var Vorld = (function() {
   var exports = {};
   exports.addChunk = function(vorld, chunk, i, j, k) {
@@ -103,6 +105,7 @@ var Chunk = (function() {
     } else {
       chunk.size = 32;
     }
+    // TODO: Use UINT array?
     if (parameters && parameters.blocks) {
       chunk.blocks = parameters.blocks;
     } else {
@@ -115,19 +118,30 @@ var Chunk = (function() {
 
 var VorldConfig = (function() {
   var exports = {};
+  var blockIds = {
+      AIR: 0,
+      STONE: 1,
+      SOIL: 2,
+      GRASS: 3,
+      WOOD: 4,
+      LEAVES: 5,
+      WATER: 6,
+      BEDROCK: 7
+  };
+  
   exports.getBlockType = function(config, value) {
     // TODO: Return id instead of string
     if(value < config.thresholds[0]) {
-  		return "";
+  		return blockIds.AIR;
     }
     if(value < config.thresholds[1]) {
-      return "soil";
+      return blockIds.SOIL;
     }
-    return "stone";
+    return blockIds.STONE;
   };
   exports.getTransformedBlockType = function(block, verticallyAdjacent) {
-    if(block == "soil" && !verticallyAdjacent) {
-      return "grass";
+    if(block == blockIds.SOIL && !verticallyAdjacent) {
+      return blockIds.GRASS;
     }
     return block;
   };
@@ -139,48 +153,47 @@ var VorldConfig = (function() {
   };
   exports.getAtlasInfo = function() {
     // TODO: Build from parameters, perhaps an init from other methods
-    atlas = {};
+    var atlas = {};
     atlas.greedy = false;
     atlas.size = [64, 64];
     atlas.padding = 2;
     atlas.tileSize = 16;
-    atlas.tileOffsets = { // TODO: Will need to switch to id look up
-    	grass: {
-    		side: [1,0],
-    		top: [0,0],
-    		bottom: [0,1]
-    	},
-    	soil: {
-    		side: [0,1],
-    		top: [0,1],
-    		bottom: [0,1]
-    	},
-    	stone: {
-    		side: [1,1],
-    		top: [1,1],
-    		bottom: [1,1]
-    	},
-    	wood: {
-    		side: [1,2],
-    		top: [0,2],
-    		bottom: [0,2]
-    	},
-    	leaves: {
-    		side: [2,0],
-    		top: [2,0],
-    		bottom: [2,0]
-    	},
-    	water: {
-    		side: [2,1],
-    		top: [2,1],
-    		bottom: [2,1]
-    	},
-    	bedrock: {
-    		side: [2,2],
-    		top: [2,2],
-    		bottom: [2,2],
-    	}
+    atlas.tileOffsets = [];
+    atlas.tileOffsets[blockIds.STONE] = {
+        side: [1,1],
+        top: [1,1],
+        bottom: [1,1]
     };
+    atlas.tileOffsets[blockIds.SOIL] = {
+		side: [0,1],
+		top: [0,1],
+		bottom: [0,1]
+	};
+	atlas.tileOffsets[blockIds.GRASS] = {
+		side: [1,0],
+		top: [0,0],
+		bottom: [0,1]
+	};
+	atlas.tileOffsets[blockIds.WOOD] = {
+		side: [1,2],
+		top: [0,2],
+		bottom: [0,2]
+	};
+    atlas.tileOffsets[blockIds.LEAVES] = {
+		side: [2,0],
+		top: [2,0],
+		bottom: [2,0]
+	};
+	atlas.tileOffsets[blockIds.WATER] = {
+    	side: [2,1],
+    	top: [2,1],
+    	bottom: [2,1]
+    };
+    atlas.tileOffsets[blockIds.BEDROCK] = {
+		side: [2,2],
+		top: [2,2],
+		bottom: [2,2],
+	};
     return atlas;
   };
   return exports;

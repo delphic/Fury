@@ -57,25 +57,25 @@ var createChunk = function(vorld, offset, octaves, generationArgs) {
       for(k = 0; k < chunk.size; k++) {
         var value = 0;
         var totalWeight = 0;
-				var x = i + size * offset[0], y = j + size * offset[1], z = k + size * offset[2];
+        var x = i + size * offset[0], y = j + size * offset[1], z = k + size * offset[2];
         for(o = 0; o < numOctaves; o++) {
           var wavelength = Math.pow(2, o);
           totalWeight += octaveWeightings[o];
           value += octaveWeightings[o] * octaves[o].noise(
-						wavelength * x / baseWavelength,
-						wavelength * y / baseWavelength,
-						wavelength * z / baseWavelength);
+              wavelength * x / baseWavelength,
+              wavelength * y / baseWavelength,
+              wavelength * z / baseWavelength);
         }
         value /= totalWeight;
-				value = shapingFunction(x, y, z) * value;
+        value = shapingFunction(x, y, z) * value;
         var block = VorldConfig.getBlockType(vorldConfig, value);
-        Chunk.addBlock(chunk, i, j, k, block)
+        Chunk.addBlock(chunk, i, j, k, block);
       }
     }
   }
 
   return chunk;
-}
+};
 
 var runAdjacenyTransformations = function(vorld, chunk, offset) {
 	for(i = 0; i < chunk.size; i++) {
@@ -95,20 +95,20 @@ onmessage = function(e) {
   var seedString = e.data.seed;
   var perlin = e.data.perlin;
   var numOctaves = e.data.numOctaves;
-  var octaves = [];1
+  var octaves = [];
   for(var o = 0; o < numOctaves; o++) {
     octaves.push(perlin ? new ClassicalNoise(createSeed(seedString)) : new SimplexNoise(createSeed(seedString)));
   }
 
   var areaExtents = e.data.areaExtents;
   var areaHeight = e.data.areaHeight;
-
-	postMessage({ stage: "" });
-	postMessage({ progress: 0 });
+  
+  postMessage({ stage: "" });
+  postMessage({ progress: 0 });
 
   // Generate Chunks
-	var iteration = 0;
-	var totalIterations = (2 * areaExtents + 1) * (2 * areaExtents + 1) * areaHeight;
+  var iteration = 0;
+  var totalIterations = (2 * areaExtents + 1) * (2 * areaExtents + 1) * areaHeight;
   var chunkOffset = [];
   for(var i = -areaExtents; i <= areaExtents; i++) {
     for (var k = -areaExtents; k <= areaExtents; k++) {
@@ -119,11 +119,12 @@ onmessage = function(e) {
 
         var chunk = createChunk(vorld, chunkOffset, octaves, e.data);
         Vorld.addChunk(vorld, chunk, i, j, k);
-
-				runAdjacenyTransformations(vorld, chunk, chunkOffset);
-
-				iteration++;
-				postMessage({ progress: iteration / totalIterations });
+        
+        runAdjacenyTransformations(vorld, chunk, chunkOffset);
+        
+        iteration++;
+        
+        postMessage({ progress: iteration / totalIterations });
       }
     }
   }

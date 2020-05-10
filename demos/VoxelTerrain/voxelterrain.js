@@ -161,7 +161,7 @@ var generateVorld = function() {
 			$("#progressStage").html(e.data.stage);
 		}
 
-		if (e.data.progress != undefined) {
+		if (e.data.progress !== undefined) {
 			$("#progressBarInner").width((e.data.progress * 100) + "%");
 		}
 
@@ -193,7 +193,7 @@ var generateMeshes = function(vorld) {
 			vec3.add(meshObject.transform.position, meshObject.transform.position, vec3.clone(e.data.offset));
 			meshes.push(meshObject);
 		}
-		if (e.data.progress != undefined) {
+		if (e.data.progress !== undefined) {
 			$("#progressBarInner").width((e.data.progress * 100) + "%");
 		}
 		if (e.data.complete) {
