@@ -25,10 +25,9 @@ var updateCanvasSize = function() {
 	var glCanvas = document.getElementById("fury");
 	glCanvas.width = resolutionFactor * glCanvas.clientWidth;
 	glCanvas.height = resolutionFactor * glCanvas.clientHeight;
-	//cameraRatio = glCanvas.clientWidth / glCanvas.clientHeight;
+	cameraRatio = glCanvas.clientWidth / glCanvas.clientHeight;
 	if (camera && camera.ratio) {
-	    // Well everything goes black if we do this
-    	// camera.ratio = cameraRatio;
+    	camera.ratio = cameraRatio;
 	}
 };
 $(window).resize(function(){
