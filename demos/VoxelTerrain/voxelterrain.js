@@ -78,12 +78,43 @@ var getGenerationVariables = function() {
 	areaHeight = parseInt($("#height").val(), 10);
 	
 	shapingFunction = $("#shapingFunction").val();
-	yOffset = parseFloat($("#yOffset").val());
-	adjustmentFactor = parseFloat($("#adjust").val());
-	yDenominator = parseFloat($("#yDenominator").val());
-	amplitude = parseFloat($("#amplitude").val());
-	sdx = parseFloat($("#sdx").val());
-	sdz = parseFloat($("#sdz").val());
+	if (shapingFunction == "inverse_y") {
+	    yOffset = parseFloat($("#yOffset").val());
+    	adjustmentFactor = 1 / parseFloat($("#adjust").val());  // TODO: Change the internal function to m / (y + offset)
+	} else if (shapingFunction == "negative_y") {
+    	yOffset = parseFloat($("#yOffset_n").val());
+    	yDenominator = parseFloat($("#yDenominator_n").val());
+	} else if (shapingFunction == "gaussian") {
+	    yDenominator = parseFloat($("#yDenominator_g").val());
+    	amplitude = parseFloat($("#amplitude").val());
+    	sdx = parseFloat($("#sdx").val());
+    	sdz = parseFloat($("#sdz").val());
+	}
+};
+
+var setParameterVisibility = function(shapingFunction) {
+    switch(shapingFunction){
+        case "inverse_y":
+            $("#inverse_y").show();
+            $("#negative_y").hide();
+            $("#gaussian").hide();
+            break;
+        case "negative_y":
+            $("#inverse_y").hide();
+            $("#negative_y").show();
+            $("#gaussian").hide();
+            break;
+        case "gaussian":
+            $("#inverse_y").hide();
+            $("#negative_y").hide();
+            $("#gaussian").show();
+            break;
+        default:
+            $("#inverse_y").hide();
+            $("#negative_y").hide();
+            $("#gaussian").hide();
+            break;
+    }
 };
 
 $(document).ready(function(){
@@ -121,6 +152,10 @@ $(document).ready(function(){
 		clear();
 		generateVorld();
 	});
+	$("#shapingFunction").change(function(event){
+	    setParameterVisibility(this.value);
+	});
+	
 
 	// Set initial values
 	$("#octaves").val(numOctaves);
@@ -139,9 +174,14 @@ $(document).ready(function(){
 	$("#height").val(areaHeight);
 	
 	$("#shapingFunction").val(shapingFunction);
+	setParameterVisibility(shapingFunction);
 	$("#yOffset").val(yOffset);
-	$("#adjust").val(adjustmentFactor);
-	$("#yDenominator").val(yDenominator);
+	$("#adjust").val(100);
+	
+	$("#yOffset_n").val(32);
+	$("#yDenominator_n").val(16);
+	
+	$("#yDenominator_g").val(yDenominator);
 	$("#amplitude").val(amplitude);
 	$("#sdx").val(sdx);
 	$("#sdz").val(sdz);

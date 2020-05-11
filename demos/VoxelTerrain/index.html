@@ -26,8 +26,15 @@ fieldset form {
 fieldset div {
 	margin: 5px 0;
 }
+
+fieldset select {
+	width: 150px;
+}
 fieldset input {
-	width: 100px;
+	width: 50px;
+}
+fieldset input.inline {
+    width: 40px;
 }
 fieldset input.button {
 	width: auto;
@@ -108,6 +115,13 @@ fieldset input.button {
 				<div id="weightingsContainer">
 				</div>
 				<div>
+				    <label for="neutralNoise">Noise Range</label>
+				    <select id="neutralNoise">
+				        <option value="netural">-0.5 to +0.5</option>
+				        <option value="sane">0 to 1</option>
+				    </select>
+				</div>
+				<div>
 				    <label for="shapingFunction">Shaping Function</label>
 				    <select id="shapingFunction">
 				        <option value="inverse_y">Inverse Y</option>
@@ -116,36 +130,18 @@ fieldset input.button {
 				        <option value="none">None</option>
 				    </select>
 				</div>
-				<div>
-				    <label for="neutralNoise">Noise Range</label>
-				    <select id="neutralNoise">
-				        <option value="netural">-0.5 to +0.5</option>
-				        <option value="sane">0 to 1</option>
-				    </select>
+				<div id="inverse_y">
+				    <p>Values from noise are multiplied by the result of the shaping function</p>
+				    <p>Inverse Y: <input id="adjust" class="inline" type="number" step="0.001" min="0" max="0.025" /> / (y + <input id="yOffset" class="inline" type="number" step="8" min="-32" max="32" />)</p>
 				</div>
-				<div>
-					<p>Values from noise are multiplied by the result of the shaping function</p>
-					<p>Inverse Y: 1 / m * (y + yOffset)</p>
-					<p>Negative Y: (yOffset - y) / yDenominator</p>
-					<p>Guassian: 1 + (peak * exp { (x*x)/(2*sdx*sdx) + (z*z)/(2*sdz*sdz) } - y) / yDenominator</p>
-					<div>
-    					<label for="adjust">m</label><input id="adjust" type="number" step="0.001" min="0" max="0.025" />
-					</div>
-					<div>
-    					<label for="yOffset">yOffset</label><input id="yOffset" type="number" step="8" min="-32" max="32" />
-    				</div>
-					<div>
-    					<label for="yDenominator">yDenominator</label><input id="yDenominator" type="number" step=8 min="8" max="128" />
-    				</div>
-					<div>
-    					<label for="amplitude">peak</label><input id="amplitude" type="number" step="8" min="8" max="128" />
-    				</div>
-					<div>
-					    <label for="sdx">sdx</label><input id="sdx" type="number" step="8" min="8" max="128" />
-				    </div>
-					<div>
-    					<label for="sdz">sdz</label><input id="sdz" type="number" step="8" min="8" max="128" />
-					</div>
+				<div id="negative_y">
+				    <p>Values from noise are multiplied by the result of the shaping function</p>
+				    <p>Negative Y: (<input id="yOffset_n" class="inline" type="number" step="8" min="-32" max="32" /> - y) / <input id="yDenominator_n" class="inline" type="number" step=8 min="8" max="128" /></p>
+				</div>
+				<div id="gaussian">
+				    <p>Values from noise are multiplied by the result of the shaping function</p>
+					<p>Guassian: 1 + (g - y) / <input id="yDenominator_g" class="inline" type="number" step=8 min="8" max="128" /></p>
+					<p>where g = <input id="amplitude" class="inline" type="number" step="8" min="8" max="128" /> * exp ( (x&sup2;)/(2*<input id="sdx" class="inline" type="number" step="8" min="8" max="128" />&sup2;) + (z&sup2;)/(2*<input id="sdz" class="inline" type="number" step="8" min="8" max="128" />&sup2;) )</p>
 				</div>
 				<div>
 					<input id="regen" class="button" type="button" value="Regenerate Terrain" />
