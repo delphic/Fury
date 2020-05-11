@@ -166,7 +166,7 @@ $(document).ready(function(){
 	$("#weightingsContainer").html(html);
 	$("#seed").val(seedString);
 	
-    $("#neutralNoise").val(neutralNoise ? "netural": "sane");
+    $("#neutralNoise").val(neutralNoise ? "neutral": "normalised");
 	
 	$("#wavelengthPower").val(7);
 	$("#baseWavelength").val(baseWavelength);
