@@ -128,7 +128,7 @@ var VorldConfig = (function() {
       WATER: 6,
       BEDROCK: 7
   };
-  
+
   exports.getBlockType = function(config, value) {
     // TODO: Return id instead of string
     if(value < config.thresholds[0]) {
@@ -151,7 +151,7 @@ var VorldConfig = (function() {
         let a = config.amplitude, sdx = config.sdx, sdz = config.sdz, x0 = 0, z0 = 0;
         return function(x, y, z) {
             let fxy = a * Math.exp(-((((x - x0) * (x - x0)) / (2 * sdx * sdx)) + (((z -z0) * (z - z0)) / (2 * sdz * sdz))));
-            return 1 + (fxy - y) / config.yDenominator;
+            return Math.max(0, 1 + (fxy - y) / config.yDenominator);
         };
     } else if (config.shapingFunction == "negative_y") {
         return function(x, y, z) {

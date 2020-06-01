@@ -6,8 +6,8 @@ var Camera = module.exports = function() {
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
 		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
-				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3],
 				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
 		},
@@ -56,7 +56,9 @@ var Camera = module.exports = function() {
 		}
 		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+
+		// TODO: Add Clear Color
 
 		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
 
