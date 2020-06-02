@@ -114,59 +114,79 @@ exports.createTexture = function(source, quality, clamp) {
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 
-	// To manually create levels need to add more gl.texImage2D using more levels
-	// May also need to texParameteri gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0
-	// and texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, <whatever the max is here>
-	// Q are the consts here correct? and what should the max be?
-	// Could just check if source is an array and if it is run several textures levels
-	// Should check out the 0fps implementation
+	setTextureQuality(gl.TEXTURE_2D, quality);
 
-	if (quality === TextureQuality.Pixel) {
-		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
-		// Might be able to use dFdx / dFdy to determine MIPMAP level and use two textures
-		// and blend the samples based of if it'd be mipmap level 0 or not
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
-			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
-		}
-		gl.generateMipmap(gl.TEXTURE_2D);
-	}
-	else if (quality === TextureQuality.Highest) {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
-			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
-		}
-		gl.generateMipmap(gl.TEXTURE_2D);
-	}
-	else if (quality === TextureQuality.High) {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-		if (anisotropyExt) {
-			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
-		}
-		gl.generateMipmap(gl.TEXTURE_2D);
-	}
-	else if (quality === TextureQuality.Medium) {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	}
-	else {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	}
 	if (clamp) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
 	gl.bindTexture(gl.TEXTURE_2D, null);
+	texture.glTextureType = gl.TEXTURE_2D;
 	return texture;
+};
+
+/// width and height are of an individual texture
+exports.createTextureArray = function(source, width, height, imageCount, quality, clamp) {
+	var texture = gl.createTexture();
+	// gl.activeTexture(gl.TEXTURE0);
+	gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA, width, height, imageCount, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
+
+	setTextureQuality(gl.TEXTURE_2D_ARRAY, quality);
+
+	if (clamp) {
+		gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	}
+
+	gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
+	texture.glTextureType = gl.TEXTURE_2D_ARRAY;
+	return texture;
+};
+
+var setTextureQuality = function(glTextureType, quality) {
+	if (quality === TextureQuality.Pixel) {
+		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
+		// Might be able to use dFdx / dFdy to determine MIPMAP level and use two textures
+		// and blend the samples based of if it'd be mipmap level 0 or not
+		// Or use multiple samplers in an version 300 ES shader
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		if (anisotropyExt) {
+			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+		}
+		gl.generateMipmap(glTextureType);
+	}
+	else if (quality === TextureQuality.Highest) {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		if (anisotropyExt) {
+			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+		}
+		gl.generateMipmap(glTextureType);
+	}
+	else if (quality === TextureQuality.High) {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+		if (anisotropyExt) {
+			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
+		}
+		gl.generateMipmap(glTextureType);
+	}
+	else if (quality === TextureQuality.Medium) {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	}
+	else {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	}
 };
 
 exports.setTexture = function(location, texture) {
 	gl.activeTexture(TextureLocations[location]);
-	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.bindTexture(texture.glTextureType, texture);
 };
 
 // Blending
