@@ -42,7 +42,6 @@ var atlas = VorldConfig.getAtlasInfo();
 var shader = Fury.Shader.create(VoxelShader.create(atlas));
 
 var atlasMaterial = Fury.Material.create({ shader: shader });
-var atlasSrc = "expanded_atlas_upscaled.png";
 // Use upscaled texture to allow for reasonable resolution closeup
 // when using mipmaps to prevent artifacts at distance.
 
@@ -72,11 +71,11 @@ var getGenerationVariables = function() {
 	perlin = $("input[name='noiseType']:checked").val() == "Perlin";
 	seedString = $("#seed").val();
     neutralNoise = $("#neutralNoise").val() == "neutral";
-	
+
 	baseWavelength = parseInt($("#baseWavelength").val(), 10);
 	areaExtents = parseInt($("#extents").val(), 10);
 	areaHeight = parseInt($("#height").val(), 10);
-	
+
 	shapingFunction = $("#shapingFunction").val();
 	if (shapingFunction == "inverse_y") {
 	    yOffset = parseFloat($("#yOffset").val());
@@ -155,7 +154,7 @@ $(document).ready(function(){
 	$("#shapingFunction").change(function(event){
 	    setParameterVisibility(this.value);
 	});
-	
+
 
 	// Set initial values
 	$("#octaves").val(numOctaves);
@@ -165,22 +164,22 @@ $(document).ready(function(){
 	}
 	$("#weightingsContainer").html(html);
 	$("#seed").val(seedString);
-	
+
     $("#neutralNoise").val(neutralNoise ? "neutral": "normalised");
-	
+
 	$("#wavelengthPower").val(7);
 	$("#baseWavelength").val(baseWavelength);
 	$("#extents").val(areaExtents);
 	$("#height").val(areaHeight);
-	
+
 	$("#shapingFunction").val(shapingFunction);
 	setParameterVisibility(shapingFunction);
 	$("#yOffset").val(yOffset);
 	$("#adjust").val(100);
-	
+
 	$("#yOffset_n").val(32);
 	$("#yDenominator_n").val(16);
-	
+
 	$("#yDenominator_g").val(yDenominator);
 	$("#amplitude").val(amplitude);
 	$("#sdx").val(sdx);
@@ -260,7 +259,10 @@ var generateMeshes = function(vorld) {
 	var mesher = new Worker('mesher.js');
 	mesher.onmessage = function(e) {
 		if (e.data.mesh) {
-			var meshObject = scene.add({ mesh: Fury.Mesh.create(e.data.mesh), material: atlasMaterial });
+			var mesh = Fury.Mesh.create(e.data.mesh);
+			mesh.tileBuffer = Fury.Renderer.createBuffer(e.data.mesh.tileIndices, 1); // Hmm should probably make it easier to add arbitary buffers?
+
+			var meshObject = scene.add({ mesh: mesh, material: atlasMaterial });
 			vec3.add(meshObject.transform.position, meshObject.transform.position, vec3.clone(e.data.offset));
 			meshes.push(meshObject);
 		}
@@ -363,8 +365,8 @@ var handleInput = function(elapsed) {
 // Create Texture
 var image = new Image();
 image.onload = function() {
-	var texture = Fury.Renderer.createTexture(image, "pixel", true);
+	var texture = Fury.Renderer.createTextureArray(image, 64, 64, 9, "pixel", true);
 	atlasMaterial.textures["uSampler"] = texture;
 	awake();
 };
-image.src = atlasSrc;
+image.src = "atlas_array.png";
