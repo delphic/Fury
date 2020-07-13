@@ -301,6 +301,7 @@ var loop = function(){
 };
 
 var localx = vec3.create();
+var localy = vec3.create();
 var localz = vec3.create();
 var unitx = vec3.fromValues(1,0,0);
 var unity = vec3.fromValues(0,1,0);
@@ -322,6 +323,7 @@ var handleInput = function(elapsed) {
 	var q = camera.rotation;
 	var p = camera.position;
 	vec3.transformQuat(localx, unitx, q);
+	vec3.transformQuat(localy, unity, q);
 	vec3.transformQuat(localz, unitz, q);
 
 	var mousePos = Input.MousePosition;
@@ -359,6 +361,12 @@ var handleInput = function(elapsed) {
 	}
 	if(Input.keyDown("d")) {
 		vec3.scaleAndAdd(p, p, localx, zoomRate*elapsed);
+	}
+	if (Input.keyDown("q")) {
+		vec3.scaleAndAdd(p, p, localy, -zoomRate*elapsed);
+	}
+	if (Input.keyDown("e")) {
+		vec3.scaleAndAdd(p, p, localy, zoomRate*elapsed);
 	}
 };
 
