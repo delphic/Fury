@@ -96,6 +96,24 @@ exports.createBuffer = function(data, itemSize, indexed) {
 	return buffer;
 };
 
+exports.createArrayBuffer = function(data, itemSize, numItems) {
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    buffer.itemSize = itemSize;
+    buffer.numItems = numItems;
+    return buffer;
+};
+
+exports.createElementArrayBuffer = function(data, itemSize, numItems) {
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    buffer.itemSize = itemSize;
+    buffer.numItems = numItems;
+    return buffer;
+};
+
 // Textures
 
 var TextureLocations = exports.TextureLocations = [];
