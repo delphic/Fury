@@ -7,6 +7,7 @@ Fury.Camera = require('./camera');
 Fury.Input = require('./input');
 Fury.Material = require('./material');
 Fury.Mesh = require('./mesh');
+Fury.Model = require("./model");
 Fury.Renderer = require('./renderer');
 Fury.Scene = require('./scene');
 Fury.Shader = require('./shader');
@@ -20,7 +21,7 @@ Fury.createPrefab = function(parameters) {
 		throw new Error("Please provide a valid and unique name parameter for your prefab");
 	} else {
 		prefabs[parameters.name] = parameters;
-		// TODO: Once using a component system will need to transfer from parameter flat structure to gameobject structure, for now these are the same
+		// TODO: If we move to using a component system will need to transfer from parameter flat structure to a gameobject like structure, for now these are the same.
 		// Note that each component class should deal with setting up that component instance from supplied parameters itself
 	}
 };

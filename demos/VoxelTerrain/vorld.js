@@ -128,7 +128,7 @@ var VorldConfig = (function() {
       WATER: 6,
       BEDROCK: 7
   };
-  
+
   exports.getBlockType = function(config, value) {
     // TODO: Return id instead of string
     if(value < config.thresholds[0]) {
@@ -151,7 +151,7 @@ var VorldConfig = (function() {
         let a = config.amplitude, sdx = config.sdx, sdz = config.sdz, x0 = 0, z0 = 0;
         return function(x, y, z) {
             let fxy = a * Math.exp(-((((x - x0) * (x - x0)) / (2 * sdx * sdx)) + (((z -z0) * (z - z0)) / (2 * sdz * sdz))));
-            return 1 + (fxy - y) / config.yDenominator;
+            return Math.max(0, 1 + (fxy - y) / config.yDenominator);
         };
     } else if (config.shapingFunction == "negative_y") {
         return function(x, y, z) {
@@ -170,46 +170,16 @@ var VorldConfig = (function() {
   exports.getAtlasInfo = function() {
     // TODO: Build from parameters, perhaps an init from other methods
     var atlas = {};
-    atlas.greedy = false;
-    atlas.size = [64, 64];
-    atlas.padding = 2;
-    atlas.tileSize = 16;
-    atlas.tileOffsets = [];
-    atlas.tileOffsets[blockIds.STONE] = {
-        side: [1,1],
-        top: [1,1],
-        bottom: [1,1]
-    };
-    atlas.tileOffsets[blockIds.SOIL] = {
-		side: [0,1],
-		top: [0,1],
-		bottom: [0,1]
-	};
-	atlas.tileOffsets[blockIds.GRASS] = {
-		side: [1,0],
-		top: [0,0],
-		bottom: [0,1]
-	};
-	atlas.tileOffsets[blockIds.WOOD] = {
-		side: [1,2],
-		top: [0,2],
-		bottom: [0,2]
-	};
-    atlas.tileOffsets[blockIds.LEAVES] = {
-		side: [2,0],
-		top: [2,0],
-		bottom: [2,0]
-	};
-	atlas.tileOffsets[blockIds.WATER] = {
-    	side: [2,1],
-    	top: [2,1],
-    	bottom: [2,1]
-    };
-    atlas.tileOffsets[blockIds.BEDROCK] = {
-		side: [2,2],
-		top: [2,2],
-		bottom: [2,2],
-	};
+    atlas.tileSize = 64;
+    atlas.arraySize = 9;
+    atlas.tileIndices = [];
+    atlas.tileIndices[blockIds.GRASS] = { side: 1, top: 0, bottom: 2 };
+    atlas.tileIndices[blockIds.SOIL] = { side: 2, top: 2, bottom: 2 };
+    atlas.tileIndices[blockIds.STONE] = { side: 3, top: 3, bottom: 3 };
+    atlas.tileIndices[blockIds.BEDROCK] = { side: 4, top: 4, bottom: 4 };
+    atlas.tileIndices[blockIds.WOOD] = { side: 6, top: 5, bottom: 5 };
+    atlas.tileIndices[blockIds.LEAVES] = { side: 7, top: 7, bottom: 7 };
+    atlas.tileIndices[blockIds.WATER] = { side: 8, top: 8, bottom: 8 };
     return atlas;
   };
   return exports;

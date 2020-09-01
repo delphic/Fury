@@ -1,14 +1,14 @@
 // Render a Crate!
-// Testing Fury's Scene, Shader, Mesh and Material Classes 
+// Testing Fury's Scene, Shader, Mesh and Material Classes
 // Compare to Arbitary Shader demo which just uses the GL Facade (renderer)
 
-// Init Fury 
+// Init Fury
 Fury.init("fury");
 
 // Create shader
 var shader = Fury.Shader.create({
 	vsSource: [
-	"attribute vec3 aVertexPosition;",
+		"attribute vec3 aVertexPosition;",
     "attribute vec2 aTextureCoord;",
 
     "uniform mat4 uMVMatrix;",
@@ -34,10 +34,11 @@ var shader = Fury.Shader.create({
 	textureUniformNames: [ "uSampler" ],
 	pMatrixUniformName: "uPMatrix",
 	mvMatrixUniformName: "uMVMatrix",
-	bindMaterial: function(material) { },
-	bindBuffers: function(mesh) {
+	bindMaterial: function(material) {
 		this.enableAttribute("aVertexPosition");
 		this.enableAttribute("aTextureCoord");
+	},
+	bindBuffers: function(mesh) {
 		this.setAttribute("aVertexPosition", mesh.vertexBuffer);
 		this.setAttribute("aTextureCoord", mesh.textureBuffer);
 		this.setIndexedAttribute(mesh.indexBuffer);
@@ -90,31 +91,31 @@ var cube = Fury.Mesh.create({
 		1.0, 0.0,
 		1.0, 1.0,
 		0.0, 1.0,
-		
+
 		// Back face
 		1.0, 0.0,
 		1.0, 1.0,
 		0.0, 1.0,
 		0.0, 0.0,
-		
+
 		// Top face
 		0.0, 1.0,
 		0.0, 0.0,
 		1.0, 0.0,
 		1.0, 1.0,
-		
+
 		// Bottom face
 		1.0, 1.0,
 		0.0, 1.0,
 		0.0, 0.0,
 		1.0, 0.0,
-		
+
 		// Right face
 		1.0, 0.0,
 		1.0, 1.0,
 		0.0, 1.0,
 		0.0, 0.0,
-		
+
 		// Left face
 		0.0, 0.0,
 		1.0, 0.0,
@@ -130,7 +131,7 @@ var cube = Fury.Mesh.create({
 		] });
 
 
-// Create Camera & Scene 
+// Create Camera & Scene
 var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 6.0) });
 var scene = Fury.Scene.create({ camera: camera });
 

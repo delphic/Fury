@@ -7,8 +7,8 @@ var Camera = module.exports = function() {
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
 		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2], 
-				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3], 
+			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
+				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3],
 				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
 		},
@@ -57,7 +57,9 @@ var Camera = module.exports = function() {
 		}
 		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();	
+		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+
+		// TODO: Add Clear Color
 
 		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
 
@@ -65,6 +67,7 @@ var Camera = module.exports = function() {
 	};
 	return exports;
 }();
+
 },{}],2:[function(require,module,exports){
 var canvas;
 
@@ -75,6 +78,7 @@ Fury.Camera = require('./camera');
 Fury.Input = require('./input');
 Fury.Material = require('./material');
 Fury.Mesh = require('./mesh');
+Fury.Model = require("./model");
 Fury.Renderer = require('./renderer');
 Fury.Scene = require('./scene');
 Fury.Shader = require('./shader');
@@ -88,7 +92,7 @@ Fury.createPrefab = function(parameters) {
 		throw new Error("Please provide a valid and unique name parameter for your prefab");
 	} else {
 		prefabs[parameters.name] = parameters;
-		// TODO: Once using a component system will need to transfer from parameter flat structure to gameobject structure, for now these are the same
+		// TODO: If we move to using a component system will need to transfer from parameter flat structure to a gameobject like structure, for now these are the same.
 		// Note that each component class should deal with setting up that component instance from supplied parameters itself
 	}
 };
@@ -107,7 +111,7 @@ Fury.init = function(canvasId) {
 	return true;
 };
 
-},{"./camera":1,"./input":4,"./material":5,"./mesh":6,"./renderer":7,"./scene":8,"./shader":9,"./transform":10}],3:[function(require,module,exports){
+},{"./camera":1,"./input":4,"./material":5,"./mesh":6,"./model":7,"./renderer":8,"./scene":9,"./shader":10,"./transform":11}],3:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
@@ -448,16 +452,24 @@ var Mesh = module.exports = function(){
 			// TODO: Calculate Normals from Vertex information
 		},
 		updateVertices: function() {
+		    // If vertexBuffers exists we should delete the existing buffer?
+		    // or we should use the existing buffer and bind different data
 			this.boundingRadius = this.calculateBoundingRadius();
 			this.vertexBuffer = r.createBuffer(this.vertices, 3);
 		},
 		updateTextureCoordinates: function() {
+		    // If uvBuffer exists we should delete the existing buffer?
+		    // or we should use the existing buffer and bind different data
 			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
 		},
 		updateNormals: function() {
+		    // If normalBuffer exists we should delete the existing buffer?
+		    // or we should use the existing buffer and bind different data
 			this.normalBuffer = r.createBuffer(this.normals, 3);
 		},
 		updateIndexBuffer: function() {
+		    // If indexBuffer exists we should delete the existing buffer?
+		    // or we should use the existing buffer and bind different data
 			this.indexBuffer = r.createBuffer(this.indices, 1, true);
 			this.indexed = true;
 		}
@@ -472,23 +484,48 @@ var Mesh = module.exports = function(){
 			} else {
 				mesh.renderMode = r.RenderMode.Triangles;
 			}
-			if(parameters.vertices) {
-				mesh.vertices = parameters.vertices;
-				mesh.updateVertices();
-			}
-			if(parameters.textureCoordinates) {
-				mesh.textureCoordinates = parameters.textureCoordinates;
-				mesh.updateTextureCoordinates();
-			}
-			if(parameters.normals) {
-				mesh.normals = parameters.normals;
-				mesh.updateNormals();
-			}
-			if(parameters.indices) {
-				mesh.indices = parameters.indices;
-				mesh.updateIndexBuffer();
+			
+			if (parameters.buffers) {
+			    // NOTE: update<X> methods will not work when providing buffers directly
+			    // if the mesh needs to be manipulated at run time, it's best to convert the buffers
+			    // to JS arrays create the mesh data with that.
+			    if (parameters.vertices && parameters.vertexCount) {
+			        mesh.vertexBuffer = r.createArrayBuffer(parameters.vertices, 3, parameters.vertexCount);
+			    }
+			    if (parameters.boundingRadius) {
+			        mesh.boundingRadius = parameters.boundingRadius;
+			    }
+			    if (parameters.textureCoordinates && parameters.textureCoordinatesCount) {
+			        mesh.textureBuffer = r.createArrayBuffer(parameters.textureCoordinates, 2, parameters.textureCoordinatesCount);
+			    }
+			    if (parameters.normals && parameters.normalsCount) {
+			        mesh.normalBuffer = r.createArrayBuffer(parameters.normals, 3, parameters.normalsCount);
+			    }
+			    if (parameters.indices && parameters.indexCount) {
+			        mesh.indexBuffer = r.createElementArrayBuffer(parameters.indices, 1, parameters.indexCount);
+			        mesh.indexed = true;
+			    } else {
+			        mesh.indexed = false;
+			    }
 			} else {
-				mesh.indexed = false;
+			    if(parameters.vertices) {
+    				mesh.vertices = parameters.vertices;
+    				mesh.updateVertices();
+    			}
+    			if(parameters.textureCoordinates) {
+    				mesh.textureCoordinates = parameters.textureCoordinates;
+    				mesh.updateTextureCoordinates();
+    			}
+    			if(parameters.normals) {
+    				mesh.normals = parameters.normals;
+    				mesh.updateNormals();
+    			}
+    			if(parameters.indices) {
+    				mesh.indices = parameters.indices;
+    				mesh.updateIndexBuffer();
+    			} else {
+    				mesh.indexed = false;
+    			}
 			}
 		}
 		return mesh;
@@ -522,7 +559,108 @@ var Mesh = module.exports = function(){
 
 	return exports;
 }();
-},{"./renderer":7}],7:[function(require,module,exports){
+},{"./renderer":8}],7:[function(require,module,exports){
+var Model = module.exports = (function() {
+    var exports = {};
+    
+    // Takes a URI of a glTF file to load 
+    // Returns an object containing an array meshdata ready for use with Fury.Mesh
+    // In future can be extended to include material information
+    exports.load = function(uri, callback) {
+        // TODO: Check file extension, only gltf currently supported
+        // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
+    
+        fetch(uri).then(function(response) { 
+            return response.json();
+        }).then(function(json) {
+            // Find first mesh and load it
+            // TODO: Load all meshes
+            // TODO: Load all sets of texture coordinates
+            
+            // TODO: Option to provide data as JS arrays (i.e. buffers: false)
+            // This is so we can have the data available to JS for runtime manipulation 
+            var meshData = {
+                buffers: true
+            };
+            
+            var attributes = json.meshes[0].primitives[0].attributes;
+            var positionIndex = attributes.POSITION;    // index into accessors
+            var normalsIndex = attributes.NORMAL;       // index into accessors
+            var uvIndex = attributes.TEXCOORD_0;        // index into accessors
+            var indicesIndex = json.meshes[0].primitives[0].indices; 
+            // ^^ I think this is the index and not the index count, should check with a more complex / varied model
+    
+            // Calculate bounding radius
+            var max = json.accessors[positionIndex].max;
+            var min = json.accessors[positionIndex].min;
+            var maxPointSqrDistance = max[0]*max[0] + max[1]*max[1] + max[2]*max[2];
+            var minPointSqrDistance = min[0]*min[0] + min[1]*min[1] + min[2]*min[2];
+            meshData.boundingRadius = Math.sqrt(Math.max(maxPointSqrDistance, minPointSqrDistance));
+    
+            var vertexCount = json.accessors[positionIndex].count;
+            var positionBufferView = json.bufferViews[json.accessors[positionIndex].bufferView];
+
+            var indexCount = json.accessors[indicesIndex].count;
+            var indicesBufferView = json.bufferViews[json.accessors[indicesIndex].bufferView];
+
+            if (positionBufferView.buffer != indicesBufferView.buffer) {
+                console.error("Triangle Indices Buffer Index does not match Position Buffer Index");
+            }
+
+            var normalsCount, uvCount;
+            var normalsBufferView, uvBufferView;
+            
+            if (normalsIndex !== undefined) {
+                normalsCount = json.accessors[normalsIndex].count;
+                normalsBufferView = json.bufferViews[json.accessors[normalsIndex].bufferView];
+                if (positionBufferView.buffer != normalsBufferView.buffer) {
+                    console.error("Normals Buffer Index does not match Position Buffer Index");
+                }
+            }
+            
+            if (uvIndex !== undefined) {
+                uvCount = json.accessors[uvIndex].count;
+                uvBufferView = json.bufferViews[json.accessors[uvIndex].bufferView];
+                if (positionBufferView.buffer != uvBufferView.buffer) {
+                    console.error("Texture Coordinates Buffer Index does not match Position Buffer Index");
+                }
+            }
+            
+            fetch(json.buffers[positionBufferView.buffer].uri).then(function(response) {
+                return response.arrayBuffer();
+            }).then(function(arrayBuffer) {
+                // TODO: pick typedarray type from accessors[index].componentType
+                // TODO: Get size from data from accessors[index].type rather than hardcoding
+                meshData.vertices = new Float32Array(arrayBuffer, positionBufferView.byteOffset, vertexCount * 3);
+                meshData.vertexCount = vertexCount;
+                
+                if (normalsIndex !== undefined) {
+                    meshData.normals = new Float32Array(arrayBuffer, normalsBufferView.byteOffset, normalsCount * 3);
+                    meshData.normalsCount = normalsCount;
+                }
+                
+                if (uvIndex !== undefined) {
+                    meshData.textureCoordinates = new Float32Array(arrayBuffer, uvBufferView.byteOffset, uvCount * 2); 
+                    meshData.textureCoordinatesCount = uvCount;
+                }
+                
+                meshData.indices = new Int16Array(arrayBuffer, indicesBufferView.byteOffset, indexCount);
+                meshData.indexCount = indexCount;
+               
+                callback({ meshData: [ meshData ]});
+                
+            }).catch(function(error) {
+                console.error("Unable to fetch data buffer from model");
+            });
+    
+        }).catch(function(error) {
+            console.error("Unable to load model at " + uri);
+        });
+    };
+    
+    return exports;
+})();
+},{}],8:[function(require,module,exports){
 // glMatrix assumed Global
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
@@ -530,7 +668,7 @@ var Mesh = module.exports = function(){
 var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas) {
-	gl = canvas.getContext('webgl');
+	gl = canvas.getContext('webgl2');
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);	// TODO: Make configurable
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
 	gl.enable(gl.CULL_FACE);  // TODO: expose as method
@@ -621,6 +759,24 @@ exports.createBuffer = function(data, itemSize, indexed) {
 	return buffer;
 };
 
+exports.createArrayBuffer = function(data, itemSize, numItems) {
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    buffer.itemSize = itemSize;
+    buffer.numItems = numItems;
+    return buffer;
+};
+
+exports.createElementArrayBuffer = function(data, itemSize, numItems) {
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    buffer.itemSize = itemSize;
+    buffer.numItems = numItems;
+    return buffer;
+};
+
 // Textures
 
 var TextureLocations = exports.TextureLocations = [];
@@ -639,50 +795,79 @@ exports.createTexture = function(source, quality, clamp) {
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 
-	if (quality === TextureQuality.Pixel) {
-		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
-			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
-		}
-		gl.generateMipmap(gl.TEXTURE_2D);
-	}
-	else if (quality === TextureQuality.Highest) {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
-			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
-		}
-		gl.generateMipmap(gl.TEXTURE_2D);
-	}
-	else if (quality === TextureQuality.High) {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-		if (anisotropyExt) {
-			gl.texParameterf(gl.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
-		}
-		gl.generateMipmap(gl.TEXTURE_2D);
-	}
-	else if (quality === TextureQuality.Medium) {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	}
-	else {
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	}
+	setTextureQuality(gl.TEXTURE_2D, quality);
+
 	if (clamp) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
 	gl.bindTexture(gl.TEXTURE_2D, null);
+	texture.glTextureType = gl.TEXTURE_2D;
 	return texture;
+};
+
+/// width and height are of an individual texture
+exports.createTextureArray = function(source, width, height, imageCount, quality, clamp) {
+	var texture = gl.createTexture();
+	// gl.activeTexture(gl.TEXTURE0);
+	gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA, width, height, imageCount, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
+
+	setTextureQuality(gl.TEXTURE_2D_ARRAY, quality);
+
+	if (clamp) {
+		gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	}
+
+	gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
+	texture.glTextureType = gl.TEXTURE_2D_ARRAY;
+	return texture;
+};
+
+var setTextureQuality = function(glTextureType, quality) {
+	if (quality === TextureQuality.Pixel) {
+		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
+		// Might be able to use dFdx / dFdy to determine MIPMAP level and use two textures
+		// and blend the samples based of if it'd be mipmap level 0 or not
+		// Or use multiple samplers in an version 300 ES shader
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		if (anisotropyExt) {
+			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+		}
+		gl.generateMipmap(glTextureType);
+	}
+	else if (quality === TextureQuality.Highest) {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		if (anisotropyExt) {
+			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+		}
+		gl.generateMipmap(glTextureType);
+	}
+	else if (quality === TextureQuality.High) {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+		if (anisotropyExt) {
+			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
+		}
+		gl.generateMipmap(glTextureType);
+	}
+	else if (quality === TextureQuality.Medium) {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	}
+	else {
+		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	}
 };
 
 exports.setTexture = function(location, texture) {
 	gl.activeTexture(TextureLocations[location]);
-	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.bindTexture(texture.glTextureType, texture);
 };
 
 // Blending
@@ -856,7 +1041,7 @@ exports.draw = function(renderMode, count, indexed, offset) {
 	}
 };
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 // glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
@@ -1198,7 +1383,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 
-},{"./indexedMap":3,"./material":5,"./mesh":6,"./renderer":7,"./transform":10}],9:[function(require,module,exports){
+},{"./indexedMap":3,"./material":5,"./mesh":6,"./renderer":8,"./transform":11}],10:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 
@@ -1266,7 +1451,7 @@ var Shader = module.exports = function() {
 	return exports;
 }();
 
-},{"./renderer":7}],10:[function(require,module,exports){
+},{"./renderer":8}],11:[function(require,module,exports){
 var Transform = module.exports = function() {
 	var exports = {};
 	var prototype = {};
