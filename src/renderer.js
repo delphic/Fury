@@ -4,8 +4,8 @@
 // mostly with the render functions, binding buffers before calling a function draw
 var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
-exports.init = function(canvas) {
-	gl = canvas.getContext('webgl2');
+exports.init = function(canvas, contextAttributes) {
+	gl = canvas.getContext('webgl2', contextAttributes);
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);	// TODO: Make configurable
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
 	gl.enable(gl.CULL_FACE);  // TODO: expose as method

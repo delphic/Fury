@@ -27,10 +27,10 @@ Fury.createPrefab = function(parameters) {
 };
 
 // Public functions
-Fury.init = function(canvasId) {
+Fury.init = function(canvasId, contextAttributes) {
 	canvas = document.getElementById(canvasId);
 	try {
-		Fury.Renderer.init(canvas);
+		Fury.Renderer.init(canvas, contextAttributes);
 	} catch (error) {
 		// TODO: debug.error(error.message)
 		console.log(error.message);
