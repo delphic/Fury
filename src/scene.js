@@ -1,9 +1,17 @@
-// glMatrix assumed global
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
 var Material = require('./material');
 var Mesh = require('./mesh');
 var Transform = require('./transform');
+var Maths = require('./maths');
+var mat2 = Maths.mat2,
+	mat3 = Maths.mat3,
+	mat4 = Maths.mat4,
+	quat = Maths.quat,
+	quat2 = Maths.quat2,
+	vec2 = Maths.vec2,
+	vec3 = Maths.vec3,
+	vec4 = Maths.vec4;
 
 var Scene = module.exports = function() {
 	var nextSceneId = 0;

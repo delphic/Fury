@@ -1,8 +1,11 @@
 // Alpha Testing Demo
 // Supply White Ring Texture with transparent centre as ring.png
 
- // Init Fury 
+ // Init Fury
 Fury.init("fury");
+
+// globalize glMatrix
+Fury.Maths.globalize();
 
 // Create shader
 var shader = Fury.Shader.create({
@@ -60,13 +63,13 @@ blueMaterial.tint = vec4.fromValues(0.0, 0.0, 1.0, 0.75);
 blueMaterial.alpha = true;
 
 // Create Mesh
-var quad = Fury.Mesh.create({ 
+var quad = Fury.Mesh.create({
 	vertices: [
 		 0.5,  0.5, 0.0,
 		-0.5,  0.5, 0.0,
 		 0.5, -0.5, 0.0,
 		-0.5, -0.5, 0.0
-	], 
+	],
 	textureCoordinates: [
 		1.0, 1.0,
 		0.0, 1.0,
@@ -75,8 +78,8 @@ var quad = Fury.Mesh.create({
 	],
 	renderMode: Fury.Renderer.RenderMode.TriangleStrip
 });
-var cube = Fury.Mesh.create({ 
-    vertices: [ 
+var cube = Fury.Mesh.create({
+    vertices: [
         // Front face
         -1.0, -1.0,  1.0,
          1.0, -1.0,  1.0,
@@ -111,43 +114,43 @@ var cube = Fury.Mesh.create({
         -1.0, -1.0, -1.0,
         -1.0, -1.0,  1.0,
         -1.0,  1.0,  1.0,
-        -1.0,  1.0, -1.0], 
-    textureCoordinates: [ 
+        -1.0,  1.0, -1.0],
+    textureCoordinates: [
         // Front face
         0.0, 0.0,
         1.0, 0.0,
         1.0, 1.0,
         0.0, 1.0,
-        
+
         // Back face
         1.0, 0.0,
         1.0, 1.0,
         0.0, 1.0,
         0.0, 0.0,
-        
+
         // Top face
         0.0, 1.0,
         0.0, 0.0,
         1.0, 0.0,
         1.0, 1.0,
-        
+
         // Bottom face
         1.0, 1.0,
         0.0, 1.0,
         0.0, 0.0,
         1.0, 0.0,
-        
+
         // Right face
         1.0, 0.0,
         1.0, 1.0,
         0.0, 1.0,
         0.0, 0.0,
-        
+
         // Left face
         0.0, 0.0,
         1.0, 0.0,
         1.0, 1.0,
-        0.0, 1.0 ], 
+        0.0, 1.0 ],
     indices: [
         0, 1, 2,      0, 2, 3,    // Front face
         4, 5, 6,      4, 6, 7,    // Back face
@@ -157,7 +160,7 @@ var cube = Fury.Mesh.create({
         20, 21, 22,   20, 22, 23  // Left face
         ] });
 
-// Create Camera & Scene 
+// Create Camera & Scene
 var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 3.0) });
 var scene = Fury.Scene.create({ camera: camera });
 
@@ -182,7 +185,7 @@ var loop = function(){
         quat.rotateY(rotation, rotation, 0.005);
         quat.rotateZ(rotation, rotation, 0.0025);
         scene.render();
-        window.requestAnimationFrame(loop); 
+        window.requestAnimationFrame(loop);
 };
 
 // Create Texture

@@ -3,6 +3,9 @@ var editor = ace.edit("editor");
 editor.setTheme("ace/theme/monokai");
 editor.getSession().setMode("ace/mode/glsl");
 
+// globalize glMatrix
+Fury.Maths.globalize();
+
 // Init
 Fury.init('fury');
 var r = Fury.Renderer;

@@ -7,18 +7,21 @@ var requestJson = function(path, callback) {
 };
 
 var createQuad = function(size) {
-	return Fury.Mesh.create({ 
-		vertices: [ size * 0.5, size * 0.5, 0.0, size * -0.5,  size * 0.5, 0.0, size * 0.5, size * -0.5, 0.0, size * -0.5, size * -0.5, 0.0 ], 
+	return Fury.Mesh.create({
+		vertices: [ size * 0.5, size * 0.5, 0.0, size * -0.5,  size * 0.5, 0.0, size * 0.5, size * -0.5, 0.0, size * -0.5, size * -0.5, 0.0 ],
 		textureCoordinates: [ 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
 		renderMode: Fury.Renderer.RenderMode.TriangleStrip
 	});
 };
 
+// globalize glMatrix
+Fury.Maths.globalize();
+
 var scale = 1;
 var canvas, ctx, clearColour = "#111111";
 var spritesPerRow, spritesPerColumn, spriteWidth, spriteHeight;
 var renderSpriteToCanvas = function(spriteData, paletteData) {
-	
+
 	var minSpritesPerRow = Math.ceil(Math.sqrt(spriteData.frames.length));
 	spriteWidth = nextPowerOfTwo(scale * spriteData.groupWidth * minSpritesPerRow);
 	spritesPerRow = Math.floor(spriteWidth / (spriteData.groupWidth * scale));
@@ -74,7 +77,7 @@ var setMaterialOffset = function(frameIndex) {
 	material.dirty = true;
 }
 
-// Init Fury 
+// Init Fury
 Fury.init("fury");
 
 // Create shader
@@ -128,13 +131,13 @@ material.alpha = true;
 material.scale = vec2.fromValues(1, 1);
 material.offset = vec2.fromValues(0, 0);
 
-var camera = Fury.Camera.create({ 
+var camera = Fury.Camera.create({
 	type: Fury.Camera.Type.Orthonormal,
 	near: 0.1,
-	far: 1000000.0, 
-	height: 1.0, 
-	ratio: 1, 
-	position: vec3.fromValues(0.0, 0.0, 1.0) 
+	far: 1000000.0,
+	height: 1.0,
+	ratio: 1,
+	position: vec3.fromValues(0.0, 0.0, 1.0)
 });
 
 var scene = Fury.Scene.create({ camera: camera });
@@ -175,7 +178,7 @@ var init = function() {
 		thingsToLoad--;
 		if(!thingsToLoad) {
 			canvas = document.getElementById("spriteCanvas");
-			ctx = canvas.getContext("2d");	
+			ctx = canvas.getContext("2d");
 			renderSpriteToCanvas(spriteData, palleteData, 0);
 
 			var texture = Fury.Renderer.createTexture(canvas, "low", true);

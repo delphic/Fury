@@ -1,3 +1,6 @@
+var Maths = require('./maths');
+var quat = Maths.quat, vec3 = Maths.vec3;
+
 var Transform = module.exports = function() {
 	var exports = {};
 	var prototype = {};

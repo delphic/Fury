@@ -40,6 +40,7 @@ var fsSource = [ "#ifdef GL_ES",
 // Init
 Fury.init('fury');
 var r = Fury.Renderer;
+var mat4 = Fury.Maths.mat4;
 
 // Create Buffers
 var quadBuffer = r.createBuffer([
@@ -143,7 +144,7 @@ var loop = function(){
 	window.requestAnimationFrame(loop);
 };
 
-// Create Texture 
+// Create Texture
 // This is a bit syntaxically messy
 var texture, image = new Image();
 image.onload = function() {
@@ -152,4 +153,3 @@ image.onload = function() {
 	loop();
 };
 image.src = "concrete1.jpg";
-

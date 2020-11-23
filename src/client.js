@@ -12,6 +12,7 @@ Fury.Renderer = require('./renderer');
 Fury.Scene = require('./scene');
 Fury.Shader = require('./shader');
 Fury.Transform = require('./transform');
+Fury.Maths = require('./maths');
 
 Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
 

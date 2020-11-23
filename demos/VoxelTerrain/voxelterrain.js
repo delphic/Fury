@@ -1,16 +1,17 @@
 "use strict";
-var vec3 = window.vec3;
-var quat = window.quat;
-var $ = window.$;
-var Fury = window.Fury;
-var VorldConfig = window.VorldConfig;
-var VoxelShader = window.VoxelShader;
 
 // Voxel Terrain Generator
 // Multiple Octaves of Perlin Noise -> Cubes
 
-// glMatrix extension
-quat.rotate = (function() {
+var $ = window.$;
+var Fury = window.Fury;
+var VorldConfig = window.VorldConfig;
+var VoxelShader = window.VoxelShader;
+// globalize glMatrix 
+Fury.Maths.globalize();
+
+// TODO: make into glMatrix extension / check glMatrix v3.3.0 for similar function
+var quatRotate = (function() {
 	var i = quat.create();
 	return function(out, q, rad, axis) {
 		quat.setAxisAngle(i, axis, rad);
@@ -341,7 +342,7 @@ var handleInput = function(elapsed) {
 	    if (Math.abs(yRotation) > maxRotatePerFrame) {
 	        yRotation = Math.sign(yRotation) * maxRotatePerFrame;
 	    }
-		quat.rotate(q, q, -xRotation, unity);
+		quatRotate(q, q, -xRotation, unity);
 
 		let roll = getRoll(q);
 		let clampAngle = 10 * Math.PI/180;

@@ -49,31 +49,31 @@ var cubeJson = {
 		1.0, 0.0,
 		1.0, 1.0,
 		0.0, 1.0,
-		
+
 		// Back face
 		1.0, 0.0,
 		1.0, 1.0,
 		0.0, 1.0,
 		0.0, 0.0,
-		
+
 		// Top face
 		0.0, 1.0,
 		0.0, 0.0,
 		1.0, 0.0,
 		1.0, 1.0,
-		
+
 		// Bottom face
 		1.0, 1.0,
 		0.0, 1.0,
 		0.0, 0.0,
 		1.0, 0.0,
-		
+
 		// Right face
 		1.0, 0.0,
 		1.0, 1.0,
 		0.0, 1.0,
 		0.0, 0.0,
-		
+
 		// Left face
 		0.0, 0.0,
 		1.0, 0.0,
@@ -88,7 +88,10 @@ var cubeJson = {
 		20, 21, 22,   20, 22, 23  // Left face
 		] };
 
-// Init Fury 
+// globalize glMatrix
+Fury.Maths.globalize();
+
+// Init Fury
 Fury.init("fury");
 
 // Create shader
@@ -140,7 +143,7 @@ var teapotMesh = Fury.Mesh.create(teapotJson);
 Fury.createPrefab({ name: "cube", mesh: cubeMesh, material: material1 });
 Fury.createPrefab({ name: "teapot", mesh: teapotMesh, material: material2 });
 
-// Create Camera & Scene 
+// Create Camera & Scene
 var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 550.0) });
 var scene = Fury.Scene.create({ camera: camera });
 

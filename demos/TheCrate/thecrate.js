@@ -2,6 +2,9 @@
 // Testing Fury's Scene, Shader, Mesh and Material Classes
 // Compare to Arbitary Shader demo which just uses the GL Facade (renderer)
 
+// globalize glMatrix
+Fury.Maths.globalize();
+
 // Init Fury
 Fury.init("fury");
 

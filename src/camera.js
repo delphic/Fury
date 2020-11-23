@@ -1,4 +1,6 @@
-// glMatrix assumed Global
+var Maths = require('./maths');
+let vec3 = Maths.vec3, mat4 = Maths.mat4, quat = Maths.quat;
+
 var Camera = module.exports = function() {
 	var exports = {};
 	var prototype = {

@@ -1,6 +1,9 @@
 // Render a Model
 // Testing a model loader class
 
+// globalize glMatrix
+Fury.Maths.globalize();
+
 // Init Fury
 Fury.init("fury");
 
@@ -16,7 +19,7 @@ var shader = Fury.Shader.create({
 
     "varying vec2 vTextureCoord;",
     "varying float vLightWeight;",
-    
+
     "void main(void) {",
         "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
         "vTextureCoord = aTextureCoord;",

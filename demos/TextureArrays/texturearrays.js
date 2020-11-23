@@ -1,6 +1,9 @@
 // Render a Block using texture arrays!
 // Using Fury's Scene, Shader, Mesh and Material Classes
 
+// globalize glMatrix
+Fury.Maths.globalize();
+
 // Init Fury
 Fury.init("fury");
 
