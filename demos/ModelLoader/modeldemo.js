@@ -4,6 +4,12 @@
 // globalize glMatrix
 Fury.Maths.globalize();
 
+var useQueen = true, useTexture = false;
+var modelName = useQueen ? "queen.gltf" : "cube.gltf";
+var textureQuality = "low", textureSrc = "checkerboard.png"; 
+var position = useQueen ? vec3.fromValues(0.05, 0.08, 0.1) : vec3.fromValues(2.5, 2.5, 5);
+// TODO: Set default fov or position based on extents of object
+
 // Init Fury
 Fury.init("fury");
 
@@ -34,7 +40,7 @@ var shader = Fury.Shader.create({
     "uniform sampler2D uSampler;",
 
     "void main(void) {",
-        "gl_FragColor = vec4(vLightWeight * vec3(1.0, 1.0, 1.0), 1.0);", //  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));",
+        "gl_FragColor = vec4(vLightWeight * vec3(1.0, 1.0, 1.0), 1.0)" + (useTexture ? " * texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));" : ";"),
     "}"].join('\n'),
 	attributeNames: [ "aVertexPosition", "aVertexNormal", "aTextureCoord" ],
 	uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
@@ -57,32 +63,33 @@ var shader = Fury.Shader.create({
 var material = Fury.Material.create({ shader : shader });
 
 // Create Camera & Scene
-var camera = Fury.Camera.create({ near: 0.01, far: 10000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.05, 0.08, 0.1), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
-// TODO: Set default zoom based on extents of object
+var camera = Fury.Camera.create({ near: 0.01, far: 10000.0, fov: 45.0, ratio: 1.0, position: position, rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
 var scene = Fury.Scene.create({ camera: camera });
 var modelObj = null;
 
 
-var loop = function(){
+var loop = () => {
 	var rotation = modelObj.transform.rotation;
-//	quat.rotateX(rotation, rotation, 0.01);
 	quat.rotateY(rotation, rotation, 0.005);
-//	quat.rotateZ(rotation, rotation, 0.0025);
-	// TODO: Camera controls
+	// TODO: Camera controls - although at that point this becomes a model viewer - which is totally legit
 	scene.render();
 	window.requestAnimationFrame(loop);
 };
 
-Fury.Model.load("queen.gltf", function(model) {
-    // TODO: Consider using promises rather than callbacks
-    var mesh = Fury.Mesh.create(model.meshData[0]);
-    modelObj = scene.add({ material: material, mesh: mesh });
-	window.requestAnimationFrame(loop);
-});
+var image = new Image();
+image.onload = () => {
+	if (useTexture) {
+		material.textures["uSampler"] = Fury.Renderer.createTexture(image, textureQuality);		
+	}
 
-/*var image = new Image();
-image.onload = function() {
-	material.textures["uSampler"] = Fury.Renderer.createTexture(image, "high");
-	loop();
+	// This is what we're actually testing, the rest is boilerplate
+	Fury.Model.load(modelName, (model) => {
+	    // TODO: Consider using promises rather than callbacks
+	    var mesh = Fury.Mesh.create(model.meshData[0]);
+	    modelObj = scene.add({ material: material, mesh: mesh });
+		window.requestAnimationFrame(loop);
+	});
 };
-image.src = "crate.gif";*/
+image.src = textureSrc;
+
+
