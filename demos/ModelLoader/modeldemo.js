@@ -85,6 +85,7 @@ image.onload = () => {
 	// This is what we're actually testing, the rest is boilerplate
 	Fury.Model.load(modelName, (model) => {
 	    // TODO: Consider using promises rather than callbacks
+	    // TODO: Investigate embedded resources / resource references for materials 
 	    var mesh = Fury.Mesh.create(model.meshData[0]);
 	    modelObj = scene.add({ material: material, mesh: mesh });
 		window.requestAnimationFrame(loop);
