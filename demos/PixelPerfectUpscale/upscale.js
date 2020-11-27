@@ -1,11 +1,4 @@
 // Helpers
-var requestJson = function(path, callback) {
-	var request = new XMLHttpRequest();
-	request.open("GET", path, true);
-	request.onload = function() { callback(request.responseText); }
-	request.send();
-};
-
 var createQuad = function(size) {
 	return Fury.Mesh.create({
 		vertices: [ size * 0.5, size * 0.5, 0.0, size * -0.5,  size * 0.5, 0.0, size * 0.5, size * -0.5, 0.0, size * -0.5, size * -0.5, 0.0 ],
