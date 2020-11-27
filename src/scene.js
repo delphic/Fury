@@ -111,16 +111,19 @@ var Scene = module.exports = function() {
 			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
-			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
-			// Should be adding a renderer component to said concept (?)
+			// Probably want to move to a stronger ECS concept
+			// Adding a transform component is probably fine
+			// as the renderer requires it.
 			object.transform = Transform.create(parameters);
 
 			object.sceneId = renderObjects.add(object);
-			object.remove = function() {
-				renderObjects.remove(this.sceneId);
-				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
-			}; // TODO: Move to prototype
+
 			return object;
+		};
+
+		scene.remove = function(object) {
+			renderObjects.remove(object.sceneId);
+			// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
 		};
 
 		scene.instantiate = function(parameters) {
