@@ -201,11 +201,16 @@ var Input = module.exports = function() {
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
 			canvas.addEventListener("mouseup", handleMouseUp);
-			document.addEventListener("keyup", handleKeyUp);
-			document.addEventListener("keydown", handleKeyDown);
+			window.addEventListener("keyup", handleKeyUp);
+			window.addEventListener("keydown", handleKeyDown);
+			window.addEventListener("blur", handleBlur);
 	};
 
 	var MousePosition = exports.MousePosition = [0, 0];
+
+	// TODO: Add signalEndFrame and store keyDown [] and keyUp[] array for
+	// querying as well, although the option of just subscribig to the events
+	// in game code is also there but need to use DescriptionToKeyCode
 
 	var keyDown = exports.keyDown = function(key) {
 		if (!isNaN(key) && !key.length) {
@@ -239,6 +244,10 @@ var Input = module.exports = function() {
 
 	var handleKeyUp = function(event) {
 		currentlyPressedKeys[event.keyCode] = false;
+	};
+
+	var handleBlur = function(event) {
+		currentlyPressedKeys.length = 0;
 	};
 
 	var handleMouseMove = function(event) {
@@ -1227,16 +1236,19 @@ var Scene = module.exports = function() {
 			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
-			// This shouldn't be done here, should be using a Fury.GameObject or similar concept, which will come with a transform
-			// Should be adding a renderer component to said concept (?)
+			// Probably want to move to a stronger ECS concept
+			// Adding a transform component is probably fine
+			// as the renderer requires it.
 			object.transform = Transform.create(parameters);
 
 			object.sceneId = renderObjects.add(object);
-			object.remove = function() {
-				renderObjects.remove(this.sceneId);
-				// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
-			}; // TODO: Move to prototype
+
 			return object;
+		};
+
+		scene.remove = function(object) {
+			renderObjects.remove(object.sceneId);
+			// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
 		};
 
 		scene.instantiate = function(parameters) {

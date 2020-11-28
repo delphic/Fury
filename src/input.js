@@ -5,11 +5,16 @@ var Input = module.exports = function() {
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
 			canvas.addEventListener("mouseup", handleMouseUp);
-			document.addEventListener("keyup", handleKeyUp);
-			document.addEventListener("keydown", handleKeyDown);
+			window.addEventListener("keyup", handleKeyUp);
+			window.addEventListener("keydown", handleKeyDown);
+			window.addEventListener("blur", handleBlur);
 	};
 
 	var MousePosition = exports.MousePosition = [0, 0];
+
+	// TODO: Add signalEndFrame and store keyDown [] and keyUp[] array for
+	// querying as well, although the option of just subscribig to the events
+	// in game code is also there but need to use DescriptionToKeyCode
 
 	var keyDown = exports.keyDown = function(key) {
 		if (!isNaN(key) && !key.length) {
@@ -43,6 +48,10 @@ var Input = module.exports = function() {
 
 	var handleKeyUp = function(event) {
 		currentlyPressedKeys[event.keyCode] = false;
+	};
+
+	var handleBlur = function(event) {
+		currentlyPressedKeys.length = 0;
 	};
 
 	var handleMouseMove = function(event) {
