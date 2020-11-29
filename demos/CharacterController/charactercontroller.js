@@ -4,7 +4,39 @@
 // globalize glMatrix
 Fury.Maths.globalize();
 
-// TODO: Move to Fury.Maths
+// Extend Maths
+// See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+Fury.Maths.calculateRoll = function(q) {
+	// x-axis rotation
+	let w = q[3], x = q[0], y = q[1], z = q[2];
+	return Math.atan2(2 * (w*x + y*z), 1 - 2 * (x*x + y*y));
+};
+
+Fury.Maths.calculatePitch = function(q) {
+	// y-axis rotation
+	let w = q[3], x = q[0], y = q[1], z = q[2];
+	let sinp = 2 * (w*y - z*x);
+	return Math.asin(sinp);
+	// returns pi/2 -> - pi/2 range only
+	// which is not helpful at all.
+};
+
+Fury.Maths.calculateYaw = function(q) {
+	// z-axis rotation
+	let w = q[3], x = q[0], y = q[1], z = q[2];
+	return Math.atan2(2 * (w*z + x*y), 1 - 2 * (y*y + z*z));
+};
+
+Fury.Maths.getRoll = function(q) {
+		// Used to avoid gimbal lock
+    let sinr_cosp = 2 * (q[3] * q[0] + q[1] * q[2]);
+    let cosr_cosp = 1 - 2 * (q[0] * q[0] + q[1] * q[1]);
+    return Math.atan(sinr_cosp / cosr_cosp);
+    // If you want to know sector you need atan2(sinr_cosp, cosr_cosp)
+    // but we don't in this case.
+};
+
+// TODO: Move to Fury.Maths or extend glMatrix
 var quatRotate = (function() {
 	var i = quat.create();
 	return function(out, q, rad, axis) {
@@ -150,12 +182,129 @@ var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1
 // TODO: Set fov based on screen size / ratio? c.f. voxel terrain
 var scene = Fury.Scene.create({ camera: camera });
 
+// Physics
+let world = { colliders: [] };
+
+let Physics = {};
+
+// Q: Do we want intersects to return true if touching
+// I don't think we necessarily do? So we should probably
+// change box comparisons to remove there "orEqualTo" aspect
+
+// https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
+Physics.Box = (function() {
+	let exports = {};
+	let prototype = {
+		cacluateMinMax: function() {
+			vec3.subtract(this.min, this.center, this.extents);
+			vec3.add(this.max, this.center, this.extents);
+		}
+	};
+
+	exports.contains = function(point, box) {
+		return point[0] >= box.min[0] && point[0] <= box.max[0]
+			&& point[1] >= box.min[1] && point[1] <= box.max[1]
+			&& point[2] >= box.min[2] && point[2] <= box.max[2];
+	};
+
+	exports.intersect = function(a, b) {
+		return (a.min[0] <= b.max[0] && a.max[0] >= b.min[0])
+			&& (a.min[1] <= b.max[1] && a.max[1] >= b.min[1])
+			&& (a.min[2] <= b.max[2] && a.max[2] >= b.min[2]);
+	};
+
+	exports.intersectSphere = function(sphere, box) {
+		// closest point on box to sphere center
+		let x = Math.max(box.min[0], Math.min(sphere.center[0], box.max[0]));
+		let y = Math.max(box.min[1], Math.min(sphere.center[1], box.max[1]));
+		let z = Math.max(box.min[2], Math.min(sphere.center[2], box.max[2]));
+
+		let sqrDistance = (x - sphere.center[0]) * (x - sphere.center[0]) +
+		 	(y - sphere.center[1]) * (y - sphere.center[1]) +
+			(z - sphere.center[2]) * (z - sphere.center[2]);
+
+		return sqrDistance < sphere.radius * sphere.radius;
+	};
+
+	exports.create = function(parameters) {
+			// Note - you are expected to keep center updated
+			let aabb = Object.create(prototype);
+			if (parameters.center) {
+					aabb.center = parameters.center;
+			} else {
+					aabb.center = vec3.create();
+			}
+
+			if (parameters.size) {
+				aabb.size = parameters.size;
+				aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
+			} else if (parameters.extents) {
+				aabb.extents = parameters.extents;
+				aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
+			}
+			aabb.min = vec3.create();
+			aabb.max = vec3.create();
+
+			aabb.cacluateMinMax();
+
+			// TODO: Allow creation from min + max
+
+			return aabb;
+	};
+
+	return exports;
+})();
+
+Physics.Sphere = (function() {
+	let exports = {};
+	let prototype = {};
+
+	exports.contains = function(point, sphere) {
+		let dx = point[0] - sphere.center[0], dy = point[1] - sphere.center[1], dz = point[2] - sphere.center[2];
+		let sqrDistance = dx * dx + dy * dy + dz * dz;
+		return sqrDistance < sphere.radius * sphere.radius;
+	};
+
+	exports.intersect = function(a, b) {
+		let dx = a.center[0] - b.center[0], dy = a.center[1] - b.center[1], dz = a.center[2] - b.center[2];
+		let sqrDistance = dx * dx + dy * dy + dz * dz;
+		return sqrDistance < (a.radius + b.radius) * (a.radius + b.radius);
+	};
+
+	exports.intersectBox = function(box, sphere) {
+		return Physics.Box.intersectSphere(sphere, box);
+	};
+
+	exports.create = function(parameters) {
+		let sphere = Object.create(prototype);
+
+		if (parameters.center) {
+			sphere.center = parameters.center;
+		} else {
+			sphere.center = vec3.create();
+		}
+		sphere.radius = parameters.radius | 0;
+
+		return sphere;
+	};
+
+	return exports;
+})();
+// TODO: might quite like a cylinder and or capsule
+
 // Build me a Room - 10x10, height 4
 let walls = [], floor, roof;
 
 var createCuboid = function(w, h, d, x, y, z) {
+	let position = vec3.fromValues(x, y, z);
+	let size = vec3.fromValues(w, h, d);
 	let mesh = Fury.Mesh.create(createCuboidMesh(w, h, d));
-	return scene.add({ material: material, mesh: mesh, position: vec3.fromValues(x, y, z) });
+	let box = Physics.Box.create({ center: position, size: size });
+	// Note if you move the cuboid you have to recalculate min max
+
+	// Add to scene and physics world
+	world.colliders.push(box);
+	return scene.add({ material: material, mesh: mesh, position: position });
 };
 
 // Walls
@@ -164,44 +313,17 @@ walls.push(createCuboid(10, 4, 1, 0, 2, -5.5));
 walls.push(createCuboid(1, 4, 10, 5.5, 2, 0));
 walls.push(createCuboid(1, 4, 10, -5.5, 2, 0));
 
-// TODO: Create colliders
-
 floor = createCuboid(10, 1, 10, 0, -0.5, 0);
 roof = createCuboid(10, 1, 10, 0, 4.5, 0);
 
-// See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-var calculateRoll = function(q) {
-	// x-axis rotation
-	let w = q[3], x = q[0], y = q[1], z = q[2];
-	return Math.atan2(2 * (w*x + y*z), 1 - 2 * (x*x + y*y));
-};
-
-var calculatePitch = function(q) {
-	// y-axis rotation
-	let w = q[3], x = q[0], y = q[1], z = q[2];
-	let sinp = 2 * (w*y - z*x);
-	return Math.asin(sinp);
-	// returns pi/2 -> - pi/2 range only
-	// which is not helpful at all.
-};
-
-var calculateYaw = function(q) {
-	// z-axis rotation
-	let w = q[3], x = q[0], y = q[1], z = q[2];
-	return Math.atan2(2 * (w*z + x*y), 1 - 2 * (y*y + z*z));
-};
-
-var getRoll = function(q) {
-		// Used to avoid gimbal lock
-    let sinr_cosp = 2 * (q[3] * q[0] + q[1] * q[2]);
-    let cosr_cosp = 1 - 2 * (q[0] * q[0] + q[1] * q[1]);
-    return Math.atan(sinr_cosp / cosr_cosp);
-    // If you want to know sector you need atan2(sinr_cosp, cosr_cosp)
-    // but we don't in this case.
-};
+let playerSphere = Physics.Sphere.create({ center: camera.position, radius: 1.0 });
+let playerBox = Physics.Box.create({ center: camera.position, size: vec3.fromValues(0.5, 1.95, 0.5) });
+// NOTE: specifically using camera.position directly so that it moves with camera automatically
 
 let localX = vec3.create(), localZ = vec3.create();
 let unitX = vec3.fromValues(1,0,0), unitY = vec3.fromValues(0,1,0), unitZ = vec3.fromValues(0,0,1);
+let vec3Cache = vec3.create();
+// TODO: Add Unit Vectors to Fury.Maths or glMatrix fork
 
 let movementSpeed = 0.025;	// TODO: per second not per frame
 let lookSpeed = 0.05;	// TODO: per second not per frame
@@ -224,7 +346,6 @@ document.addEventListener('pointerlockchange', (event) => {
 });
 
 
-//
 var loop = function(){
 	scene.render();
 
@@ -257,13 +378,11 @@ var loop = function(){
 
 	quatRotate(camera.rotation, camera.rotation, ry, unitY);
 
-	// Note doesn't lock in the right place if you're using atan2 version
-	let roll = getRoll(camera.rotation);
+	let roll = Fury.Maths.getRoll(camera.rotation); // Note doesn't lock in the right place if you're using atan2 version
 	let clampAngle = 10 * Math.PI/180;
 	if (Math.sign(roll) == Math.sign(-rx) || Math.abs(roll - rx) < 0.5*Math.PI - clampAngle) {
 		quat.rotateX(camera.rotation, camera.rotation, rx);
 	}
-
 
 	let dx = 0, dz = 0;
 	// TODO: Invert camera look direction for the love of my sanity
@@ -280,6 +399,9 @@ var loop = function(){
 		dx += 1;
 	}
 
+	// TODO: jump and gravity
+
+	// Calculate local axes for camera - ignoring roll
 	// This would be easier with a character transform
 	// Wouldn't need to zero the y component
 	vec3.transformQuat(localX, unitX, camera.rotation);
@@ -288,8 +410,33 @@ var loop = function(){
 	vec3.normalize(localX, localX);
 	localZ[1] = 0;
 	vec3.normalize(localZ, localZ);
+
+	vec3.copy(vec3Cache, camera.position);
 	vec3.scaleAndAdd(camera.position, camera.position, localZ, movementSpeed * dz);
 	vec3.scaleAndAdd(camera.position, camera.position, localX, movementSpeed * dx);
+
+	let collision = false, useBox = true;
+
+	if (useBox) {
+		playerBox.cacluateMinMax();
+	}
+
+	for (let i = 0, l = world.colliders.length; i < l; i++) {
+		if (useBox) {
+			if (Physics.Box.intersect(playerBox, world.colliders[i])) {
+				collision = true;
+				break;
+			}
+		} else if (Physics.Box.intersectSphere(playerSphere, world.colliders[i])) {
+			collision = true;
+			break;
+		}
+	}
+	if (collision) {
+		// TODO: Would like to be able to slide along an object please
+		// TODO: Would be nice to move up to the object instead
+		vec3.copy(camera.position, vec3Cache);
+	}
 
 	window.requestAnimationFrame(loop);
 };
