@@ -183,7 +183,10 @@ var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1
 var scene = Fury.Scene.create({ camera: camera });
 
 // Physics
-let world = { colliders: [] };
+let world = { boxes: [], spheres: [] };
+// As these currently aren't polymorphic separate colldiers by type
+// However with sensible prototype methods -> insterectType(other, self)
+// we could use a single array
 
 let Physics = {};
 
@@ -303,7 +306,7 @@ var createCuboid = function(w, h, d, x, y, z) {
 	// Note if you move the cuboid you have to recalculate min max
 
 	// Add to scene and physics world
-	world.colliders.push(box);
+	world.boxes.push(box);
 	return scene.add({ material: material, mesh: mesh, position: position });
 };
 
@@ -421,13 +424,13 @@ var loop = function(){
 		playerBox.cacluateMinMax();
 	}
 
-	for (let i = 0, l = world.colliders.length; i < l; i++) {
+	for (let i = 0, l = world.boxes.length; i < l; i++) {
 		if (useBox) {
-			if (Physics.Box.intersect(playerBox, world.colliders[i])) {
+			if (Physics.Box.intersect(playerBox, world.boxes[i])) {
 				collision = true;
 				break;
 			}
-		} else if (Physics.Box.intersectSphere(playerSphere, world.colliders[i])) {
+		} else if (Physics.Box.intersectSphere(playerSphere, world.boxes[i])) {
 			collision = true;
 			break;
 		}
@@ -435,6 +438,10 @@ var loop = function(){
 	if (collision) {
 		// TODO: Would like to be able to slide along an object please
 		// TODO: Would be nice to move up to the object instead
+		// To do this figure out which axes you moved in on - and move out to touch point
+		// in order of which would would have entered first - ratio of move to overlap
+		// Penetration vector.
+		// need list of overlapping colliders though
 		vec3.copy(camera.position, vec3Cache);
 	}
 
@@ -445,7 +452,6 @@ var loop = function(){
 var image = new Image();
 image.onload = function() {
 	material.textures["uSampler"] = Fury.Renderer.createTexture(image, "high");
-	// Q: How set clamp?
 	loop();
 };
 image.src = "checkerboard.png";
