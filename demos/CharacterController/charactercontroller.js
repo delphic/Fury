@@ -196,11 +196,21 @@ let Physics = {};
 
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 Physics.Box = (function() {
+	// Technically this is identical to bounds which is something we want to use
+	// in our renderer, so we've got a name issue here hehe.
 	let exports = {};
 	let prototype = {
 		cacluateMinMax: function() {
 			vec3.subtract(this.min, this.center, this.extents);
 			vec3.add(this.max, this.center, this.extents);
+		},
+		calculateExtents: function() {
+			vec3.subtract(this.size, this.max, this.min);
+			// If we had a vec3.zero vector could use scale and add
+			this.extents[0] = 0.5 * this.size[0];
+			this.extents[1] = 0.5 * this.size[1];
+			this.extents[2] = 0.5 * this.size[2];
+			vec3.add(this.center, this.min, this.extents);
 		}
 	};
 
@@ -230,27 +240,37 @@ Physics.Box = (function() {
 	};
 
 	exports.create = function(parameters) {
-			// Note - you are expected to keep center updated
+			// Note - you are expected to recalculate min/max when position or extents change
+			// or alternatively if you change min/max you can recalculate extents/size/center
 			let aabb = Object.create(prototype);
-			if (parameters.center) {
-					aabb.center = parameters.center;
+
+			if (parameters.center || parameters.size || parameters.extents) {
+				if (parameters.center) {
+						aabb.center = parameters.center;
+				} else {
+						aabb.center = vec3.create();
+				}
+
+				if (parameters.size) {
+					aabb.size = parameters.size;
+					aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
+				} else if (parameters.extents) {
+					aabb.extents = parameters.extents;
+					aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
+				}
+				aabb.min = vec3.create();
+				aabb.max = vec3.create();
+
+				aabb.cacluateMinMax();
 			} else {
-					aabb.center = vec3.create();
+				// Could check min < max on all axes to make this easier to use
+				aabb.min = parameters.min;
+				aabb.max = parameters.max;
+				aabb.center = vec3.create();
+				aabb.size = vec3.create();
+				aabb.extents = vec3.create();
+				aabb.calculateExtents();
 			}
-
-			if (parameters.size) {
-				aabb.size = parameters.size;
-				aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
-			} else if (parameters.extents) {
-				aabb.extents = parameters.extents;
-				aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
-			}
-			aabb.min = vec3.create();
-			aabb.max = vec3.create();
-
-			aabb.cacluateMinMax();
-
-			// TODO: Allow creation from min + max
 
 			return aabb;
 	};
@@ -328,11 +348,15 @@ let unitX = vec3.fromValues(1,0,0), unitY = vec3.fromValues(0,1,0), unitZ = vec3
 let vec3Cache = vec3.create();
 // TODO: Add Unit Vectors to Fury.Maths or glMatrix fork
 
-let movementSpeed = 0.025;	// TODO: per second not per frame
-let lookSpeed = 0.05;	// TODO: per second not per frame
+let movementSpeed = 1.5;
+let lookSpeed = 1;
+
+let yVelocity = 0, jumping = false, jumpDeltaV = 3;
+// TODO: Store x/z velocity when jump and then can alter it with in air movement
+// but the maximum is less
 
 // Mouse look / pointer lock
-let mouseLookSpeed = 0.001;
+let mouseLookSpeed = 0.1;
 let pointerLocked = false;
 let mdx = 0, mdy = 0; // Store accumulating deltas
 let handleMouseMove = function(event) {
@@ -348,9 +372,12 @@ document.addEventListener('pointerlockchange', (event) => {
 	pointerLocked = !!(document.pointerLockElement || document.mozPointerLockElement);
 });
 
+let lastTime = 0;
 
 var loop = function(){
-	scene.render();
+	var elapsed = Date.now() - lastTime;
+	lastTime += elapsed;
+	elapsed /= 1000;
 
 	let ry = 0, rx = 0;
 
@@ -360,23 +387,23 @@ var loop = function(){
 		}
 	} else {
 		// Add the movement to rotations and clear the cache of movement delta
-		ry -= mouseLookSpeed * mdx;
-		rx -= mouseLookSpeed * mdy;
+		ry -= mouseLookSpeed * elapsed * mdx;
+		rx -= mouseLookSpeed * elapsed * mdy;
 		mdx = 0;
 		mdy = 0;
 	}
 
 	if (Fury.Input.keyDown("Left")) {
-		ry += lookSpeed;
+		ry += lookSpeed * elapsed;
 	}
 	if (Fury.Input.keyDown("Right")) {
-		ry -= lookSpeed;
+		ry -= lookSpeed * elapsed;
 	}
 	if (Fury.Input.keyDown("Up")) {
-		rx += lookSpeed;
+		rx += lookSpeed * elapsed;
 	}
 	if (Fury.Input.keyDown("Down")) {
-		rx -= lookSpeed;
+		rx -= lookSpeed * elapsed;
 	}
 
 	quatRotate(camera.rotation, camera.rotation, ry, unitY);
@@ -402,8 +429,6 @@ var loop = function(){
 		dx += 1;
 	}
 
-	// TODO: jump and gravity
-
 	// Calculate local axes for camera - ignoring roll
 	// This would be easier with a character transform
 	// Wouldn't need to zero the y component
@@ -415,11 +440,12 @@ var loop = function(){
 	vec3.normalize(localZ, localZ);
 
 	vec3.copy(vec3Cache, camera.position);
-	vec3.scaleAndAdd(camera.position, camera.position, localZ, movementSpeed * dz);
-	vec3.scaleAndAdd(camera.position, camera.position, localX, movementSpeed * dx);
+	vec3.scaleAndAdd(camera.position, camera.position, localZ, movementSpeed * elapsed * dz);
+	vec3.scaleAndAdd(camera.position, camera.position, localX, movementSpeed * elapsed * dx);
 
 	let collision = false, useBox = true;
 
+	// This is basically character controller move
 	if (useBox) {
 		playerBox.cacluateMinMax();
 	}
@@ -443,7 +469,54 @@ var loop = function(){
 		// Penetration vector.
 		// need list of overlapping colliders though
 		vec3.copy(camera.position, vec3Cache);
+
+		// Also need to support steps and slopes
 	}
+
+	// Now lets do it again for gravity / jumping
+	collision = false;
+	if (!jumping && Fury.Input.keyDown("Space")) {
+		jumping = true;
+		yVelocity = jumpDeltaV;
+	} else if (jumping) {
+		yVelocity -= 9.8 * elapsed;
+	}
+
+	// Another Character Controller Move
+	vec3.copy(vec3Cache, camera.position);
+	vec3.scaleAndAdd(camera.position, camera.position, unitY, yVelocity * elapsed);
+	if (useBox) {
+		playerBox.cacluateMinMax();
+	}
+
+	for (let i = 0, l = world.boxes.length; i < l; i++) {
+		if (useBox) {
+			if (Physics.Box.intersect(playerBox, world.boxes[i])) {
+				collision = true;
+				break;
+			}
+		} else if (Physics.Box.intersectSphere(playerSphere, world.boxes[i])) {
+			collision = true;
+			break;
+		}
+	}
+	if (collision) {
+		// TODO: Would like to be able to slide along an object please
+		// TODO: Would be nice to move up to the object instead
+		// To do this figure out which axes you moved in on - and move out to touch point
+		// in order of which would would have entered first - ratio of move to overlap
+		// Penetration vector.
+		// need list of overlapping colliders though
+		vec3.copy(camera.position, vec3Cache);
+		if (yVelocity < 0) {
+			jumping = false;
+			// ^^ TODO: Need to convert this into isGrounded check, and will need to
+			// change dx / dz to be against slopes if/when we introduce them
+		}
+		yVelocity = 0;
+	}
+
+	scene.render();
 
 	window.requestAnimationFrame(loop);
 };
