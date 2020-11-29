@@ -190,10 +190,6 @@ let world = { boxes: [], spheres: [] };
 
 let Physics = {};
 
-// Q: Do we want intersects to return true if touching
-// I don't think we necessarily do? So we should probably
-// change box comparisons to remove there "orEqualTo" aspect
-
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 Physics.Box = (function() {
 	// Technically this is identical to bounds which is something we want to use
@@ -220,10 +216,13 @@ Physics.Box = (function() {
 			&& point[2] >= box.min[2] && point[2] <= box.max[2];
 	};
 
+	// TODO: Adds Touches methods which use <= and >=
+	// Note - ray casts should probably return true for touches
+
 	exports.intersect = function(a, b) {
-		return (a.min[0] <= b.max[0] && a.max[0] >= b.min[0])
-			&& (a.min[1] <= b.max[1] && a.max[1] >= b.min[1])
-			&& (a.min[2] <= b.max[2] && a.max[2] >= b.min[2]);
+		return (a.min[0] < b.max[0] && a.max[0] > b.min[0])
+			&& (a.min[1] < b.max[1] && a.max[1] > b.min[1])
+			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
 	};
 
 	exports.intersectSphere = function(sphere, box) {
@@ -340,7 +339,7 @@ floor = createCuboid(10, 1, 10, 0, -0.5, 0);
 roof = createCuboid(10, 1, 10, 0, 4.5, 0);
 
 let playerSphere = Physics.Sphere.create({ center: camera.position, radius: 1.0 });
-let playerBox = Physics.Box.create({ center: camera.position, size: vec3.fromValues(0.5, 1.95, 0.5) });
+let playerBox = Physics.Box.create({ center: camera.position, size: vec3.fromValues(0.5, 2, 0.5) });
 // NOTE: specifically using camera.position directly so that it moves with camera automatically
 
 let localX = vec3.create(), localZ = vec3.create();
