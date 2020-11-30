@@ -182,7 +182,7 @@ $(document).ready(function(){
 var rotateRate = 0.1 * Math.PI, maxRotatePerFrame = 0.2 * rotateRate;
 var zoomRate = 16;
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 1.0472, ratio: cameraRatio, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 1.0472, ratio: cameraRatio, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94), enableCulling: true });
 var scene = Fury.Scene.create({ camera: camera });
 var meshes = [];
 
@@ -311,7 +311,7 @@ var getRoll = function(q) {
 var handleInput = function(elapsed) {
 	var q = camera.rotation;
 	var p = camera.position;
-	Maths.Fury.quatLocalAxes(q, localX, localY, localZ);
+	Fury.Maths.quatLocalAxes(q, localx, localy, localz);
 
 	var mousePos = Input.MousePosition;
 	var deltaX = mousePos[0] - prevX;
