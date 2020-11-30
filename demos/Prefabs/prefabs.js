@@ -144,7 +144,7 @@ Fury.createPrefab({ name: "cube", mesh: cubeMesh, material: material1 });
 Fury.createPrefab({ name: "teapot", mesh: teapotMesh, material: material2 });
 
 // Create Camera & Scene
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 550.0) });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 1.0472, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 550.0) });
 var scene = Fury.Scene.create({ camera: camera });
 
 var rotation = quat.create();

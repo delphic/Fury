@@ -6,7 +6,7 @@ Fury.Maths.globalize();
 
 var useQueen = true, useTexture = false;
 var modelName = useQueen ? "queen.gltf" : "cube.gltf";
-var textureQuality = "low", textureSrc = "checkerboard.png"; 
+var textureQuality = "low", textureSrc = "checkerboard.png";
 var position = useQueen ? vec3.fromValues(0.05, 0.08, 0.1) : vec3.fromValues(2.5, 2.5, 5);
 // TODO: Set default fov or position based on extents of object
 
@@ -63,7 +63,7 @@ var shader = Fury.Shader.create({
 var material = Fury.Material.create({ shader : shader });
 
 // Create Camera & Scene
-var camera = Fury.Camera.create({ near: 0.01, far: 10000.0, fov: 45.0, ratio: 1.0, position: position, rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
+var camera = Fury.Camera.create({ near: 0.01, far: 10000.0, fov: 1.0472, ratio: 1.0, position: position, rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
 var scene = Fury.Scene.create({ camera: camera });
 var modelObj = null;
 
@@ -79,18 +79,16 @@ var loop = () => {
 var image = new Image();
 image.onload = () => {
 	if (useTexture) {
-		material.textures["uSampler"] = Fury.Renderer.createTexture(image, textureQuality);		
+		material.textures["uSampler"] = Fury.Renderer.createTexture(image, textureQuality);
 	}
 
 	// This is what we're actually testing, the rest is boilerplate
 	Fury.Model.load(modelName, (model) => {
 	    // TODO: Consider using promises rather than callbacks
-	    // TODO: Investigate embedded resources / resource references for materials 
+	    // TODO: Investigate embedded resources / resource references for materials
 	    var mesh = Fury.Mesh.create(model.meshData[0]);
 	    modelObj = scene.add({ material: material, mesh: mesh });
 		window.requestAnimationFrame(loop);
 	});
 };
 image.src = textureSrc;
-
-

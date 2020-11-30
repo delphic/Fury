@@ -7,17 +7,8 @@ var $ = window.$;
 var Fury = window.Fury;
 var VorldConfig = window.VorldConfig;
 var VoxelShader = window.VoxelShader;
-// globalize glMatrix 
+// globalize glMatrix
 Fury.Maths.globalize();
-
-// TODO: make into glMatrix extension / check glMatrix v3.3.0 for similar function
-var quatRotate = (function() {
-	var i = quat.create();
-	return function(out, q, rad, axis) {
-		quat.setAxisAngle(i, axis, rad);
-		return quat.multiply(out, i, q);
-	};
-})();
 
 var resolutionFactor = 1; // Lower this for low-spec devices
 var cameraRatio = 16 / 9;
@@ -191,7 +182,7 @@ $(document).ready(function(){
 var rotateRate = 0.1 * Math.PI, maxRotatePerFrame = 0.2 * rotateRate;
 var zoomRate = 16;
 var initalRotation = quat.create();
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: cameraRatio, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 1.0472, ratio: cameraRatio, position: vec3.fromValues(53.0, 55.0, 123.0), rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94) });
 var scene = Fury.Scene.create({ camera: camera });
 var meshes = [];
 
@@ -304,9 +295,6 @@ var loop = function(){
 var localx = vec3.create();
 var localy = vec3.create();
 var localz = vec3.create();
-var unitx = vec3.fromValues(1,0,0);
-var unity = vec3.fromValues(0,1,0);
-var unitz = vec3.fromValues(0,0,1);
 var prevX = 0;
 var prevY = 0;
 
@@ -323,15 +311,14 @@ var getRoll = function(q) {
 var handleInput = function(elapsed) {
 	var q = camera.rotation;
 	var p = camera.position;
-	vec3.transformQuat(localx, unitx, q);
-	vec3.transformQuat(localy, unity, q);
-	vec3.transformQuat(localz, unitz, q);
+	Maths.Fury.quatLocalAxes(q, localX, localY, localZ);
 
 	var mousePos = Input.MousePosition;
 	var deltaX = mousePos[0] - prevX;
 	var deltaY = mousePos[1] - prevY;
 	prevX = mousePos[0];
 	prevY = mousePos[1];
+	// TODO: Should have mouseDelta array using movementX and movementY
 
 	if (Input.mouseDown(2)) {
 	    let xRotation = deltaX*rotateRate*elapsed;
@@ -342,7 +329,7 @@ var handleInput = function(elapsed) {
 	    if (Math.abs(yRotation) > maxRotatePerFrame) {
 	        yRotation = Math.sign(yRotation) * maxRotatePerFrame;
 	    }
-		quatRotate(q, q, -xRotation, unity);
+		Fury.Maths.quatRotate(q, q, -xRotation, Fury.Maths.vec3Y);
 
 		let roll = getRoll(q);
 		let clampAngle = 10 * Math.PI/180;

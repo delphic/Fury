@@ -68,7 +68,7 @@ var cubeJson = {
 var cube = Fury.Mesh.create(cubeJson);
 
 // Create Camera & Scene
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 6.0) });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 1.0472, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 6.0) });
 var scene = Fury.Scene.create({ camera: camera });
 
 Fury.Renderer.clearColor(0.1, 0.1, 0.2, 1.0);

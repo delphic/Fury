@@ -161,7 +161,7 @@ var cube = Fury.Mesh.create({
         ] });
 
 // Create Camera & Scene
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 3.0) });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 1.0472, ratio: 1.0, position: vec3.fromValues(0.0, 0.0, 3.0) });
 var scene = Fury.Scene.create({ camera: camera });
 
 // Add Quads to Scene

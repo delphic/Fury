@@ -36,15 +36,6 @@ Fury.Maths.getRoll = function(q) {
     // but we don't in this case.
 };
 
-// TODO: Move to Fury.Maths or extend glMatrix
-var quatRotate = (function() {
-	var i = quat.create();
-	return function(out, q, rad, axis) {
-		quat.setAxisAngle(i, axis, rad);
-		return quat.multiply(out, i, q);
-	};
-})();
-
 // Init Fury
 Fury.init("fury");
 
@@ -178,8 +169,7 @@ var createCuboidMesh = function(width, height, depth) {
 };
 
 // Create Camera & Scene
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: 45.0, ratio: 1.0, position: vec3.fromValues(0.0, 1.0, 4.0) });
-// TODO: Set fov based on screen size / ratio? c.f. voxel terrain
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: Fury.Maths.toRadian(60), ratio: 1.0, position: vec3.fromValues(0.0, 1.0, 0.0), enableCulling: true });
 var scene = Fury.Scene.create({ camera: camera });
 
 // Physics
@@ -188,131 +178,8 @@ let world = { boxes: [], spheres: [] };
 // However with sensible prototype methods -> insterectType(other, self)
 // we could use a single array
 
-let Physics = {};
-
-// https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
-Physics.Box = (function() {
-	// Technically this is identical to bounds which is something we want to use
-	// in our renderer, so we've got a name issue here hehe.
-	let exports = {};
-	let prototype = {
-		cacluateMinMax: function() {
-			vec3.subtract(this.min, this.center, this.extents);
-			vec3.add(this.max, this.center, this.extents);
-		},
-		calculateExtents: function() {
-			vec3.subtract(this.size, this.max, this.min);
-			// If we had a vec3.zero vector could use scale and add
-			this.extents[0] = 0.5 * this.size[0];
-			this.extents[1] = 0.5 * this.size[1];
-			this.extents[2] = 0.5 * this.size[2];
-			vec3.add(this.center, this.min, this.extents);
-		}
-	};
-
-	exports.contains = function(point, box) {
-		return point[0] >= box.min[0] && point[0] <= box.max[0]
-			&& point[1] >= box.min[1] && point[1] <= box.max[1]
-			&& point[2] >= box.min[2] && point[2] <= box.max[2];
-	};
-
-	// TODO: Adds Touches methods which use <= and >=
-	// Note - ray casts should probably return true for touches
-
-	exports.intersect = function(a, b) {
-		return (a.min[0] < b.max[0] && a.max[0] > b.min[0])
-			&& (a.min[1] < b.max[1] && a.max[1] > b.min[1])
-			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
-	};
-
-	exports.intersectSphere = function(sphere, box) {
-		// closest point on box to sphere center
-		let x = Math.max(box.min[0], Math.min(sphere.center[0], box.max[0]));
-		let y = Math.max(box.min[1], Math.min(sphere.center[1], box.max[1]));
-		let z = Math.max(box.min[2], Math.min(sphere.center[2], box.max[2]));
-
-		let sqrDistance = (x - sphere.center[0]) * (x - sphere.center[0]) +
-		 	(y - sphere.center[1]) * (y - sphere.center[1]) +
-			(z - sphere.center[2]) * (z - sphere.center[2]);
-
-		return sqrDistance < sphere.radius * sphere.radius;
-	};
-
-	exports.create = function(parameters) {
-			// Note - you are expected to recalculate min/max when position or extents change
-			// or alternatively if you change min/max you can recalculate extents/size/center
-			let aabb = Object.create(prototype);
-
-			if (parameters.center || parameters.size || parameters.extents) {
-				if (parameters.center) {
-						aabb.center = parameters.center;
-				} else {
-						aabb.center = vec3.create();
-				}
-
-				if (parameters.size) {
-					aabb.size = parameters.size;
-					aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
-				} else if (parameters.extents) {
-					aabb.extents = parameters.extents;
-					aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
-				}
-				aabb.min = vec3.create();
-				aabb.max = vec3.create();
-
-				aabb.cacluateMinMax();
-			} else {
-				// Could check min < max on all axes to make this easier to use
-				aabb.min = parameters.min;
-				aabb.max = parameters.max;
-				aabb.center = vec3.create();
-				aabb.size = vec3.create();
-				aabb.extents = vec3.create();
-				aabb.calculateExtents();
-			}
-
-			return aabb;
-	};
-
-	return exports;
-})();
-
-Physics.Sphere = (function() {
-	let exports = {};
-	let prototype = {};
-
-	exports.contains = function(point, sphere) {
-		let dx = point[0] - sphere.center[0], dy = point[1] - sphere.center[1], dz = point[2] - sphere.center[2];
-		let sqrDistance = dx * dx + dy * dy + dz * dz;
-		return sqrDistance < sphere.radius * sphere.radius;
-	};
-
-	exports.intersect = function(a, b) {
-		let dx = a.center[0] - b.center[0], dy = a.center[1] - b.center[1], dz = a.center[2] - b.center[2];
-		let sqrDistance = dx * dx + dy * dy + dz * dz;
-		return sqrDistance < (a.radius + b.radius) * (a.radius + b.radius);
-	};
-
-	exports.intersectBox = function(box, sphere) {
-		return Physics.Box.intersectSphere(sphere, box);
-	};
-
-	exports.create = function(parameters) {
-		let sphere = Object.create(prototype);
-
-		if (parameters.center) {
-			sphere.center = parameters.center;
-		} else {
-			sphere.center = vec3.create();
-		}
-		sphere.radius = parameters.radius | 0;
-
-		return sphere;
-	};
-
-	return exports;
-})();
-// TODO: might quite like a cylinder and or capsule
+let Maths = Fury.Maths;
+let Physics = Fury.Physics;
 
 // Build me a Room - 10x10, height 4
 let walls = [], floor, roof;
@@ -343,9 +210,7 @@ let playerBox = Physics.Box.create({ center: camera.position, size: vec3.fromVal
 // NOTE: specifically using camera.position directly so that it moves with camera automatically
 
 let localX = vec3.create(), localZ = vec3.create();
-let unitX = vec3.fromValues(1,0,0), unitY = vec3.fromValues(0,1,0), unitZ = vec3.fromValues(0,0,1);
 let vec3Cache = vec3.create();
-// TODO: Add Unit Vectors to Fury.Maths or glMatrix fork
 
 let movementSpeed = 1.5;
 let lookSpeed = 1;
@@ -405,7 +270,7 @@ var loop = function(){
 		rx -= lookSpeed * elapsed;
 	}
 
-	quatRotate(camera.rotation, camera.rotation, ry, unitY);
+	Maths.quatRotate(camera.rotation, camera.rotation, ry, Maths.vec3Y);
 
 	let roll = Fury.Maths.getRoll(camera.rotation); // Note doesn't lock in the right place if you're using atan2 version
 	let clampAngle = 10 * Math.PI/180;
@@ -431,8 +296,8 @@ var loop = function(){
 	// Calculate local axes for camera - ignoring roll
 	// This would be easier with a character transform
 	// Wouldn't need to zero the y component
-	vec3.transformQuat(localX, unitX, camera.rotation);
-	vec3.transformQuat(localZ, unitZ, camera.rotation);
+	vec3.transformQuat(localX, Maths.vec3X, camera.rotation);
+	vec3.transformQuat(localZ, Maths.vec3Z, camera.rotation);
 	localX[1] = 0;
 	vec3.normalize(localX, localX);
 	localZ[1] = 0;
@@ -446,7 +311,7 @@ var loop = function(){
 
 	// This is basically character controller move
 	if (useBox) {
-		playerBox.cacluateMinMax();
+		playerBox.calculateMinMax();
 	}
 
 	for (let i = 0, l = world.boxes.length; i < l; i++) {
@@ -483,9 +348,9 @@ var loop = function(){
 
 	// Another Character Controller Move
 	vec3.copy(vec3Cache, camera.position);
-	vec3.scaleAndAdd(camera.position, camera.position, unitY, yVelocity * elapsed);
+	vec3.scaleAndAdd(camera.position, camera.position, Maths.vec3Y, yVelocity * elapsed);
 	if (useBox) {
-		playerBox.cacluateMinMax();
+		playerBox.calculateMinMax();
 	}
 
 	for (let i = 0, l = world.boxes.length; i < l; i++) {

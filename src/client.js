@@ -3,16 +3,18 @@ var canvas;
 // Fury Global
 Fury = {};
 // Modules
+Fury.Bounds = require('./bounds');
 Fury.Camera = require('./camera');
 Fury.Input = require('./input');
 Fury.Material = require('./material');
+Fury.Maths = require('./maths');
 Fury.Mesh = require('./mesh');
-Fury.Model = require("./model");
+Fury.Model = require('./model');
+Fury.Physics = require('./physics');
 Fury.Renderer = require('./renderer');
 Fury.Scene = require('./scene');
 Fury.Shader = require('./shader');
 Fury.Transform = require('./transform');
-Fury.Maths = require('./maths');
 
 Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
 

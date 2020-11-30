@@ -4,6 +4,7 @@ var Material = require('./material');
 var Mesh = require('./mesh');
 var Transform = require('./transform');
 var Maths = require('./maths');
+var Bounds = require('./bounds');
 var mat2 = Maths.mat2,
 	mat3 = Maths.mat3,
 	mat4 = Maths.mat4,
@@ -115,6 +116,8 @@ var Scene = module.exports = function() {
 			// Adding a transform component is probably fine
 			// as the renderer requires it.
 			object.transform = Transform.create(parameters);
+			object.bounds = Bounds.create({ center: object.transform.position, size: object.mesh.bounds.size });
+			// Bound to transform position (just so long as you dont' overwrite it)
 
 			object.sceneId = renderObjects.add(object);
 
@@ -122,8 +125,15 @@ var Scene = module.exports = function() {
 		};
 
 		scene.remove = function(object) {
-			renderObjects.remove(object.sceneId);
 			// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
+			if (object.sceneId !== undefined) {
+				renderObjects.remove(object.sceneId);
+			} else if (object.id) {
+				// Is prefab, look on prototype for instances and remove this
+				object.instances.remove(object.id);
+				// Note not deleting the locally stored prefab, even if !instances.length as we would get duplicate mesh / materials if we were to readd
+				// Keeping the prefab details around is preferable and should be low overhead
+			}
 		};
 
 		scene.instantiate = function(parameters) {
@@ -140,12 +150,7 @@ var Scene = module.exports = function() {
 					name: parameters.name,
 					instances: indexedMap.create(),
 					mesh: Mesh.copy(defn.mesh),
-					material: Material.copy(defn.material),
-					remove: function() {
-						this.instances.remove(this.id);
-						// Note not deleting the locally stored prefab, even if !instances.length as we would get duplicate mesh / materials if we were to readd
-						// Keeping the prefab details around is preferable and should be low overhead
-					}
+					material: Material.copy(defn.material)
 				};
 				prefab.meshId = meshes.add(prefab.mesh);
 				prefab.materialId = materials.add(prefab.material);
@@ -159,6 +164,8 @@ var Scene = module.exports = function() {
 			}
 			var instance = Object.create(prefab);
 			instance.transform = Transform.create(parameters);
+			instance.bounds = Bounds.create({ center: instance.transform.position, size: prefab.mesh.bounds.size });
+			// Bound to transform position (just so long as you dont' overwrite it)
 			instance.id = prefab.instances.add(instance);
 			return instance;
 		};
@@ -178,6 +185,9 @@ var Scene = module.exports = function() {
 		// Render
 		scene.render = function(cameraName) {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
+			if (camera.enableCulling) {
+				camera.calculateFrustrum();				
+			}
 			camera.getProjectionMatrix(pMatrix);
 			// Camera Matrix should transform world space -> camera space
 			quat.invert(inverseCameraRotation, camera.rotation);						// TODO: Not quite sure about this, camera's looking in -z but THREE.js does it so it's probably okay
@@ -204,20 +214,26 @@ var Scene = module.exports = function() {
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var renderObject = renderObjects[renderObjects.keys[i]];
-				if(renderObject.material.alpha) {
-					addToAlphaList(renderObject, camera.getDepth(renderObject));
-				} else {
-					bindAndDraw(renderObject);
+				renderObject.bounds.calculateMinMax();	// TODO: Only if !static
+				if (!camera.enableCulling || camera.isInFrustum(renderObject.bounds)) {
+					if(renderObject.material.alpha) {
+						addToAlphaList(renderObject, camera.getDepth(renderObject));
+					} else {
+						bindAndDraw(renderObject);
+					}
 				}
 			}
 			for(i = 0, l = prefabs.keys.length; i < l; i++) {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					var instance = instances[instances.keys[j]];
-					if(instance.material.alpha) {
-						addToAlphaList(instance, camera.getDepth(instance));
-					} else {
-						bindAndDraw(instance);
+					instance.bounds.calculateMinMax();	// TODO: Only if !static
+					if (!camera.enableCulling || camera.isInFrustum(instance.bounds)) {
+						if(instance.material.alpha) {
+							addToAlphaList(instance, camera.getDepth(instance));
+						} else {
+							bindAndDraw(instance);
+						}
 					}
 				}
 			}
@@ -240,7 +256,7 @@ var Scene = module.exports = function() {
 			// Having now determined that actually we don't need to rebind uniforms when switching shader programs, we'll need this flag whenever there's only one mesh or material using a given shader.
 
 			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
-			// as this indicates that this object needs reording in the graph (as it's been changed).
+			// as this indicates that this object needs reordering in the graph (as it's been changed).
 
 			var shaderChanged = false;
 			var materialChanged = false;
