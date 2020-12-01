@@ -4,32 +4,48 @@ var Bounds = require('./bounds');
 var Mesh = module.exports = function(){
 	exports = {};
 
-	let calculateMinVertex = function(out, mesh) {
+	let calculateMinVertex = function(out, vertices) {
 		var i, l, v1 = Number.MAX_VALUE, v2 = Number.MAX_VALUE, v3 = Number.MAX_VALUE;
-		for(i = 0, l = mesh.vertices.length; i < l; i += 3) {
-			v1 = Math.min(v1, mesh.vertices[i]);
-			v2 = Math.min(v2, mesh.vertices[i+1]);
-			v3 = Math.min(v3, mesh.vertices[i+2]);
+		for(i = 0, l = vertices.length; i < l; i += 3) {
+			v1 = Math.min(v1, vertices[i]);
+			v2 = Math.min(v2, vertices[i+1]);
+			v3 = Math.min(v3, vertices[i+2]);
 		}
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
 
-	let calculateMaxVertex = function(out, mesh) {
+	let calculateMaxVertex = function(out, vertices) {
 		var i, l, v1 = Number.MIN_VALUE, v2 = Number.MIN_VALUE, v3 = Number.MIN_VALUE;
-		for(i = 0, l = mesh.vertices.length; i < l; i += 3) {
-			v1 = Math.max(v1, mesh.vertices[i]);
-			v2 = Math.max(v2, mesh.vertices[i+1]);
-			v3 = Math.max(v3, mesh.vertices[i+2]);
+		for(i = 0, l = vertices.length; i < l; i += 3) {
+			v1 = Math.max(v1, vertices[i]);
+			v2 = Math.max(v2, vertices[i+1]);
+			v3 = Math.max(v3, vertices[i+2]);
 		}
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
-	// TODO: Readd bounding radius can still be useful for physics and rendering of dynamic objects
+
+	// Returns the furthest vertex from the local origin
+	// Note this is not the same as the furthest from the mid-point of the vertices
+	// This is necessray for the boundingRadius to remain accurate under rotation
+	let calculateBoundingRadius = function(vertices) {
+		var sqrResult = 0;
+		for (let i = 0, l = vertices.length; i< l; i += 3) {
+			let sqrDistance = vertices[i] * vertices[i]
+				+ vertices[i + 1] * vertices[i + 1]
+				+ vertices[i + 2] * vertices[i + 2];
+			if (sqrDistance > sqrResult) {
+				sqrResult = sqrDistance;
+			}
+		}
+		return Math.sqrt(sqrResult);
+	};
 
 	var prototype = {
 		calculateBounds: function() {
-			// NOTE: bounds in local space
-			calculateMinVertex(this.bounds.min, this);
-			calculateMaxVertex(this.bounds.max, this);
+			// NOTE: all bounds in local space
+			this.boundingRadius = calculateBoundingRadius(this.vertices);
+			calculateMinVertex(this.bounds.min, this.vertices);
+			calculateMaxVertex(this.bounds.max, this.vertices);
 			this.bounds.calculateExtents(this.bounds.min, this.bounds.max);
 		},
 		calculateNormals: function() {
@@ -69,6 +85,8 @@ var Mesh = module.exports = function(){
 			} else {
 				mesh.renderMode = r.RenderMode.Triangles;
 			}
+
+			mesh.boundingRadius = parameters.boundingRadius | 0;
 
 			if (parameters.buffers) {
 			    // NOTE: update<X> methods will not work when providing buffers directly
@@ -121,6 +139,7 @@ var Mesh = module.exports = function(){
 
 		copy.indexed = mesh.indexed;
 		copy.renderMode = mesh.renderMode;
+		copy.boundingRadius = mesh.boundingRadius;
 		copy.bounds = Bounds.create({ min: mesh.bounds.min, max: mesh.bounds.max }) ;
 		if (mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);

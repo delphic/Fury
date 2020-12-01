@@ -193,7 +193,7 @@ var createCuboid = function(w, h, d, x, y, z) {
 
 	// Add to scene and physics world
 	world.boxes.push(box);
-	return scene.add({ material: material, mesh: mesh, position: position });
+	return scene.add({ material: material, mesh: mesh, position: position, static: true });
 };
 
 // Walls

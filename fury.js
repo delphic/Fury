@@ -175,7 +175,18 @@ var Camera = module.exports = function() {
 
 			// TODO: The points too please so we can improve culling
 		},
-		isInFrustum: function(bounds) {	// TODO: Add implementation for sphere bounds
+		isSphereInFrustum: function(center, radius) {
+			vec4Cache[3] = 1;
+			for (let i = 0; i < 6; i++) {
+				// We want the point center + normal of the plane * radius
+				vec3.scaleAndAdd(vec4Cache, center, this.planes[i], radius);
+				if (vec4.dot(this.planes[i], vec4Cache) < 0) {
+					return false;
+				}
+			}
+			return true;
+		},
+		isInFrustum: function(bounds) {
 			// https://iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
 			// Note : https://stackoverflow.com/questions/31788925/correct-frustum-aabb-intersection
 			// TODO: Profile and try different techniques (using continue in the loop, unrolling the lot, etc)
@@ -701,7 +712,14 @@ let Maths = module.exports = (function() {
   var vec3Y = exports.vec3Y = glMatrix.vec3.fromValues(0,1,0);
   var vec3Z = exports.vec3Z = glMatrix.vec3.fromValues(0,0,1);
 
+  let equals = glMatrix.glMatrix.equals;
+
   // TODO: create quat from euler
+
+  exports.quatIdentity = function(q) {
+    // Is the provided quaterion identity
+    return (equals(q[0], 0) && equals(q[1], 0) && equals(q[2], 0) && equals(q[3], 1));
+  }
 
   exports.quatRotate = (function() {
   	var i = glMatrix.quat.create();
@@ -729,32 +747,48 @@ var Bounds = require('./bounds');
 var Mesh = module.exports = function(){
 	exports = {};
 
-	let calculateMinVertex = function(out, mesh) {
+	let calculateMinVertex = function(out, vertices) {
 		var i, l, v1 = Number.MAX_VALUE, v2 = Number.MAX_VALUE, v3 = Number.MAX_VALUE;
-		for(i = 0, l = mesh.vertices.length; i < l; i += 3) {
-			v1 = Math.min(v1, mesh.vertices[i]);
-			v2 = Math.min(v2, mesh.vertices[i+1]);
-			v3 = Math.min(v3, mesh.vertices[i+2]);
+		for(i = 0, l = vertices.length; i < l; i += 3) {
+			v1 = Math.min(v1, vertices[i]);
+			v2 = Math.min(v2, vertices[i+1]);
+			v3 = Math.min(v3, vertices[i+2]);
 		}
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
 
-	let calculateMaxVertex = function(out, mesh) {
+	let calculateMaxVertex = function(out, vertices) {
 		var i, l, v1 = Number.MIN_VALUE, v2 = Number.MIN_VALUE, v3 = Number.MIN_VALUE;
-		for(i = 0, l = mesh.vertices.length; i < l; i += 3) {
-			v1 = Math.max(v1, mesh.vertices[i]);
-			v2 = Math.max(v2, mesh.vertices[i+1]);
-			v3 = Math.max(v3, mesh.vertices[i+2]);
+		for(i = 0, l = vertices.length; i < l; i += 3) {
+			v1 = Math.max(v1, vertices[i]);
+			v2 = Math.max(v2, vertices[i+1]);
+			v3 = Math.max(v3, vertices[i+2]);
 		}
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
-	// TODO: Readd bounding radius can still be useful for physics and rendering of dynamic objects
+
+	// Returns the furthest vertex from the local origin
+	// Note this is not the same as the furthest from the mid-point of the vertices
+	// This is necessray for the boundingRadius to remain accurate under rotation
+	let calculateBoundingRadius = function(vertices) {
+		var sqrResult = 0;
+		for (let i = 0, l = vertices.length; i< l; i += 3) {
+			let sqrDistance = vertices[i] * vertices[i]
+				+ vertices[i + 1] * vertices[i + 1]
+				+ vertices[i + 2] * vertices[i + 2];
+			if (sqrDistance > sqrResult) {
+				sqrResult = sqrDistance;
+			}
+		}
+		return Math.sqrt(sqrResult);
+	};
 
 	var prototype = {
 		calculateBounds: function() {
-			// NOTE: bounds in local space
-			calculateMinVertex(this.bounds.min, this);
-			calculateMaxVertex(this.bounds.max, this);
+			// NOTE: all bounds in local space
+			this.boundingRadius = calculateBoundingRadius(this.vertices);
+			calculateMinVertex(this.bounds.min, this.vertices);
+			calculateMaxVertex(this.bounds.max, this.vertices);
 			this.bounds.calculateExtents(this.bounds.min, this.bounds.max);
 		},
 		calculateNormals: function() {
@@ -794,6 +828,8 @@ var Mesh = module.exports = function(){
 			} else {
 				mesh.renderMode = r.RenderMode.Triangles;
 			}
+
+			mesh.boundingRadius = parameters.boundingRadius | 0;
 
 			if (parameters.buffers) {
 			    // NOTE: update<X> methods will not work when providing buffers directly
@@ -846,6 +882,7 @@ var Mesh = module.exports = function(){
 
 		copy.indexed = mesh.indexed;
 		copy.renderMode = mesh.renderMode;
+		copy.boundingRadius = mesh.boundingRadius;
 		copy.bounds = Bounds.create({ min: mesh.bounds.min, max: mesh.bounds.max }) ;
 		if (mesh.vertices) {
 			copy.vertices = mesh.vertices.slice(0);
@@ -1508,6 +1545,36 @@ var Scene = module.exports = function() {
 			}
 		};
 
+		var createObjectBounds = function(object, mesh, rotation) {
+			// If object is static and not rotated, create object AABB from mesh bounds
+			if (object.static && (!rotation || Maths.quatIdentity(rotation))) {
+				// TODO: Allow for calculation of AABB of rotated meshes
+				let center = vec3.clone(mesh.bounds.center);
+				vec3.add(center, center, object.transform.position);
+				let size = vec3.clone(mesh.bounds.size);
+				object.bounds = Bounds.create({ center: center, size: size });
+			}
+		};
+
+		var recalculateObjectBounds = function(object) {
+			if (object.bounds) {
+				// This method recalculates AABB for a translated static objects
+				// NOTE: Does not account for rotation of object :scream:
+				// Need to recalculate extents as well as center if rotation is not identity
+				// => need to transform all mesh vertices in order to recalculate accurate AABB
+				vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
+				object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
+			}
+		};
+
+		var isCulledByFrustrum = function(camera, object) {
+			if (!object.static || !object.bounds) {
+				return !camera.isSphereInFrustum(object.transform.position, object.mesh.boundingRadius);
+			} else {
+				return !camera.isInFrustum(object.bounds);
+			}
+		};
+
 		// Add Object
 		// TODO: RenderObject / Component should have its own class
 		scene.add = function(parameters) {
@@ -1530,14 +1597,10 @@ var Scene = module.exports = function() {
 			// as the renderer requires it.
 			object.transform = Transform.create(parameters);
 
-			// Clone bounds w/ offset
-			let center = vec3.clone(object.mesh.bounds.center);
-			vec3.add(center, center, object.transform.position);
-			let size = vec3.clone(object.mesh.bounds.size);
-			object.bounds = Bounds.create({ center: center, size: size });
-
 			object.sceneId = renderObjects.add(object);
 			object.static = !!parameters.static;
+
+			createObjectBounds(object, object.mesh, parameters.rotation);
 
 			return object;
 		};
@@ -1583,13 +1646,10 @@ var Scene = module.exports = function() {
 			var instance = Object.create(prefab);
 			instance.transform = Transform.create(parameters);
 
-			let center = vec3.clone(prefab.mesh.bounds.center);
-			vec3.add(center, center, instance.transform.position);
-			let size = vec3.clone(prefab.mesh.bounds.size);
-			instance.bounds = Bounds.create({ center: center, size: size });
-
 			instance.id = prefab.instances.add(instance);
 			instance.static = !!parameters.static;
+
+			createObjectBounds(instance, prefab.mesh, parameters.rotation);
 
 			return instance;
 		};
@@ -1604,14 +1664,6 @@ var Scene = module.exports = function() {
 				cameraNames.push(key);
 			}
 			cameras[key] = camera;
-		};
-
-		var recalculateBounds = function(object) {
-			vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
-			// NOTE: Does not account for rotation of object :scream: (i.e. need to recalculate extents if rotation is not identity)
-			// We should probably reserve AABB for static objects, to avoid the need to recalculate
-			// and use boundingRadius for dynamic objects
-			object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
 		};
 
 		// Render
@@ -1643,12 +1695,13 @@ var Scene = module.exports = function() {
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
+			var culled = false;
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var renderObject = renderObjects[renderObjects.keys[i]];
-				if (camera.enableCulling && !renderObject.static) {
-					recalculateBounds(renderObject);
+				if (camera.enableCulling) {
+					culled = isCulledByFrustrum(camera, renderObject);
 				}
-				if (!camera.enableCulling || camera.isInFrustum(renderObject.bounds)) {
+				if (!culled) {
 					if(renderObject.material.alpha) {
 						addToAlphaList(renderObject, camera.getDepth(renderObject));
 					} else {
@@ -1660,10 +1713,10 @@ var Scene = module.exports = function() {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					var instance = instances[instances.keys[j]];
-					if (camera.enableCulling && !instance.static) {
-						recalculateBounds(renderObject);
+					if (camera.enableCulling) {
+						culled = isCulledByFrustrum(camera, instance);
 					}
-					if (!camera.enableCulling || camera.isInFrustum(instance.bounds)) {
+					if (!culled) {
 						if(instance.material.alpha) {
 							addToAlphaList(instance, camera.getDepth(instance));
 						} else {

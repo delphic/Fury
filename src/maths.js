@@ -45,7 +45,14 @@ let Maths = module.exports = (function() {
   var vec3Y = exports.vec3Y = glMatrix.vec3.fromValues(0,1,0);
   var vec3Z = exports.vec3Z = glMatrix.vec3.fromValues(0,0,1);
 
+  let equals = glMatrix.glMatrix.equals;
+
   // TODO: create quat from euler
+
+  exports.quatIdentity = function(q) {
+    // Is the provided quaterion identity
+    return (equals(q[0], 0) && equals(q[1], 0) && equals(q[2], 0) && equals(q[3], 1));
+  }
 
   exports.quatRotate = (function() {
   	var i = glMatrix.quat.create();

@@ -59,7 +59,18 @@ var Camera = module.exports = function() {
 
 			// TODO: The points too please so we can improve culling
 		},
-		isInFrustum: function(bounds) {	// TODO: Add implementation for sphere bounds
+		isSphereInFrustum: function(center, radius) {
+			vec4Cache[3] = 1;
+			for (let i = 0; i < 6; i++) {
+				// We want the point center + normal of the plane * radius
+				vec3.scaleAndAdd(vec4Cache, center, this.planes[i], radius);
+				if (vec4.dot(this.planes[i], vec4Cache) < 0) {
+					return false;
+				}
+			}
+			return true;
+		},
+		isInFrustum: function(bounds) {
 			// https://iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
 			// Note : https://stackoverflow.com/questions/31788925/correct-frustum-aabb-intersection
 			// TODO: Profile and try different techniques (using continue in the loop, unrolling the lot, etc)

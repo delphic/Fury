@@ -95,6 +95,36 @@ var Scene = module.exports = function() {
 			}
 		};
 
+		var createObjectBounds = function(object, mesh, rotation) {
+			// If object is static and not rotated, create object AABB from mesh bounds
+			if (object.static && (!rotation || Maths.quatIdentity(rotation))) {
+				// TODO: Allow for calculation of AABB of rotated meshes
+				let center = vec3.clone(mesh.bounds.center);
+				vec3.add(center, center, object.transform.position);
+				let size = vec3.clone(mesh.bounds.size);
+				object.bounds = Bounds.create({ center: center, size: size });
+			}
+		};
+
+		var recalculateObjectBounds = function(object) {
+			if (object.bounds) {
+				// This method recalculates AABB for a translated static objects
+				// NOTE: Does not account for rotation of object :scream:
+				// Need to recalculate extents as well as center if rotation is not identity
+				// => need to transform all mesh vertices in order to recalculate accurate AABB
+				vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
+				object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
+			}
+		};
+
+		var isCulledByFrustrum = function(camera, object) {
+			if (!object.static || !object.bounds) {
+				return !camera.isSphereInFrustum(object.transform.position, object.mesh.boundingRadius);
+			} else {
+				return !camera.isInFrustum(object.bounds);
+			}
+		};
+
 		// Add Object
 		// TODO: RenderObject / Component should have its own class
 		scene.add = function(parameters) {
@@ -117,14 +147,10 @@ var Scene = module.exports = function() {
 			// as the renderer requires it.
 			object.transform = Transform.create(parameters);
 
-			// Clone bounds w/ offset
-			let center = vec3.clone(object.mesh.bounds.center);
-			vec3.add(center, center, object.transform.position);
-			let size = vec3.clone(object.mesh.bounds.size);
-			object.bounds = Bounds.create({ center: center, size: size });
-
 			object.sceneId = renderObjects.add(object);
 			object.static = !!parameters.static;
+
+			createObjectBounds(object, object.mesh, parameters.rotation);
 
 			return object;
 		};
@@ -170,13 +196,10 @@ var Scene = module.exports = function() {
 			var instance = Object.create(prefab);
 			instance.transform = Transform.create(parameters);
 
-			let center = vec3.clone(prefab.mesh.bounds.center);
-			vec3.add(center, center, instance.transform.position);
-			let size = vec3.clone(prefab.mesh.bounds.size);
-			instance.bounds = Bounds.create({ center: center, size: size });
-
 			instance.id = prefab.instances.add(instance);
 			instance.static = !!parameters.static;
+
+			createObjectBounds(instance, prefab.mesh, parameters.rotation);
 
 			return instance;
 		};
@@ -191,14 +214,6 @@ var Scene = module.exports = function() {
 				cameraNames.push(key);
 			}
 			cameras[key] = camera;
-		};
-
-		var recalculateBounds = function(object) {
-			vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
-			// NOTE: Does not account for rotation of object :scream: (i.e. need to recalculate extents if rotation is not identity)
-			// We should probably reserve AABB for static objects, to avoid the need to recalculate
-			// and use boundingRadius for dynamic objects
-			object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
 		};
 
 		// Render
@@ -230,12 +245,13 @@ var Scene = module.exports = function() {
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
+			var culled = false;
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var renderObject = renderObjects[renderObjects.keys[i]];
-				if (camera.enableCulling && !renderObject.static) {
-					recalculateBounds(renderObject);
+				if (camera.enableCulling) {
+					culled = isCulledByFrustrum(camera, renderObject);
 				}
-				if (!camera.enableCulling || camera.isInFrustum(renderObject.bounds)) {
+				if (!culled) {
 					if(renderObject.material.alpha) {
 						addToAlphaList(renderObject, camera.getDepth(renderObject));
 					} else {
@@ -247,10 +263,10 @@ var Scene = module.exports = function() {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					var instance = instances[instances.keys[j]];
-					if (camera.enableCulling && !instance.static) {
-						recalculateBounds(renderObject);
+					if (camera.enableCulling) {
+						culled = isCulledByFrustrum(camera, instance);
 					}
-					if (!camera.enableCulling || camera.isInFrustum(instance.bounds)) {
+					if (!culled) {
 						if(instance.material.alpha) {
 							addToAlphaList(instance, camera.getDepth(instance));
 						} else {
