@@ -38,6 +38,9 @@ var Scene = module.exports = function() {
 
 		var scene = Object.create(prototype);
 
+		scene.enableFrustumCulling = !!parameters.enableFrustumCulling;
+		var forceSphereCulling = !!parameters.forceSphereCulling;
+
 		// these renderObjects / instances on prefabs need to contain at minimum materialId, meshId, and transform (currently object just has material and mesh as well as transform)
 		var renderObjects = indexedMap.create(); // TODO: use materialId / meshId to bind
 		var prefabs = { keys: [] };	// Arguably instances could be added to renderer objects and memory would still be saved, however keeping a separate list allows easier batching for now
@@ -97,7 +100,7 @@ var Scene = module.exports = function() {
 
 		var createObjectBounds = function(object, mesh, rotation) {
 			// If object is static and not rotated, create object AABB from mesh bounds
-			if (object.static && (!rotation || Maths.quatIdentity(rotation))) {
+			if (!forceSphereCulling && object.static && (!rotation || Maths.quatIdentity(rotation))) {
 				// TODO: Allow for calculation of AABB of rotated meshes
 				let center = vec3.clone(mesh.bounds.center);
 				vec3.add(center, center, object.transform.position);
@@ -219,7 +222,7 @@ var Scene = module.exports = function() {
 		// Render
 		scene.render = function(cameraName) {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
-			if (camera.enableCulling) {	// TODO: Move enableCulling flag to scene as it's scene management
+			if (scene.enableFrustumCulling) {
 				camera.calculateFrustrum();
 			}
 			camera.getProjectionMatrix(pMatrix);
@@ -248,7 +251,7 @@ var Scene = module.exports = function() {
 			var culled = false;
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var renderObject = renderObjects[renderObjects.keys[i]];
-				if (camera.enableCulling) {
+				if (scene.enableFrustumCulling) {
 					culled = isCulledByFrustrum(camera, renderObject);
 				}
 				if (!culled) {
@@ -263,7 +266,7 @@ var Scene = module.exports = function() {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					var instance = instances[instances.keys[j]];
-					if (camera.enableCulling) {
+					if (scene.enableFrustumCulling) {
 						culled = isCulledByFrustrum(camera, instance);
 					}
 					if (!culled) {

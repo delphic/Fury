@@ -141,7 +141,7 @@ var Camera = module.exports = function() {
 		camera.type = parameters.type ? parameters.type : Type.Perspective;
 		camera.near = parameters.near;
 		camera.far = parameters.far;
-		camera.enableCulling = parameters.enableCulling;
+		
 		if(camera.type == Type.Perspective) {
 			// vertical field of view, ratio (aspect) determines horizontal fov
 			camera.fov = parameters.fov;

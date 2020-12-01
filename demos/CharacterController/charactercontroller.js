@@ -169,8 +169,8 @@ var createCuboidMesh = function(width, height, depth) {
 };
 
 // Create Camera & Scene
-var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: Fury.Maths.toRadian(60), ratio: 1.0, position: vec3.fromValues(0.0, 1.0, 0.0), enableCulling: true });
-var scene = Fury.Scene.create({ camera: camera });
+var camera = Fury.Camera.create({ near: 0.1, far: 1000000.0, fov: Fury.Maths.toRadian(60), ratio: 1.0, position: vec3.fromValues(0.0, 1.0, 0.0) });
+var scene = Fury.Scene.create({ camera: camera, enableFrustumCulling: true });
 
 // Physics
 let world = { boxes: [], spheres: [] };

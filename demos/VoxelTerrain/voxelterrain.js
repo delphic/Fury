@@ -188,10 +188,9 @@ var camera = Fury.Camera.create({
 	fov: 1.0472,
 	ratio: cameraRatio,
 	position: vec3.fromValues(53.0, 55.0, 123.0),
-	rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94),
-	enableCulling: true
+	rotation: quat.fromValues(-0.232, 0.24, 0.06, 0.94)
 });
-var scene = Fury.Scene.create({ camera: camera });
+var scene = Fury.Scene.create({ camera: camera, enableFrustumCulling: true });
 var meshes = [];	// This is chunkMeshObjects really
 
 var lastTime = Date.now();
