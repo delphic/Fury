@@ -23,6 +23,7 @@ var Mesh = module.exports = function(){
 		}
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
+	// TODO: Readd bounding radius can still be useful for physics and rendering of dynamic objects
 
 	var prototype = {
 		calculateBounds: function() {
