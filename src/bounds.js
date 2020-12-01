@@ -1,17 +1,17 @@
 var Bounds = module.exports = (function() {
 	let exports = {};
 	let prototype = {
-		calculateMinMax: function() {
-			vec3.subtract(this.min, this.center, this.extents);
-			vec3.add(this.max, this.center, this.extents);
+		calculateMinMax: function(center, extents) {
+			vec3.subtract(this.min, center, extents);
+			vec3.add(this.max, center, extents);
 		},
-		calculateExtents: function() {
-			vec3.subtract(this.size, this.max, this.min);
+		calculateExtents: function(min, max) {
+			vec3.subtract(this.size, max, min);
 			// If we had a vec3.zero vector could use scale and add
 			this.extents[0] = 0.5 * this.size[0];
 			this.extents[1] = 0.5 * this.size[1];
 			this.extents[2] = 0.5 * this.size[2];
-			vec3.add(this.center, this.min, this.extents);
+			vec3.add(this.center, min, this.extents);
 		}
 	};
 
@@ -65,7 +65,7 @@ var Bounds = module.exports = (function() {
 				aabb.min = vec3.create();
 				aabb.max = vec3.create();
 
-				aabb.calculateMinMax();
+				aabb.calculateMinMax(aabb.center, aabb.extents);
 			} else {
 				// Could check min < max on all axes to make this easier to use
 				aabb.min = parameters.min;
@@ -73,7 +73,7 @@ var Bounds = module.exports = (function() {
 				aabb.center = vec3.create();
 				aabb.size = vec3.create();
 				aabb.extents = vec3.create();
-				aabb.calculateExtents();
+				aabb.calculateExtents(aabb.min, aabb.max);
 			}
 
 			return aabb;

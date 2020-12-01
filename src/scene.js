@@ -116,10 +116,15 @@ var Scene = module.exports = function() {
 			// Adding a transform component is probably fine
 			// as the renderer requires it.
 			object.transform = Transform.create(parameters);
-			object.bounds = Bounds.create({ center: object.transform.position, size: object.mesh.bounds.size });
-			// Bound to transform position (just so long as you dont' overwrite it)
+
+			// Clone bounds w/ offset
+			let center = vec3.clone(object.mesh.bounds.center);
+			vec3.add(center, center, object.transform.position);
+			let size = vec3.clone(object.mesh.bounds.size);
+			object.bounds = Bounds.create({ center: center, size: size });
 
 			object.sceneId = renderObjects.add(object);
+			object.static = !!parameters.static;
 
 			return object;
 		};
@@ -164,9 +169,14 @@ var Scene = module.exports = function() {
 			}
 			var instance = Object.create(prefab);
 			instance.transform = Transform.create(parameters);
-			instance.bounds = Bounds.create({ center: instance.transform.position, size: prefab.mesh.bounds.size });
-			// Bound to transform position (just so long as you dont' overwrite it)
+
+			let center = vec3.clone(prefab.mesh.bounds.center);
+			vec3.add(center, center, instance.transform.position);
+			let size = vec3.clone(prefab.mesh.bounds.size);
+			instance.bounds = Bounds.create({ center: center, size: size });
+
 			instance.id = prefab.instances.add(instance);
+			instance.static = !!parameters.static;
 			return instance;
 		};
 
@@ -182,11 +192,21 @@ var Scene = module.exports = function() {
 			cameras[key] = camera;
 		};
 
+		let recalculateBounds = function(object) {
+			if (!object.static) {
+				vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
+				// NOTE: Does not account for rotation of object :scream: (i.e. need to recalculate extents if rotation is not identity)
+				// We should probably reserve AABB for static objects, to avoid the need to recalculate
+				// and use boundingRadius for dynamic objects
+				object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
+			}
+		};
+
 		// Render
 		scene.render = function(cameraName) {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
-			if (camera.enableCulling) {
-				camera.calculateFrustrum();				
+			if (camera.enableCulling) {	// TODO: Move enableCulling flag to scene as it's scene management
+				camera.calculateFrustrum();
 			}
 			camera.getProjectionMatrix(pMatrix);
 			// Camera Matrix should transform world space -> camera space
@@ -206,7 +226,6 @@ var Scene = module.exports = function() {
 			// An extension would be to batch materials such that shaders that textures used overlap
 
 			// This batching by shader / material / mesh may need to be combined with scene management techniques
-			// I.e. Scene graph would include things like frustrum culling
 
 			r.clear();
 
@@ -214,7 +233,9 @@ var Scene = module.exports = function() {
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				var renderObject = renderObjects[renderObjects.keys[i]];
-				renderObject.bounds.calculateMinMax();	// TODO: Only if !static
+				if (camera.enableCulling && !renderObject.static) {
+					recalculateBounds(renderObject);
+				}
 				if (!camera.enableCulling || camera.isInFrustum(renderObject.bounds)) {
 					if(renderObject.material.alpha) {
 						addToAlphaList(renderObject, camera.getDepth(renderObject));
@@ -227,7 +248,9 @@ var Scene = module.exports = function() {
 				var instances = prefabs[prefabs.keys[i]].instances;
 				for(var j = 0, n = instances.keys.length; j < n; j++) {
 					var instance = instances[instances.keys[j]];
-					instance.bounds.calculateMinMax();	// TODO: Only if !static
+					if (camera.enableCulling && !instance.static) {
+						recalculateBounds(renderObject);
+					}
 					if (!camera.enableCulling || camera.isInFrustum(instance.bounds)) {
 						if(instance.material.alpha) {
 							addToAlphaList(instance, camera.getDepth(instance));

@@ -4,7 +4,7 @@ var Bounds = require('./bounds');
 var Mesh = module.exports = function(){
 	exports = {};
 
-	let calculateMinVertex = function(mesh, out) {
+	let calculateMinVertex = function(out, mesh) {
 		var i, l, v1 = Number.MAX_VALUE, v2 = Number.MAX_VALUE, v3 = Number.MAX_VALUE;
 		for(i = 0, l = mesh.vertices.length; i < l; i += 3) {
 			v1 = Math.min(v1, mesh.vertices[i]);
@@ -14,7 +14,7 @@ var Mesh = module.exports = function(){
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
 
-	let calculateMaxVertex = function(mesh, out) {
+	let calculateMaxVertex = function(out, mesh) {
 		var i, l, v1 = Number.MIN_VALUE, v2 = Number.MIN_VALUE, v3 = Number.MIN_VALUE;
 		for(i = 0, l = mesh.vertices.length; i < l; i += 3) {
 			v1 = Math.max(v1, mesh.vertices[i]);
@@ -27,9 +27,9 @@ var Mesh = module.exports = function(){
 	var prototype = {
 		calculateBounds: function() {
 			// NOTE: bounds in local space
-			calculateMinVertex(this, this.bounds.min);
-			calculateMaxVertex(this, this.bounds.max);
-			this.bounds.calculateExtents();
+			calculateMinVertex(this.bounds.min, this);
+			calculateMaxVertex(this.bounds.max, this);
+			this.bounds.calculateExtents(this.bounds.min, this.bounds.max);
 		},
 		calculateNormals: function() {
 			// TODO: Calculate Normals from Vertex information

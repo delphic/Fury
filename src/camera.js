@@ -62,6 +62,8 @@ var Camera = module.exports = function() {
 		isInFrustum: function(bounds) {
 			// https://iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
 			// Note : https://stackoverflow.com/questions/31788925/correct-frustum-aabb-intersection
+			// TODO: Profile and try different techniques (using continue in the loop)
+			// unrolling the lot, etc
 			vec4Cache[3] = 1;
 			for (let i = 0; i < 6; i++) {
 				let out = 0;
