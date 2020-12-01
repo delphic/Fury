@@ -311,7 +311,8 @@ var loop = function(){
 
 	// This is basically character controller move
 	if (useBox) {
-		playerBox.calculateMinMax();
+		// TODO: playerBox.center has changed because it's set to the camera.position ref
+		playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 	}
 
 	for (let i = 0, l = world.boxes.length; i < l; i++) {
@@ -350,7 +351,8 @@ var loop = function(){
 	vec3.copy(vec3Cache, camera.position);
 	vec3.scaleAndAdd(camera.position, camera.position, Maths.vec3Y, yVelocity * elapsed);
 	if (useBox) {
-		playerBox.calculateMinMax();
+		// TODO: playerBox.center has changed because it's set to the camera.position ref
+		playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 	}
 
 	for (let i = 0, l = world.boxes.length; i < l; i++) {

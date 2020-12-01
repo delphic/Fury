@@ -175,11 +175,10 @@ var Camera = module.exports = function() {
 
 			// TODO: The points too please so we can improve culling
 		},
-		isInFrustum: function(bounds) {
+		isInFrustum: function(bounds) {	// TODO: Add implementation for sphere bounds
 			// https://iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
 			// Note : https://stackoverflow.com/questions/31788925/correct-frustum-aabb-intersection
-			// TODO: Profile and try different techniques (using continue in the loop)
-			// unrolling the lot, etc
+			// TODO: Profile and try different techniques (using continue in the loop, unrolling the lot, etc)
 			vec4Cache[3] = 1;
 			for (let i = 0; i < 6; i++) {
 				let out = 0;
@@ -749,6 +748,7 @@ var Mesh = module.exports = function(){
 		}
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
+	// TODO: Readd bounding radius can still be useful for physics and rendering of dynamic objects
 
 	var prototype = {
 		calculateBounds: function() {
@@ -1590,6 +1590,7 @@ var Scene = module.exports = function() {
 
 			instance.id = prefab.instances.add(instance);
 			instance.static = !!parameters.static;
+
 			return instance;
 		};
 
@@ -1605,14 +1606,12 @@ var Scene = module.exports = function() {
 			cameras[key] = camera;
 		};
 
-		let recalculateBounds = function(object) {
-			if (!object.static) {
-				vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
-				// NOTE: Does not account for rotation of object :scream: (i.e. need to recalculate extents if rotation is not identity)
-				// We should probably reserve AABB for static objects, to avoid the need to recalculate
-				// and use boundingRadius for dynamic objects
-				object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
-			}
+		var recalculateBounds = function(object) {
+			vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
+			// NOTE: Does not account for rotation of object :scream: (i.e. need to recalculate extents if rotation is not identity)
+			// We should probably reserve AABB for static objects, to avoid the need to recalculate
+			// and use boundingRadius for dynamic objects
+			object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
 		};
 
 		// Render

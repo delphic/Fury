@@ -177,6 +177,7 @@ var Scene = module.exports = function() {
 
 			instance.id = prefab.instances.add(instance);
 			instance.static = !!parameters.static;
+
 			return instance;
 		};
 
@@ -192,14 +193,12 @@ var Scene = module.exports = function() {
 			cameras[key] = camera;
 		};
 
-		let recalculateBounds = function(object) {
-			if (!object.static) {
-				vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
-				// NOTE: Does not account for rotation of object :scream: (i.e. need to recalculate extents if rotation is not identity)
-				// We should probably reserve AABB for static objects, to avoid the need to recalculate
-				// and use boundingRadius for dynamic objects
-				object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
-			}
+		var recalculateBounds = function(object) {
+			vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
+			// NOTE: Does not account for rotation of object :scream: (i.e. need to recalculate extents if rotation is not identity)
+			// We should probably reserve AABB for static objects, to avoid the need to recalculate
+			// and use boundingRadius for dynamic objects
+			object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
 		};
 
 		// Render
