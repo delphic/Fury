@@ -1602,6 +1602,7 @@ var Scene = module.exports = function() {
 
 			object.sceneId = renderObjects.add(object);
 			object.static = !!parameters.static;
+			object.active = parameters.active === undefined || !!parameters.active;
 
 			createObjectBounds(object, object.mesh, parameters.rotation);
 
@@ -1651,6 +1652,7 @@ var Scene = module.exports = function() {
 
 			instance.id = prefab.instances.add(instance);
 			instance.static = !!parameters.static;
+			instance.active = parameters.active === undefined || !!parameters.active;
 
 			createObjectBounds(instance, prefab.mesh, parameters.rotation);
 
@@ -1704,7 +1706,7 @@ var Scene = module.exports = function() {
 				if (scene.enableFrustumCulling) {
 					culled = isCulledByFrustrum(camera, renderObject);
 				}
-				if (!culled) {
+				if (!culled && renderObject.active) {
 					if(renderObject.material.alpha) {
 						addToAlphaList(renderObject, camera.getDepth(renderObject));
 					} else {
@@ -1719,7 +1721,7 @@ var Scene = module.exports = function() {
 					if (scene.enableFrustumCulling) {
 						culled = isCulledByFrustrum(camera, instance);
 					}
-					if (!culled) {
+					if (!culled && instance.active) {
 						if(instance.material.alpha) {
 							addToAlphaList(instance, camera.getDepth(instance));
 						} else {
