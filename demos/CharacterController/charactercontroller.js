@@ -207,9 +207,9 @@ let step2 = createCuboid(0.5, 0.5, 0.5, 0, 0.25, -3.5);
 floor = createCuboid(10, 1, 10, 0, -0.5, 0);
 roof = createCuboid(10, 1, 10, 0, 4.5, 0);
 
-let playerSphere = Physics.Sphere.create({ center: camera.position, radius: 1.0 });
-let playerBox = Physics.Box.create({ center: camera.position, size: vec3.fromValues(0.5, 2, 0.5) });
-// NOTE: specifically using camera.position directly so that it moves with camera automatically
+let playerPosition = vec3.clone(camera.position);
+let playerSphere = Physics.Sphere.create({ center: playerPosition, radius: 1.0 });
+let playerBox = Physics.Box.create({ center: playerPosition, size: vec3.fromValues(0.5, 2, 0.5) });
 
 let localX = vec3.create(), localZ = vec3.create();
 let lastPosition = vec3.create();
@@ -239,16 +239,30 @@ document.addEventListener('pointerlockchange', (event) => {
 	pointerLocked = !!(document.pointerLockElement || document.mozPointerLockElement);
 });
 
+let lostFocus;
 let lastTime = 0;
 
 var loop = function(){
-	if (lastTime == 0) {
+	if (lastTime == 0 || lostFocus) {
 		// Better for first frame to have an elapsed time of 0 than Date.now eh?
 		lastTime = Date.now();
+		// If focus was lost we don't want to perform a huge update, set to 0.
+		lostFocus = false;
 	}
 	var elapsed = Date.now() - lastTime;
 	lastTime += elapsed;
+
+	if (elapsed > 66)
+	{
+		// Low FPS or huge elapsed from alt-tabs cause
+		// physics issues so clamp elapsed for sanity
+		// Ideally we'd note when we paused but need to find the correct events for that
+		elapsed = 66;
+	}
 	elapsed /= 1000;
+
+	// Need to pause the timer when you blur to that this doesn't end up huge and you clip through the floor
+	// :thinking: I wonder what happens to websockets when you alt tab.
 
 	let ry = 0, rx = 0;
 
@@ -277,6 +291,7 @@ var loop = function(){
 		rx -= lookSpeed * elapsed;
 	}
 
+	// Directly rotate camera
 	Maths.quatRotate(camera.rotation, camera.rotation, ry, Maths.vec3Y);
 
 	let roll = Fury.Maths.getRoll(camera.rotation); // Note doesn't lock in the right place if you're using atan2 version
@@ -286,7 +301,6 @@ var loop = function(){
 	}
 
 	let inputX = 0, inputZ = 0;
-	// TODO: Invert camera look direction for the love of my sanity
 	if (Fury.Input.keyDown("w")) {
 		inputZ -= 1;
 	}
@@ -316,20 +330,21 @@ var loop = function(){
 		inputZ /= Math.SQRT2;
 	}
 
-	vec3.copy(lastPosition, camera.position);
-	vec3.copy(targetPosition, camera.position);
+	// Move player position
+	vec3.copy(lastPosition, playerPosition);
+	vec3.copy(targetPosition, playerPosition);
 	// Calculate Target Position
 	vec3.scaleAndAdd(targetPosition, targetPosition, localZ, movementSpeed * elapsed * inputZ);
 	vec3.scaleAndAdd(targetPosition, targetPosition, localX, movementSpeed * elapsed * inputX);
 
-	// Move camera to new position for physics checks
-	vec3.copy(camera.position, targetPosition);
+	// Move player to new position for physics checks
+	vec3.copy(playerPosition, targetPosition);
 
 	let collision = false, useBox = true;
 
 	// This is basically character controller move
 	if (useBox) {
-		// TODO: playerBox.center has changed because it's set to the camera.position ref
+		// TODO: playerBox.center has changed because it's set to the playerPosition ref
 		playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 	}
 
@@ -346,41 +361,41 @@ var loop = function(){
 				// not overlapping to overlapping. In theory we should calculate distance and move
 				// up to it for high speeds, however we'd probably want a skin depth, for the speeds
 				// we're travelling, just stop is probably fine
-				if (Physics.Box.enteredX(world.boxes[i], playerBox, camera.position[0] - lastPosition[0])) {
+				if (Physics.Box.enteredX(world.boxes[i], playerBox, playerPosition[0] - lastPosition[0])) {
 					let separation = world.boxes[i].max[1] - playerBox.min[1];
 					if (stepCount == 0 && !stepX && separation <= stepHeight) {
 						// Step!
 						stepCount = 1;
 						stepX = true;
-						camera.position[1] += separation;
+						playerPosition[1] += separation;
 						// Funnily enough this is very snappy, potentially moving step height in one frame
 						// we should separate player position and camera position and smooth camera position
 					} else {
-						camera.position[0] = lastPosition[0];
+						playerPosition[0] = lastPosition[0];
 						if (stepX) {
 							// If have stepping in this direction already cancel
-							camera.position[1] = lastPosition[1];
+							playerPosition[1] = lastPosition[1];
 						}
 					}
 				}
-				if (Physics.Box.enteredZ(world.boxes[i], playerBox, camera.position[2] - lastPosition[2])) {
+				if (Physics.Box.enteredZ(world.boxes[i], playerBox, playerPosition[2] - lastPosition[2])) {
 					let separation = world.boxes[i].max[1] - playerBox.min[1];
 					if (stepCount == 0 && separation <= stepHeight) {
 						// Step!
 						stepCount = 1;
 						stepZ = true;
-						camera.position[1] += separation;
+						playerPosition[1] += separation;
 					} else {
-						camera.position[2] = lastPosition[2];
+						playerPosition[2] = lastPosition[2];
 						if (stepZ) {
 							// If have stepped in this direction already cancel
-							camera.postition[1] = lastPosition[1];
+							playerPosition[1] = lastPosition[1];
 						}
 					}
 				}
 				// Whilst we're only moving on x-z atm but if we change to fly camera we'll need this
-				if (Physics.Box.enteredY(world.boxes[i], playerBox, camera.position[1] - lastPosition[1])) {
-					camera.position[1] = lastPosition[1];
+				if (Physics.Box.enteredY(world.boxes[i], playerBox, playerPosition[1] - lastPosition[1])) {
+					playerPosition[1] = lastPosition[1];
 					// TODO: If stepped should reset those too?
 				}
 
@@ -389,7 +404,7 @@ var loop = function(){
 				// collider collisions... ?
 
 				// Update target position and box bounds for future checks
-				vec3.copy(targetPosition, camera.position);
+				vec3.copy(targetPosition, playerPosition);
 				playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 
 				// TODO: if we've changed target y position because of steps we should technically re-evaluate all boxes on y axis
@@ -402,7 +417,7 @@ var loop = function(){
 			}
 		} else if (Physics.Box.intersectSphere(playerSphere, world.boxes[i])) {
 			collision = true;
-			vec3.copy(camera.position, lastPosition);
+			vec3.copy(playerPosition, lastPosition);
 
 			// Does it even make sense to step with a sphere collider?
 
@@ -414,7 +429,7 @@ var loop = function(){
 			nowOverlap = Physics.Box.intersectSphere(playerSphere, world.boxes[i]);
 			if (!didOverlap && nowOverlap) {
 				// Stop movement in axis
-				camera.position[0] = lastPosition[0];
+				playerPosition[0] = lastPosition[0];
 			}
 
 			camera.position[1] = targetPosition[1];
@@ -422,18 +437,18 @@ var loop = function(){
 			nowOverlap = Physics.Box.intersectSphere(playerSphere, world.boxes[i]);
 			if (!didOverlap && nowOverlap) {
 				// Stop movement in axis
-				camera.position[1] = lastPosition[1];
+				playerPosition[1] = lastPosition[1];
 			}
 
 			camera.position[2] = targetPosition[2];
 			nowOverlap = Physics.Box.intersectSphere(playerSphere, world.boxes[i]);
 			if (!didOverlap && nowOverlap) {
 				// Stop movement in axis
-				camera.position[2] = lastPosition[2];
+				playerPosition[2] = lastPosition[2];
 			}
 
 			// Update target position for future checks
-			vec3.copy(targetPosition, camera.position);
+			vec3.copy(targetPosition, playerPosition);
 
 			// Have to check other boxes cause still moving, so no break - technically we could track which
 			// axes we'd collided on and not check those in future if we wanted to try to optimize.
@@ -457,10 +472,10 @@ var loop = function(){
 	// the lack here means that if you're overlapping with something you fall through the floor
 
 	// Another Character Controller Move
-	vec3.copy(lastPosition, camera.position);
-	vec3.scaleAndAdd(camera.position, camera.position, Maths.vec3Y, yVelocity * elapsed);
+	vec3.copy(lastPosition, playerPosition);
+	vec3.scaleAndAdd(playerPosition, playerPosition, Maths.vec3Y, yVelocity * elapsed);
 	if (useBox) {
-		// TODO: playerBox.center has changed because it's set to the camera.position ref
+		// playerBox.center has changed because it's set to the playerPosition ref
 		playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 	}
 
@@ -483,13 +498,23 @@ var loop = function(){
 		// in order of which would would have entered first - ratio of move to overlap
 		// Penetration vector.
 		// need list of overlapping colliders though
-		vec3.copy(camera.position, lastPosition);
+		vec3.copy(playerPosition, lastPosition);
 		if (yVelocity < 0) {
 			jumping = false;
 			// ^^ TODO: Need to convert this into isGrounded check, and will need to
 			// change dx / dz to be against slopes if/when we introduce them
 		}
 		yVelocity = 0;
+	}
+
+	// Smoothly move the camera - no jerks from sudden movement please!
+	// Technically displacement isn't the issue, it's acceleration
+	// Arguably the change due to falling if there is any, we should just do,
+	// as that should always be smooth
+	if (vec3.squaredLength(playerPosition) < 0.1) {
+		vec3.copy(camera.position, playerPosition);
+	} else {
+		vec3.lerp(camera.position, camera.position, playerPosition, 0.5);
 	}
 
 	scene.render();
