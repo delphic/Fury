@@ -252,8 +252,7 @@ var loop = function(){
 	var elapsed = Date.now() - lastTime;
 	lastTime += elapsed;
 
-	if (elapsed > 66)
-	{
+	if (elapsed > 66) {
 		// Low FPS or huge elapsed from alt-tabs cause
 		// physics issues so clamp elapsed for sanity
 		// Ideally we'd note when we paused but need to find the correct events for that
@@ -361,6 +360,7 @@ var loop = function(){
 				// not overlapping to overlapping. In theory we should calculate distance and move
 				// up to it for high speeds, however we'd probably want a skin depth, for the speeds
 				// we're travelling, just stop is probably fine
+				// BUG: You can get stuck on corners of flush surfaces when sliding along them
 				if (Physics.Box.enteredX(world.boxes[i], playerBox, playerPosition[0] - lastPosition[0])) {
 					let separation = world.boxes[i].max[1] - playerBox.min[1];
 					if (stepCount == 0 && !stepX && separation <= stepHeight) {
@@ -514,7 +514,7 @@ var loop = function(){
 	if (vec3.squaredLength(playerPosition) < 0.1) {
 		vec3.copy(camera.position, playerPosition);
 	} else {
-		vec3.lerp(camera.position, camera.position, playerPosition, 0.5);
+		vec3.lerp(camera.position, camera.position, playerPosition, 0.25);
 	}
 
 	scene.render();
