@@ -201,7 +201,8 @@ walls.push(createCuboid(10, 4, 1, 0, 2, 5.5));
 walls.push(createCuboid(10, 4, 1, 0, 2, -5.5));
 walls.push(createCuboid(1, 4, 10, 5.5, 2, 0));
 walls.push(createCuboid(1, 4, 10, -5.5, 2, 0));
-let box = createCuboid(0.5, 0.5, 0.5, 0, 0.25, -3);	// TODO: Oh no we suddenly need isGrounded check :D
+let step = createCuboid(0.5, 0.25, 0.5, 0, 0.125, -3);
+let step2 = createCuboid(0.5, 0.5, 0.5, 0, 0.25, -3.5);
 
 floor = createCuboid(10, 1, 10, 0, -0.5, 0);
 roof = createCuboid(10, 1, 10, 0, 4.5, 0);
@@ -217,7 +218,7 @@ let targetPosition = vec3.create();	// Would be nice to have a pool we could use
 let movementSpeed = 1.5;
 let lookSpeed = 1;
 
-let yVelocity = 0, jumping = false, jumpDeltaV = 3;
+let yVelocity = 0, jumping = false, jumpDeltaV = 3, stepHeight = 0.3;
 // TODO: Store x/z velocity when jump and then can alter it with in air movement
 // but the maximum is less
 
@@ -335,6 +336,7 @@ var loop = function(){
 	// We used to have the collision handling outside the loop, but has we need to continue
 	// the loops I moved it inside, a world collision method which returned a list of boxes
 	// that overlapped would be acceptable.
+	let stepCount = 0, stepX = false, stepZ = false;
 	for (let i = 0, l = world.boxes.length; i < l; i++) {
 		if (useBox) {
 			if (Physics.Box.intersect(playerBox, world.boxes[i])) {
@@ -345,18 +347,42 @@ var loop = function(){
 				// up to it for high speeds, however we'd probably want a skin depth, for the speeds
 				// we're travelling, just stop is probably fine
 				if (Physics.Box.enteredX(world.boxes[i], playerBox, camera.position[0] - lastPosition[0])) {
-					camera.position[0] = lastPosition[0];
+					let separation = world.boxes[i].max[1] - playerBox.min[1];
+					if (stepCount == 0 && !stepX && separation <= stepHeight) {
+						// Step!
+						stepCount = 1;
+						stepX = true;
+						camera.position[1] += separation;
+						// Funnily enough this is very snappy, potentially moving step height in one frame
+						// we should separate player position and camera position and smooth camera position
+					} else {
+						camera.position[0] = lastPosition[0];
+						if (stepX) {
+							// If have stepping in this direction already cancel
+							camera.position[1] = lastPosition[1];
+						}
+					}
+				}
+				if (Physics.Box.enteredZ(world.boxes[i], playerBox, camera.position[2] - lastPosition[2])) {
+					let separation = world.boxes[i].max[1] - playerBox.min[1];
+					if (stepCount == 0 && separation <= stepHeight) {
+						// Step!
+						stepCount = 1;
+						stepZ = true;
+						camera.position[1] += separation;
+					} else {
+						camera.position[2] = lastPosition[2];
+						if (stepZ) {
+							// If have stepped in this direction already cancel
+							camera.postition[1] = lastPosition[1];
+						}
+					}
 				}
 				// Whilst we're only moving on x-z atm but if we change to fly camera we'll need this
 				if (Physics.Box.enteredY(world.boxes[i], playerBox, camera.position[1] - lastPosition[1])) {
 					camera.position[1] = lastPosition[1];
+					// TODO: If stepped should reset those too?
 				}
-				if (Physics.Box.enteredZ(world.boxes[i], playerBox, camera.position[2] - lastPosition[2])) {
-					camera.position[2] = lastPosition[2];
-				}
-
-				// TODO: Step check - check yMax of collider and if required displacement is less than step height
-				// move up instead of cancelling movement in x/z
 
 				// Note this only works AABB, for OOBB and other colliders we'd probably need to get
 				// impact normal and then convert the movement to be perpendicular, and if there's multiple
@@ -366,6 +392,9 @@ var loop = function(){
 				vec3.copy(targetPosition, camera.position);
 				playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 
+				// TODO: if we've changed target y position because of steps we should technically re-evaluate all boxes on y axis
+				// If collider and they are above us we should remove the step and cancel the x/z movement as appropriate
+
 				// Have to check other boxes cause still moving, so no break - technically we could track which
 				// axes we'd collided on and not check those in future if we wanted to try to optimize.
 				// Also could break if all axes we moved in had returned true
@@ -374,6 +403,8 @@ var loop = function(){
 		} else if (Physics.Box.intersectSphere(playerSphere, world.boxes[i])) {
 			collision = true;
 			vec3.copy(camera.position, lastPosition);
+
+			// Does it even make sense to step with a sphere collider?
 
 			// Check Axis by Axis
 			let didOverlap, nowOverlap;
