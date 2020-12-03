@@ -182,7 +182,7 @@ let Maths = Fury.Maths;
 let Physics = Fury.Physics;
 
 // Build me a Room - 10x10, height 4
-let walls = [], floor, roof;
+let walls = [], floor, roof;	// We don't actually use these references yet
 
 var createCuboid = function(w, h, d, x, y, z) {
 	let position = vec3.fromValues(x, y, z);
@@ -201,6 +201,7 @@ walls.push(createCuboid(10, 4, 1, 0, 2, 5.5));
 walls.push(createCuboid(10, 4, 1, 0, 2, -5.5));
 walls.push(createCuboid(1, 4, 10, 5.5, 2, 0));
 walls.push(createCuboid(1, 4, 10, -5.5, 2, 0));
+let box = createCuboid(0.5, 0.5, 0.5, 0, 0.25, -3);	// TODO: Oh no we suddenly need isGrounded check :D
 
 floor = createCuboid(10, 1, 10, 0, -0.5, 0);
 roof = createCuboid(10, 1, 10, 0, 4.5, 0);
@@ -240,6 +241,10 @@ document.addEventListener('pointerlockchange', (event) => {
 let lastTime = 0;
 
 var loop = function(){
+	if (lastTime == 0) {
+		// Better for first frame to have an elapsed time of 0 than Date.now eh?
+		lastTime = Date.now();
+	}
 	var elapsed = Date.now() - lastTime;
 	lastTime += elapsed;
 	elapsed /= 1000;
@@ -342,13 +347,17 @@ var loop = function(){
 				if (Physics.Box.enteredX(world.boxes[i], playerBox, camera.position[0] - lastPosition[0])) {
 					camera.position[0] = lastPosition[0];
 				}
-				// Whilst we're only moving on x-z atm if we change to fly camera we'll need this
+				// Whilst we're only moving on x-z atm but if we change to fly camera we'll need this
 				if (Physics.Box.enteredY(world.boxes[i], playerBox, camera.position[1] - lastPosition[1])) {
 					camera.position[1] = lastPosition[1];
 				}
 				if (Physics.Box.enteredZ(world.boxes[i], playerBox, camera.position[2] - lastPosition[2])) {
 					camera.position[2] = lastPosition[2];
 				}
+
+				// TODO: Step check - check yMax of collider and if required displacement is less than step height
+				// move up instead of cancelling movement in x/z
+
 				// Note this only works AABB, for OOBB and other colliders we'd probably need to get
 				// impact normal and then convert the movement to be perpendicular, and if there's multiple
 				// collider collisions... ?
@@ -409,9 +418,12 @@ var loop = function(){
 	if (!jumping && Fury.Input.keyDown("Space")) {
 		jumping = true;
 		yVelocity = jumpDeltaV;
-	} else if (jumping) {
+	} else /*if (jumping)*/ { // How's this for "isGrounded" ;D
 		yVelocity -= 9.8 * elapsed;
 	}
+
+	// So the entered checks allow you to move out of objects you're clipping with
+	// the lack here means that if you're overlapping with something you fall through the floor
 
 	// Another Character Controller Move
 	vec3.copy(lastPosition, camera.position);
