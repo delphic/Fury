@@ -61,6 +61,36 @@ var Bounds = module.exports = (function() {
 			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
 	};
 
+	// Enters functions return true if box b did not intersect box a on specified axis
+	// before displacement but would afterwards. Calculating the point of entry could be useful.
+	// If it's always needed we could return the distance and use > 0 check for does enter
+	exports.entersX = function(a, b, displacement) {
+		return !(a.min[0] < b.max[0] && a.max[0] > b.min[0])
+			&& (a.min[0] < b.max[0] + displacement && a.max[0] > b.min[0] + displacement);
+	};
+	exports.entersY = function(a, b, displacement) {
+		return !(a.min[1] < b.max[1] && a.max[1] > b.min[1])
+			&& (a.min[1] < b.max[1] + displacement && a.max[1] > b.min[1] + displacement);
+	};
+	exports.entersZ = function(a, b, displacement) {
+		return !(a.min[2] < b.max[2] && a.max[2] > b.min[2])
+			&& (a.min[2] < b.max[2] + displacement && a.max[2] > b.min[2] + displacement);
+	};
+
+	// Entered is the same as enters but it assumes you've already moved the box
+	exports.enteredX = function(a, b, displacement) {
+		return !(a.min[0] < b.max[0] - displacement && a.max[0] > b.min[0] - displacement)
+			&& (a.min[0] < b.max[0] && a.max[0] > b.min[0]);
+	}
+	exports.enteredY = function(a, b, displacement) {
+		return !(a.min[1] < b.max[1] - displacement && a.max[1] > b.min[1] - displacement)
+			&& (a.min[1] < b.max[1] && a.max[0] > b.min[1]);
+	}
+	exports.enteredZ = function(a, b, displacement) {
+		return !(a.min[2] < b.max[2] - displacement && a.max[2] > b.min[2] - displacement)
+			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
+	}
+
 	exports.intersectSphere = function(sphere, box) {
 		// closest point on box to sphere center
 		let x = Math.max(box.min[0], Math.min(sphere.center[0], box.max[0]));
@@ -670,7 +700,7 @@ var Material = module.exports = function(){
 let glMatrix = require('../libs/gl-matrix-min');
 
 // Created here so that any local variables in the Maths Module
-// does not spot the globalising of the variable.
+// does not stop the globalising of the variable.
 let globalize = () => {
   // Lets create some globals!
   mat2 = glMatrix.mat2;

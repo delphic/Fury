@@ -210,7 +210,8 @@ let playerBox = Physics.Box.create({ center: camera.position, size: vec3.fromVal
 // NOTE: specifically using camera.position directly so that it moves with camera automatically
 
 let localX = vec3.create(), localZ = vec3.create();
-let vec3Cache = vec3.create();
+let lastPosition = vec3.create();
+let targetPosition = vec3.create();	// Would be nice to have a pool we could use.
 
 let movementSpeed = 1.5;
 let lookSpeed = 1;
@@ -278,19 +279,19 @@ var loop = function(){
 		quat.rotateX(camera.rotation, camera.rotation, rx);
 	}
 
-	let dx = 0, dz = 0;
+	let inputX = 0, inputZ = 0;
 	// TODO: Invert camera look direction for the love of my sanity
 	if (Fury.Input.keyDown("w")) {
-		dz -= 1;
+		inputZ -= 1;
 	}
 	if (Fury.Input.keyDown("s")) {
-		dz += 1;
+		inputZ += 1;
 	}
 	if (Fury.Input.keyDown("a")) {
-		dx -= 1;
+		inputX -= 1;
 	}
 	if (Fury.Input.keyDown("d")) {
-		dx += 1;
+		inputX += 1;
 	}
 
 	// Calculate local axes for camera - ignoring roll
@@ -299,13 +300,24 @@ var loop = function(){
 	vec3.transformQuat(localX, Maths.vec3X, camera.rotation);
 	vec3.transformQuat(localZ, Maths.vec3Z, camera.rotation);
 	localX[1] = 0;
-	vec3.normalize(localX, localX);
+	vec3.normalize(localX, localX);	// This should be unnecessary
 	localZ[1] = 0;
-	vec3.normalize(localZ, localZ);
+	vec3.normalize(localZ, localZ);	// This should be unnecessary
 
-	vec3.copy(vec3Cache, camera.position);
-	vec3.scaleAndAdd(camera.position, camera.position, localZ, movementSpeed * elapsed * dz);
-	vec3.scaleAndAdd(camera.position, camera.position, localX, movementSpeed * elapsed * dx);
+	if (inputX !== 0 && inputZ !== 0) {
+		// Normalize input vector in moving in more than one direction
+		inputX /= Math.SQRT2;
+		inputZ /= Math.SQRT2;
+	}
+
+	vec3.copy(lastPosition, camera.position);
+	vec3.copy(targetPosition, camera.position);
+	// Calculate Target Position
+	vec3.scaleAndAdd(targetPosition, targetPosition, localZ, movementSpeed * elapsed * inputZ);
+	vec3.scaleAndAdd(targetPosition, targetPosition, localX, movementSpeed * elapsed * inputX);
+
+	// Move camera to new position for physics checks
+	vec3.copy(camera.position, targetPosition);
 
 	let collision = false, useBox = true;
 
@@ -315,28 +327,82 @@ var loop = function(){
 		playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 	}
 
+	// We used to have the collision handling outside the loop, but has we need to continue
+	// the loops I moved it inside, a world collision method which returned a list of boxes
+	// that overlapped would be acceptable.
 	for (let i = 0, l = world.boxes.length; i < l; i++) {
 		if (useBox) {
 			if (Physics.Box.intersect(playerBox, world.boxes[i])) {
 				collision = true;
-				break;
+
+				// Check each axis individually and only stop movement on those which changed from
+				// not overlapping to overlapping. In theory we should calculate distance and move
+				// up to it for high speeds, however we'd probably want a skin depth, for the speeds
+				// we're travelling, just stop is probably fine
+				if (Physics.Box.enteredX(world.boxes[i], playerBox, camera.position[0] - lastPosition[0])) {
+					camera.position[0] = lastPosition[0];
+				}
+				// Whilst we're only moving on x-z atm if we change to fly camera we'll need this
+				if (Physics.Box.enteredY(world.boxes[i], playerBox, camera.position[1] - lastPosition[1])) {
+					camera.position[1] = lastPosition[1];
+				}
+				if (Physics.Box.enteredZ(world.boxes[i], playerBox, camera.position[2] - lastPosition[2])) {
+					camera.position[2] = lastPosition[2];
+				}
+				// Note this only works AABB, for OOBB and other colliders we'd probably need to get
+				// impact normal and then convert the movement to be perpendicular, and if there's multiple
+				// collider collisions... ?
+
+				// Update target position and box bounds for future checks
+				vec3.copy(targetPosition, camera.position);
+				playerBox.calculateMinMax(playerBox.center, playerBox.extents);
+
+				// Have to check other boxes cause still moving, so no break - technically we could track which
+				// axes we'd collided on and not check those in future if we wanted to try to optimize.
+				// Also could break if all axes we moved in had returned true
+				// Could also only check axes we were actually moving in
 			}
 		} else if (Physics.Box.intersectSphere(playerSphere, world.boxes[i])) {
 			collision = true;
-			break;
+			vec3.copy(camera.position, lastPosition);
+
+			// Check Axis by Axis
+			let didOverlap, nowOverlap;
+			didOverlap = Physics.Box.intersectSphere(playerSphere, world.boxes[i]);
+
+			camera.position[0] = targetPosition[0];
+			nowOverlap = Physics.Box.intersectSphere(playerSphere, world.boxes[i]);
+			if (!didOverlap && nowOverlap) {
+				// Stop movement in axis
+				camera.position[0] = lastPosition[0];
+			}
+
+			camera.position[1] = targetPosition[1];
+			// Don't have to reset other axis points because we're testing axis by axis
+			nowOverlap = Physics.Box.intersectSphere(playerSphere, world.boxes[i]);
+			if (!didOverlap && nowOverlap) {
+				// Stop movement in axis
+				camera.position[1] = lastPosition[1];
+			}
+
+			camera.position[2] = targetPosition[2];
+			nowOverlap = Physics.Box.intersectSphere(playerSphere, world.boxes[i]);
+			if (!didOverlap && nowOverlap) {
+				// Stop movement in axis
+				camera.position[2] = lastPosition[2];
+			}
+
+			// Update target position for future checks
+			vec3.copy(targetPosition, camera.position);
+
+			// Have to check other boxes cause still moving, so no break - technically we could track which
+			// axes we'd collided on and not check those in future if we wanted to try to optimize.
+			// Also could break if all axes we moved in had returned true & could also
+			// only check the axises we're moving in
 		}
 	}
-	if (collision) {
-		// TODO: Would like to be able to slide along an object please
-		// TODO: Would be nice to move up to the object instead
-		// To do this figure out which axes you moved in on - and move out to touch point
-		// in order of which would would have entered first - ratio of move to overlap
-		// Penetration vector.
-		// need list of overlapping colliders though
-		vec3.copy(camera.position, vec3Cache);
+	// Also need to support steps and slopes
 
-		// Also need to support steps and slopes
-	}
 
 	// Now lets do it again for gravity / jumping
 	collision = false;
@@ -348,7 +414,7 @@ var loop = function(){
 	}
 
 	// Another Character Controller Move
-	vec3.copy(vec3Cache, camera.position);
+	vec3.copy(lastPosition, camera.position);
 	vec3.scaleAndAdd(camera.position, camera.position, Maths.vec3Y, yVelocity * elapsed);
 	if (useBox) {
 		// TODO: playerBox.center has changed because it's set to the camera.position ref
@@ -359,6 +425,7 @@ var loop = function(){
 		if (useBox) {
 			if (Physics.Box.intersect(playerBox, world.boxes[i])) {
 				collision = true;
+				// Only moving on one axis don't need to do the slide checks
 				break;
 			}
 		} else if (Physics.Box.intersectSphere(playerSphere, world.boxes[i])) {
@@ -373,7 +440,7 @@ var loop = function(){
 		// in order of which would would have entered first - ratio of move to overlap
 		// Penetration vector.
 		// need list of overlapping colliders though
-		vec3.copy(camera.position, vec3Cache);
+		vec3.copy(camera.position, lastPosition);
 		if (yVelocity < 0) {
 			jumping = false;
 			// ^^ TODO: Need to convert this into isGrounded check, and will need to

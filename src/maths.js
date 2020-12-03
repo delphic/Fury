@@ -3,7 +3,7 @@
 let glMatrix = require('../libs/gl-matrix-min');
 
 // Created here so that any local variables in the Maths Module
-// does not spot the globalising of the variable.
+// does not stop the globalising of the variable.
 let globalize = () => {
   // Lets create some globals!
   mat2 = glMatrix.mat2;
