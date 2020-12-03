@@ -343,7 +343,7 @@ var loop = function(){
 
 	// This is basically character controller move
 	if (useBox) {
-		// TODO: playerBox.center has changed because it's set to the playerPosition ref
+		// playerBox.center has changed because it's set to the playerPosition ref
 		playerBox.calculateMinMax(playerBox.center, playerBox.extents);
 	}
 
@@ -361,6 +361,7 @@ var loop = function(){
 				// up to it for high speeds, however we'd probably want a skin depth, for the speeds
 				// we're travelling, just stop is probably fine
 				// BUG: You can get stuck on corners of flush surfaces when sliding along them
+				// Should be resolvable if we find all colliding boxes first then respond with full information
 				if (Physics.Box.enteredX(world.boxes[i], playerBox, playerPosition[0] - lastPosition[0])) {
 					let separation = world.boxes[i].max[1] - playerBox.min[1];
 					if (stepCount == 0 && !stepX && separation <= stepHeight) {
@@ -368,8 +369,6 @@ var loop = function(){
 						stepCount = 1;
 						stepX = true;
 						playerPosition[1] += separation;
-						// Funnily enough this is very snappy, potentially moving step height in one frame
-						// we should separate player position and camera position and smooth camera position
 					} else {
 						playerPosition[0] = lastPosition[0];
 						if (stepX) {
