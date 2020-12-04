@@ -320,53 +320,64 @@ var Camera = module.exports = function() {
 	return exports;
 }();
 
-},{"./maths":8}],4:[function(require,module,exports){
-var canvas;
+},{"./maths":9}],4:[function(require,module,exports){
+// Client.js - for using Fury old school style as a JS file which adds a
+// global which you can use. 
 
-// Fury Global
-Fury = {};
-// Modules
-Fury.Bounds = require('./bounds');
-Fury.Camera = require('./camera');
-Fury.Input = require('./input');
-Fury.Material = require('./material');
-Fury.Maths = require('./maths');
-Fury.Mesh = require('./mesh');
-Fury.Model = require('./model');
-Fury.Physics = require('./physics');
-Fury.Renderer = require('./renderer');
-Fury.Scene = require('./scene');
-Fury.Shader = require('./shader');
-Fury.Transform = require('./transform');
+// Create Fury Global
+Fury = require('./fury.js');
 
-Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
+},{"./fury.js":5}],5:[function(require,module,exports){
+// Fury Module can be used with 'require'
+var Fury = module.exports = (function() {
+  let Fury = {};
+  let canvas;
 
-Fury.createPrefab = function(parameters) {
-	var prefabs = Fury.prefabs;
-	if(!parameters || !parameters.name || prefabs[parameters.name]) {
-		throw new Error("Please provide a valid and unique name parameter for your prefab");
-	} else {
-		prefabs[parameters.name] = parameters;
-		// TODO: If we move to using a component system will need to transfer from parameter flat structure to a gameobject like structure, for now these are the same.
-		// Note that each component class should deal with setting up that component instance from supplied parameters itself
-	}
-};
+  // Modules
+  Fury.Bounds = require('./bounds');
+  Fury.Camera = require('./camera');
+  Fury.Input = require('./input');
+  Fury.Material = require('./material');
+  Fury.Maths = require('./maths');
+  Fury.Mesh = require('./mesh');
+  Fury.Model = require('./model');
+  Fury.Physics = require('./physics');
+  Fury.Renderer = require('./renderer');
+  Fury.Scene = require('./scene');
+  Fury.Shader = require('./shader');
+  Fury.Transform = require('./transform');
 
-// Public functions
-Fury.init = function(canvasId, contextAttributes) {
-	canvas = document.getElementById(canvasId);
-	try {
-		Fury.Renderer.init(canvas, contextAttributes);
-	} catch (error) {
-		// TODO: debug.error(error.message)
-		console.log(error.message);
-		return false;
-	}
-	Fury.Input.init(canvas);
-	return true;
-};
+  Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
 
-},{"./bounds":2,"./camera":3,"./input":6,"./material":7,"./maths":8,"./mesh":9,"./model":10,"./physics":11,"./renderer":12,"./scene":13,"./shader":14,"./transform":15}],5:[function(require,module,exports){
+  Fury.createPrefab = function(parameters) {
+  	var prefabs = Fury.prefabs;
+  	if(!parameters || !parameters.name || prefabs[parameters.name]) {
+  		throw new Error("Please provide a valid and unique name parameter for your prefab");
+  	} else {
+  		prefabs[parameters.name] = parameters;
+  		// TODO: If we move to using a component system will need to transfer from parameter flat structure to a gameobject like structure, for now these are the same.
+  		// Note that each component class should deal with setting up that component instance from supplied parameters itself
+  	}
+  };
+
+  // Public functions
+  Fury.init = function(canvasId, contextAttributes) {
+  	canvas = document.getElementById(canvasId);
+  	try {
+  		Fury.Renderer.init(canvas, contextAttributes);
+  	} catch (error) {
+  		// TODO: debug.error(error.message)
+  		console.log(error.message);
+  		return false;
+  	}
+  	Fury.Input.init(canvas);
+  	return true;
+  };
+
+  return Fury;
+})();
+
+},{"./bounds":2,"./camera":3,"./input":7,"./material":8,"./maths":9,"./mesh":10,"./model":11,"./physics":12,"./renderer":13,"./scene":14,"./shader":15,"./transform":16}],6:[function(require,module,exports){
 var IndexedMap = module.exports = function(){
 	// This creates a dictionary that provides its own keys
 	// It also contains an array of keys for quick enumeration
@@ -415,7 +426,7 @@ var IndexedMap = module.exports = function(){
 
 	return exports;
 }();
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var Input = module.exports = function() {
 	var exports = {};
 	var mouseState = [], currentlyPressedKeys = [];
@@ -645,7 +656,7 @@ var Input = module.exports = function() {
 	return exports;
 }();
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var Material = module.exports = function(){
 	var exports = {};
 	var prototype = {
@@ -694,7 +705,7 @@ var Material = module.exports = function(){
 
 	return exports;
 }();
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 // This is a centralised point for importing glMatrix
 // Also provides a helper for globalizing for ease of use
 let glMatrix = require('../libs/gl-matrix-min');
@@ -770,7 +781,7 @@ let Maths = module.exports = (function() {
   return exports;
 })();
 
-},{"../libs/gl-matrix-min":1}],9:[function(require,module,exports){
+},{"../libs/gl-matrix-min":1}],10:[function(require,module,exports){
 var r = require('./renderer');
 var Bounds = require('./bounds');
 
@@ -937,7 +948,7 @@ var Mesh = module.exports = function(){
 	return exports;
 }();
 
-},{"./bounds":2,"./renderer":12}],10:[function(require,module,exports){
+},{"./bounds":2,"./renderer":13}],11:[function(require,module,exports){
 var Model = module.exports = (function() {
     var exports = {};
     
@@ -1038,7 +1049,7 @@ var Model = module.exports = (function() {
     
     return exports;
 })();
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var Physics = module.exports = (function(){
   // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 
@@ -1086,7 +1097,7 @@ var Physics = module.exports = (function(){
   return exports;
 })();
 
-},{"./bounds":2}],12:[function(require,module,exports){
+},{"./bounds":2}],13:[function(require,module,exports){
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
@@ -1477,7 +1488,7 @@ exports.draw = function(renderMode, count, indexed, offset) {
 	}
 };
 
-},{"./maths":8}],13:[function(require,module,exports){
+},{"./maths":9}],14:[function(require,module,exports){
 var r = require('./renderer');
 var indexedMap = require('./indexedMap');
 var Material = require('./material');
@@ -1889,7 +1900,7 @@ var Scene = module.exports = function() {
 	return exports;
 }();
 
-},{"./bounds":2,"./indexedMap":5,"./material":7,"./maths":8,"./mesh":9,"./renderer":12,"./transform":15}],14:[function(require,module,exports){
+},{"./bounds":2,"./indexedMap":6,"./material":8,"./maths":9,"./mesh":10,"./renderer":13,"./transform":16}],15:[function(require,module,exports){
 // Shader Class for use with Fury Scene
 var r = require('./renderer');
 
@@ -1957,7 +1968,7 @@ var Shader = module.exports = function() {
 	return exports;
 }();
 
-},{"./renderer":12}],15:[function(require,module,exports){
+},{"./renderer":13}],16:[function(require,module,exports){
 var Maths = require('./maths');
 var quat = Maths.quat, vec3 = Maths.vec3;
 
@@ -1986,4 +1997,4 @@ var Transform = module.exports = function() {
 	return exports;
 }();
 
-},{"./maths":8}]},{},[4]);
+},{"./maths":9}]},{},[4]);
