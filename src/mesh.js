@@ -1,5 +1,6 @@
 var r = require('./renderer');
 var Bounds = require('./bounds');
+var vec3 = require('./maths').vec3;
 
 var Mesh = module.exports = function(){
 	exports = {};

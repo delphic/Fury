@@ -1,3 +1,5 @@
+var vec3 = require('./maths').vec3;
+
 var Bounds = module.exports = (function() {
 	let exports = {};
 	let prototype = {
