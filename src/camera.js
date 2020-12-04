@@ -75,6 +75,8 @@ var Camera = module.exports = function() {
 			// Note : https://stackoverflow.com/questions/31788925/correct-frustum-aabb-intersection
 			// TODO: Profile and try different techniques (using continue in the loop, unrolling the lot, etc)
 			vec4Cache[3] = 1;
+			// Consider wrapping this cache in an anon function execution to keep scope minimal, see of it improves performance
+			// i.e. isInFrustum = (function() { let cache = vec4.create(); return function(bounds) { /* implementation */ }; })();
 			for (let i = 0; i < 6; i++) {
 				let out = 0;
 				vec4Cache[0] = bounds.min[0], vec4Cache[1] = bounds.max[1], vec4Cache[2] = bounds.min[2];
@@ -141,7 +143,7 @@ var Camera = module.exports = function() {
 		camera.type = parameters.type ? parameters.type : Type.Perspective;
 		camera.near = parameters.near;
 		camera.far = parameters.far;
-		
+
 		if(camera.type == Type.Perspective) {
 			// vertical field of view, ratio (aspect) determines horizontal fov
 			camera.fov = parameters.fov;
