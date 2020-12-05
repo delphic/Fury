@@ -433,20 +433,48 @@ var IndexedMap = module.exports = function(){
 },{}],7:[function(require,module,exports){
 var Input = module.exports = function() {
 	var exports = {};
+
+	var pointerLocked = false;
 	var mouseState = [], currentlyPressedKeys = [];
-	var init = exports.init = function(canvas) {
+	var canvas;
+	var init = exports.init = function(targetCanvas) {
+			canvas = targetCanvas;
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
 			canvas.addEventListener("mouseup", handleMouseUp);
+			canvas.addEventListener('mousemove', (event) => {
+				MouseDelta[0] += event.movementX;
+				MouseDelta[1] += event.movementY;
+			});
+			document.addEventListener('pointerlockchange', (event) => {
+				pointerLocked = !!(document.pointerLockElement || document.mozPointerLockElement); // polyfill
+			});
+			canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock; // polyfill
+
 			window.addEventListener("keyup", handleKeyUp);
 			window.addEventListener("keydown", handleKeyDown);
 			window.addEventListener("blur", handleBlur);
 	};
 
+	exports.handleFrameFinished = function() {
+		// TODO: Use this to track keyDown, keyPressed and keyUp separately
+		MouseDelta[0] = 0;
+		MouseDelta[1] = 0;
+	};
+
+	exports.isPointerLocked = function() {
+		return pointerLocked;
+	};
+
+	exports.requestPointerLock = function() {
+		canvas.requestPointerLock();
+	};
+
+	var MouseDelta = exports.MouseDelta = [0, 0];
 	var MousePosition = exports.MousePosition = [0, 0];
 
 	// TODO: Add signalEndFrame and store keyDown [] and keyUp[] array for
-	// querying as well, although the option of just subscribig to the events
+	// querying as well, although the option of just subscribing to the events
 	// in game code is also there but need to use DescriptionToKeyCode
 
 	var keyDown = exports.keyDown = function(key) {
@@ -455,7 +483,7 @@ var Input = module.exports = function() {
 		}
 		else if (key) {
 			var map = DescriptionToKeyCode[key];
-			return (map) ? currentlyPressedKeys[map] : false;
+			return (map) ? !!currentlyPressedKeys[map] : false;
 		}
 		else {
 			return false;
