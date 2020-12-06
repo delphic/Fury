@@ -68,6 +68,36 @@ let Maths = module.exports = (function() {
     glMatrix.vec3.transformQuat(localZ, vec3Z, q);
   };
 
+  // See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+  // Note: They define roll as rotation around x axis, pitch around y axis, and yaw around z-axis
+  // I do not agree, roll is around z-axis, pitch around x-axis, and yaw around y-axis.
+  // Methods renamed accordingly
+
+  // I attempted to swap and rearrange some of the formula so pitch could be -pi/2 to pi/2 range
+  // and yaw would be -pi to pi but naively swapping the formula according to the apparent pattern did not work
+  // c.f. 7dfps player class for hacky work around - TODO: Fix these
+  exports.calculatePitch = function(q) {
+  	// x-axis rotation
+  	let w = q[3], x = q[0], y = q[1], z = q[2];
+  	return Math.atan2(2 * (w*x + y*z), 1 - 2 * (x*x + y*y)); // use atan and probably would get -90:90?
+  };
+
+  exports.calculateYaw = function(q) {
+  	// y-axis rotation
+  	let w = q[3], x = q[0], y = q[1], z = q[2];
+  	let sinp = 2 * (w*y - z*x);
+    if (Math.abs(sinp) >= 1) sinp = Math.sign(sinp) * (Math.PI / 2);  // Use 90 if out of range
+  	return Math.asin(sinp) // returns pi/2 -> - pi/2 range
+  };
+
+  exports.calculateRoll = function(q) {
+  	// z-axis rotation
+  	let w = q[3], x = q[0], y = q[1], z = q[2];
+  	return Math.atan2(2 * (w*z + x*y), 1 - 2 * (y*y + z*z));
+    // This seems to occasionally return PI or -PI instead of 0
+    // It does seem to be related to crossing boundaries but it's not entirely predictable
+  };
+
   exports.globalize = globalize;
 
   return exports;
