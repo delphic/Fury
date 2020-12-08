@@ -47,12 +47,16 @@ let Maths = module.exports = (function() {
 
   let equals = glMatrix.glMatrix.equals;
 
-  // TODO: create quat from euler
+  exports.quatEuler = function(x, y, z) {
+    let q = glMatrix.quat.create();
+    glMatrix.quat.fromEuler(q, x, y, z);
+    return q;
+  };
 
-  exports.quatIdentity = function(q) {
+  exports.quatIsIdentity = function(q) {
     // Is the provided quaterion identity
     return (equals(q[0], 0) && equals(q[1], 0) && equals(q[2], 0) && equals(q[3], 1));
-  }
+  };
 
   exports.quatRotate = (function() {
   	var i = glMatrix.quat.create();
