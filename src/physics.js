@@ -6,7 +6,7 @@ var Physics = module.exports = (function(){
   // For now a box is an AABB - in future we'll need to allow rotation
   var Box = exports.Box = require('./bounds');
 
-  var Sphere =exports.Sphere = (function() {
+  var Sphere = exports.Sphere = (function() {
   	let exports = {};
   	let prototype = {};
 
@@ -34,7 +34,11 @@ var Physics = module.exports = (function(){
   		} else {
   			sphere.center = vec3.create();
   		}
-  		sphere.radius = parameters.radius | 0;
+      if (parameters.radius) {
+        sphere.radius = parameters.radius;
+      } else {
+        sphere.radius = 0;
+      }
 
   		return sphere;
   	};

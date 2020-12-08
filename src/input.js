@@ -2,7 +2,8 @@ var Input = module.exports = function() {
 	var exports = {};
 
 	var pointerLocked = false;
-	var mouseState = [], currentlyPressedKeys = [];
+	var mouseState = [], currentlyPressedKeys = [];	// probably shouldn't use arrays lots of empty space
+	var downKeys = [], upKeys = []; // Keys pressed or released this frame
 	var canvas;
 	var init = exports.init = function(targetCanvas) {
 			canvas = targetCanvas;
@@ -23,12 +24,6 @@ var Input = module.exports = function() {
 			window.addEventListener("blur", handleBlur);
 	};
 
-	exports.handleFrameFinished = function() {
-		// TODO: Use this to track keyDown, keyPressed and keyUp separately
-		MouseDelta[0] = 0;
-		MouseDelta[1] = 0;
-	};
-
 	exports.isPointerLocked = function() {
 		return pointerLocked;
 	};
@@ -44,7 +39,7 @@ var Input = module.exports = function() {
 	// querying as well, although the option of just subscribing to the events
 	// in game code is also there but need to use DescriptionToKeyCode
 
-	var keyDown = exports.keyDown = function(key) {
+	var keyPressed = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return currentlyPressedKeys[key];
 		}
@@ -54,6 +49,36 @@ var Input = module.exports = function() {
 		}
 		else {
 			return false;
+		}
+	};
+
+	var keyUp = exports.keyUp = function(key) {
+		if (!isNaN(key) && !key.length) {
+			return upKeys[key];
+		}
+		else if (key) {
+			var map = DescriptionToKeyCode[key];
+			return (map) ? !!upKeys[map] : false;
+		}
+		else {
+			return false;
+		}
+	};
+
+	var keyDown = exports.keyDown = function(key, thisFrame) {
+		if (!thisFrame) {
+			return keyPressed(key);
+		} else {
+			if (!isNaN(key) && !key.length) {
+				return downKeys[key];
+			}
+			else if (key) {
+				var map = DescriptionToKeyCode[key];
+				return (map) ? !!downKeys[map] : false;
+			}
+			else {
+				return false;
+			}
 		}
 	};
 
@@ -70,16 +95,27 @@ var Input = module.exports = function() {
 		}
 	};
 
+	exports.handleFrameFinished = function() {
+		MouseDelta[0] = 0;
+		MouseDelta[1] = 0;
+		downKeys.length = 0;
+		upKeys.length = 0;
+	};
+
 	var handleKeyDown = function(event) {
+		downKeys[event.keyCode] = true;
 		currentlyPressedKeys[event.keyCode] = true;
 	};
 
 	var handleKeyUp = function(event) {
 		currentlyPressedKeys[event.keyCode] = false;
+		upKeys[event.keyCode] = true;
 	};
 
 	var handleBlur = function(event) {
+		downKeys.length = 0;
 		currentlyPressedKeys.length = 0;
+		upKeys.length = 0;	// Q: Should we be copying currently pressed Keys as they've kinda been released?
 	};
 
 	var handleMouseMove = function(event) {
