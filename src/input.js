@@ -103,7 +103,10 @@ var Input = module.exports = function() {
 	};
 
 	var handleKeyDown = function(event) {
-		downKeys[event.keyCode] = true;
+		// keyDown event can get called multiple times after a short delay
+		if (!currentlyPressedKeys[event.keyCode]) {
+			downKeys[event.keyCode] = true;
+		}
 		currentlyPressedKeys[event.keyCode] = true;
 	};
 
