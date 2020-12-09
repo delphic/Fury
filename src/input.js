@@ -32,6 +32,10 @@ var Input = module.exports = function() {
 		canvas.requestPointerLock();
 	};
 
+	exports.releasePointerLock = function() {
+		document.exitPointerLock();
+	};
+
 	var MouseDelta = exports.MouseDelta = [0, 0];
 	var MousePosition = exports.MousePosition = [0, 0];
 
