@@ -4,8 +4,8 @@
 // globalize glMatrix
 Fury.Maths.globalize();
 
-var useQueen = true, useTexture = false;
-var modelName = useQueen ? "queen.gltf" : "cube.gltf";
+var useQueen = true, useTexture = false, useColors = false;
+var modelName = useQueen ? "queen.gltf" : "colored_cube.gltf";
 var textureQuality = "low", textureSrc = "checkerboard.png";
 var position = useQueen ? vec3.fromValues(0.05, 0.08, 0.1) : vec3.fromValues(2.5, 2.5, 5);
 // TODO: Set default fov or position based on extents of object
@@ -14,51 +14,115 @@ var position = useQueen ? vec3.fromValues(0.05, 0.08, 0.1) : vec3.fromValues(2.5
 Fury.init("fury");
 
 // Create shader
-var shader = Fury.Shader.create({
-	vsSource: [
-	"attribute vec3 aVertexPosition;",
-	"attribute vec3 aVertexNormal;",
-    "attribute vec2 aTextureCoord;",
+var shader;
+if (!useColors) {
+	shader = Fury.Shader.create({
+		vsSource: [
+			"attribute vec3 aVertexPosition;",
+			"attribute vec3 aVertexNormal;",
+			"attribute vec2 aTextureCoord;",
 
-    "uniform mat4 uMVMatrix;",
-    "uniform mat4 uPMatrix;",
+			"uniform mat4 uMVMatrix;",
+			"uniform mat4 uPMatrix;",
 
-    "varying vec2 vTextureCoord;",
-    "varying float vLightWeight;",
+			"varying vec2 vTextureCoord;",
+			"varying float vLightWeight;",
 
-    "void main(void) {",
-        "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
-        "vTextureCoord = aTextureCoord;",
-        "vLightWeight = 0.5 + 0.5 * max(dot(aVertexNormal, normalize(vec3(-1.0, 2.0, 1.0))), 0.0);",
-    "}"].join('\n'),
-	fsSource: [
-	"precision mediump float;",
+			"void main(void) {",
+				"gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
+				"vTextureCoord = aTextureCoord;",
+				"vLightWeight = 0.5 + 0.5 * max(dot(aVertexNormal, normalize(vec3(-1.0, 2.0, 1.0))), 0.0);",
+			"}"].join('\n'),
+		fsSource: [
+			"precision mediump float;",
 
-    "varying vec2 vTextureCoord;",
-    "varying float vLightWeight;",
+			"varying vec2 vTextureCoord;",
+			"varying float vLightWeight;",
 
-    "uniform sampler2D uSampler;",
+			"uniform sampler2D uSampler;",
 
-    "void main(void) {",
-        "gl_FragColor = vec4(vLightWeight * vec3(1.0, 1.0, 1.0), 1.0)" + (useTexture ? " * texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));" : ";"),
-    "}"].join('\n'),
-	attributeNames: [ "aVertexPosition", "aVertexNormal", "aTextureCoord" ],
-	uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
-	textureUniformNames: [ "uSampler" ],
-	pMatrixUniformName: "uPMatrix",
-	mvMatrixUniformName: "uMVMatrix",
-	bindMaterial: function(material) {
-		this.enableAttribute("aVertexPosition");
-		this.enableAttribute("aVertexNormal");
-		this.enableAttribute("aTextureCoord");
-	},
-	bindBuffers: function(mesh) {
-		this.setAttribute("aVertexPosition", mesh.vertexBuffer);
-		this.setAttribute("aVertexNormal", mesh.normalBuffer);
-		this.setAttribute("aTextureCoord", mesh.textureBuffer);
-		this.setIndexedAttribute(mesh.indexBuffer);
-	}
-});
+			"void main(void) {",
+				"gl_FragColor = vec4(vLightWeight * vec3(1.0, 1.0, 1.0), 1.0)" + (useTexture ? " * texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));" : ";"),
+			"}"].join('\n'),
+		attributeNames: [ "aVertexPosition", "aVertexNormal", "aTextureCoord", ],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
+		textureUniformNames: [ "uSampler" ],
+		pMatrixUniformName: "uPMatrix",
+		mvMatrixUniformName: "uMVMatrix",
+		bindMaterial: function(material) {
+			this.enableAttribute("aVertexPosition");
+			this.enableAttribute("aVertexNormal");
+			this.enableAttribute("aTextureCoord");
+		},
+		bindBuffers: function(mesh) {
+			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
+			this.setAttribute("aVertexNormal", mesh.normalBuffer);
+			this.setAttribute("aTextureCoord", mesh.textureBuffer);
+			this.setIndexedAttribute(mesh.indexBuffer);
+		}
+	});
+} else {
+	shader = Fury.Shader.create({
+		vsSource: [
+			"attribute vec3 aVertexPosition;",
+			"attribute vec3 aVertexNormal;",
+			"attribute vec2 aTextureCoord;",
+
+			"attribute vec4 aColor0;",
+			"attribute vec4 aColor1;",
+
+			"uniform mat4 uMVMatrix;",
+			"uniform mat4 uPMatrix;",
+
+			"varying vec2 vTextureCoord;",
+			"varying float vLightWeight;",
+
+			"varying vec4 vColor0;",
+			"varying vec4 vColor1;",
+
+			"void main(void) {",
+				"gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
+				"vTextureCoord = aTextureCoord;",
+				"vLightWeight = 0.5 + 0.5 * max(dot(aVertexNormal, normalize(vec3(-1.0, 2.0, 1.0))), 0.0);",
+				"vColor0 = aColor0;",
+				"vColor1 = aColor1;",
+			"}"].join('\n'),
+		fsSource: [
+			"precision mediump float;",
+
+			"varying vec4 vColor0;",
+			"varying vec4 vColor1;",
+
+			"varying vec2 vTextureCoord;",
+			"varying float vLightWeight;",
+
+			"uniform sampler2D uSampler;",
+
+			"void main(void) {",
+				"gl_FragColor = vec4(vLightWeight * vec3(1.0, 1.0, 1.0), 1.0)" + (useTexture ? " * texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));" : " * vColor0;"),
+			"}"].join('\n'),
+		attributeNames: [ "aVertexPosition", "aVertexNormal", "aTextureCoord", "aColor0", "aColor1" ],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler" ],
+		textureUniformNames: [ "uSampler" ],
+		pMatrixUniformName: "uPMatrix",
+		mvMatrixUniformName: "uMVMatrix",
+		bindMaterial: function(material) {
+			this.enableAttribute("aVertexPosition");
+			this.enableAttribute("aVertexNormal");
+			this.enableAttribute("aTextureCoord");
+			this.enableAttribute("aColor0");
+			this.enableAttribute("aColor1");
+		},
+		bindBuffers: function(mesh) {
+			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
+			this.setAttribute("aVertexNormal", mesh.normalBuffer);
+			this.setAttribute("aTextureCoord", mesh.textureBuffer);
+			this.setAttribute("aColor0", mesh.customBuffers["COLOR_0"]);
+			this.setAttribute("aColor1", mesh.customBuffers["COLOR_1"]);
+			this.setIndexedAttribute(mesh.indexBuffer);
+		}
+	});
+}
 
 var material = Fury.Material.create({ shader : shader });
 
@@ -84,10 +148,10 @@ image.onload = () => {
 
 	// This is what we're actually testing, the rest is boilerplate
 	Fury.Model.load(modelName, (model) => {
-	    // TODO: Consider using promises rather than callbacks
-	    // TODO: Investigate embedded resources / resource references for materials
-	    var mesh = Fury.Mesh.create(model.meshData[0]);
-	    modelObj = scene.add({ material: material, mesh: mesh });
+			// TODO: Consider using promises rather than callbacks
+			// TODO: Investigate embedded resources / resource references for materials
+			var mesh = Fury.Mesh.create(model.meshData[0]);
+			modelObj = scene.add({ material: material, mesh: mesh });
 		window.requestAnimationFrame(loop);
 	});
 };

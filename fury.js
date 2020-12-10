@@ -435,7 +435,8 @@ var Input = module.exports = function() {
 	var exports = {};
 
 	var pointerLocked = false;
-	var mouseState = [], currentlyPressedKeys = [];
+	var mouseState = [], currentlyPressedKeys = [];	// probably shouldn't use arrays lots of empty space
+	var downKeys = [], upKeys = []; // Keys pressed or released this frame
 	var canvas;
 	var init = exports.init = function(targetCanvas) {
 			canvas = targetCanvas;
@@ -456,18 +457,16 @@ var Input = module.exports = function() {
 			window.addEventListener("blur", handleBlur);
 	};
 
-	exports.handleFrameFinished = function() {
-		// TODO: Use this to track keyDown, keyPressed and keyUp separately
-		MouseDelta[0] = 0;
-		MouseDelta[1] = 0;
-	};
-
 	exports.isPointerLocked = function() {
 		return pointerLocked;
 	};
 
 	exports.requestPointerLock = function() {
 		canvas.requestPointerLock();
+	};
+
+	exports.releasePointerLock = function() {
+		document.exitPointerLock();
 	};
 
 	var MouseDelta = exports.MouseDelta = [0, 0];
@@ -477,7 +476,7 @@ var Input = module.exports = function() {
 	// querying as well, although the option of just subscribing to the events
 	// in game code is also there but need to use DescriptionToKeyCode
 
-	var keyDown = exports.keyDown = function(key) {
+	var keyPressed = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return currentlyPressedKeys[key];
 		}
@@ -487,6 +486,36 @@ var Input = module.exports = function() {
 		}
 		else {
 			return false;
+		}
+	};
+
+	var keyUp = exports.keyUp = function(key) {
+		if (!isNaN(key) && !key.length) {
+			return upKeys[key];
+		}
+		else if (key) {
+			var map = DescriptionToKeyCode[key];
+			return (map) ? !!upKeys[map] : false;
+		}
+		else {
+			return false;
+		}
+	};
+
+	var keyDown = exports.keyDown = function(key, thisFrame) {
+		if (!thisFrame) {
+			return keyPressed(key);
+		} else {
+			if (!isNaN(key) && !key.length) {
+				return downKeys[key];
+			}
+			else if (key) {
+				var map = DescriptionToKeyCode[key];
+				return (map) ? !!downKeys[map] : false;
+			}
+			else {
+				return false;
+			}
 		}
 	};
 
@@ -503,16 +532,30 @@ var Input = module.exports = function() {
 		}
 	};
 
+	exports.handleFrameFinished = function() {
+		MouseDelta[0] = 0;
+		MouseDelta[1] = 0;
+		downKeys.length = 0;
+		upKeys.length = 0;
+	};
+
 	var handleKeyDown = function(event) {
+		// keyDown event can get called multiple times after a short delay
+		if (!currentlyPressedKeys[event.keyCode]) {
+			downKeys[event.keyCode] = true;
+		}
 		currentlyPressedKeys[event.keyCode] = true;
 	};
 
 	var handleKeyUp = function(event) {
 		currentlyPressedKeys[event.keyCode] = false;
+		upKeys[event.keyCode] = true;
 	};
 
 	var handleBlur = function(event) {
+		downKeys.length = 0;
 		currentlyPressedKeys.length = 0;
+		upKeys.length = 0;	// Q: Should we be copying currently pressed Keys as they've kinda been released?
 	};
 
 	var handleMouseMove = function(event) {
@@ -787,12 +830,16 @@ let Maths = module.exports = (function() {
 
   let equals = glMatrix.glMatrix.equals;
 
-  // TODO: create quat from euler
+  exports.quatEuler = function(x, y, z) {
+    let q = glMatrix.quat.create();
+    glMatrix.quat.fromEuler(q, x, y, z);
+    return q;
+  };
 
-  exports.quatIdentity = function(q) {
+  exports.quatIsIdentity = function(q) {
     // Is the provided quaterion identity
     return (equals(q[0], 0) && equals(q[1], 0) && equals(q[2], 0) && equals(q[3], 1));
-  }
+  };
 
   exports.quatRotate = (function() {
   	var i = glMatrix.quat.create();
@@ -806,6 +853,36 @@ let Maths = module.exports = (function() {
     glMatrix.vec3.transformQuat(localX, vec3X, q);
     glMatrix.vec3.transformQuat(localY, vec3Y, q);
     glMatrix.vec3.transformQuat(localZ, vec3Z, q);
+  };
+
+  // See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+  // Note: They define roll as rotation around x axis, pitch around y axis, and yaw around z-axis
+  // I do not agree, roll is around z-axis, pitch around x-axis, and yaw around y-axis.
+  // Methods renamed accordingly
+
+  // I attempted to swap and rearrange some of the formula so pitch could be -pi/2 to pi/2 range
+  // and yaw would be -pi to pi but naively swapping the formula according to the apparent pattern did not work
+  // c.f. 7dfps player class for hacky work around - TODO: Fix these
+  exports.calculatePitch = function(q) {
+  	// x-axis rotation
+  	let w = q[3], x = q[0], y = q[1], z = q[2];
+  	return Math.atan2(2 * (w*x + y*z), 1 - 2 * (x*x + y*y)); // use atan and probably would get -90:90?
+  };
+
+  exports.calculateYaw = function(q) {
+  	// y-axis rotation
+  	let w = q[3], x = q[0], y = q[1], z = q[2];
+  	let sinp = 2 * (w*y - z*x);
+    if (Math.abs(sinp) >= 1) sinp = Math.sign(sinp) * (Math.PI / 2);  // Use 90 if out of range
+  	return Math.asin(sinp) // returns pi/2 -> - pi/2 range
+  };
+
+  exports.calculateRoll = function(q) {
+  	// z-axis rotation
+  	let w = q[3], x = q[0], y = q[1], z = q[2];
+  	return Math.atan2(2 * (w*z + x*y), 1 - 2 * (y*y + z*z));
+    // This seems to occasionally return PI or -PI instead of 0
+    // It does seem to be related to crossing boundaries but it's not entirely predictable
   };
 
   exports.globalize = globalize;
@@ -920,6 +997,23 @@ var Mesh = module.exports = function(){
 			    if (parameters.normals && parameters.normalsCount) {
 			        mesh.normalBuffer = r.createArrayBuffer(parameters.normals, 3, parameters.normalsCount);
 			    }
+
+					if (parameters.customBuffers && parameters.customBuffers.length) {
+						mesh.customBuffers = [];
+						for (let i = 0, l = parameters.customBuffers.length; i < l; i++) {
+							let customBuffer = parameters.customBuffers[i];
+							switch (customBuffer.componentType) {
+								case 5126: // Float32
+									mesh.customBuffers[customBuffer.name] = r.createArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+									break;
+								case 5123: // Int16
+									mesh.customBuffers[customBuffer.name] = r.createElementArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+									// UNTESTED
+									break;
+							}
+						}
+					}
+
 			    if (parameters.indices && parameters.indexCount) {
 			        mesh.indexBuffer = r.createElementArrayBuffer(parameters.indices, 1, parameters.indexCount);
 			        mesh.indexed = true;
@@ -984,41 +1078,50 @@ var Mesh = module.exports = function(){
 },{"./bounds":2,"./maths":9,"./renderer":13}],11:[function(require,module,exports){
 var Model = module.exports = (function() {
     var exports = {};
-    
-    // Takes a URI of a glTF file to load 
+
+    // Takes a URI of a glTF file to load
     // Returns an object containing an array meshdata ready for use with Fury.Mesh
     // In future can be extended to include material information
     exports.load = function(uri, callback) {
         // TODO: Check file extension, only gltf currently supported
         // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
-    
-        fetch(uri).then(function(response) { 
+
+        fetch(uri).then(function(response) {
             return response.json();
         }).then(function(json) {
             // Find first mesh and load it
             // TODO: Load all meshes
             // TODO: Load all sets of texture coordinates
-            
+
             // TODO: Option to provide data as JS arrays (i.e. buffers: false)
-            // This is so we can have the data available to JS for runtime manipulation 
+            // This is so we can have the data available to JS for runtime manipulation
             var meshData = {
                 buffers: true
             };
-            
+
             var attributes = json.meshes[0].primitives[0].attributes;
             var positionIndex = attributes.POSITION;    // index into accessors
             var normalsIndex = attributes.NORMAL;       // index into accessors
             var uvIndex = attributes.TEXCOORD_0;        // index into accessors
-            var indicesIndex = json.meshes[0].primitives[0].indices; 
+            var colorIndices = [];
+
+            var propertyName = "COLOR_";
+            var propertyNameIndex = 0;
+            while (attributes.hasOwnProperty(propertyName + propertyNameIndex)) {
+              colorIndices.push(attributes[propertyName + propertyNameIndex]);
+              propertyNameIndex++;
+            }
+
+            var indicesIndex = json.meshes[0].primitives[0].indices;
             // ^^ I think this is the index and not the index count, should check with a more complex / varied model
-    
+
             // Calculate bounding radius
             var max = json.accessors[positionIndex].max;
             var min = json.accessors[positionIndex].min;
             var maxPointSqrDistance = max[0]*max[0] + max[1]*max[1] + max[2]*max[2];
             var minPointSqrDistance = min[0]*min[0] + min[1]*min[1] + min[2]*min[2];
             meshData.boundingRadius = Math.sqrt(Math.max(maxPointSqrDistance, minPointSqrDistance));
-    
+
             var vertexCount = json.accessors[positionIndex].count;
             var positionBufferView = json.bufferViews[json.accessors[positionIndex].bufferView];
 
@@ -1031,7 +1134,7 @@ var Model = module.exports = (function() {
 
             var normalsCount, uvCount;
             var normalsBufferView, uvBufferView;
-            
+
             if (normalsIndex !== undefined) {
                 normalsCount = json.accessors[normalsIndex].count;
                 normalsBufferView = json.bufferViews[json.accessors[normalsIndex].bufferView];
@@ -1039,7 +1142,7 @@ var Model = module.exports = (function() {
                     console.error("Normals Buffer Index does not match Position Buffer Index");
                 }
             }
-            
+
             if (uvIndex !== undefined) {
                 uvCount = json.accessors[uvIndex].count;
                 uvBufferView = json.bufferViews[json.accessors[uvIndex].bufferView];
@@ -1047,41 +1150,69 @@ var Model = module.exports = (function() {
                     console.error("Texture Coordinates Buffer Index does not match Position Buffer Index");
                 }
             }
-            
+
+            var colorsCounts = [];
+            var colorsBufferViews = [];
+
+            for (let i = 0, l = colorIndices.length; i < l; i++) {
+              let colorIndex = colorIndices[i];
+              let accessor = json.accessors[colorIndex];
+              colorsCounts[i] = accessor.count;
+              colorsBufferViews[i] = json.bufferViews[accessor.bufferView];
+              if (positionBufferView.buffer != colorsBufferViews[i].buffer) {
+                console.error("The COLOR_" + i +" Buffer Index does not match Position Buffer Index");
+              }
+            }
+
             fetch(json.buffers[positionBufferView.buffer].uri).then(function(response) {
                 return response.arrayBuffer();
             }).then(function(arrayBuffer) {
-                // TODO: pick typedarray type from accessors[index].componentType
+                // TODO: pick typedarray type from accessors[index].componentType (5126 => Float32, 5123 => Int16)
                 // TODO: Get size from data from accessors[index].type rather than hardcoding
                 meshData.vertices = new Float32Array(arrayBuffer, positionBufferView.byteOffset, vertexCount * 3);
                 meshData.vertexCount = vertexCount;
-                
+
                 if (normalsIndex !== undefined) {
                     meshData.normals = new Float32Array(arrayBuffer, normalsBufferView.byteOffset, normalsCount * 3);
                     meshData.normalsCount = normalsCount;
                 }
-                
+
                 if (uvIndex !== undefined) {
-                    meshData.textureCoordinates = new Float32Array(arrayBuffer, uvBufferView.byteOffset, uvCount * 2); 
+                    meshData.textureCoordinates = new Float32Array(arrayBuffer, uvBufferView.byteOffset, uvCount * 2);
                     meshData.textureCoordinatesCount = uvCount;
                 }
-                
+
                 meshData.indices = new Int16Array(arrayBuffer, indicesBufferView.byteOffset, indexCount);
                 meshData.indexCount = indexCount;
-               
+
+                if(colorIndices.length > 0) {
+                  meshData.customBuffers = [];
+                  // Assumed componentType = 5126 => Float32, type = "VEC4" => count * 4
+                  for (let i = 0, l = colorIndices.length; i < l; i++) {
+                    meshData.customBuffers.push({
+                      name: "COLOR_" + i,
+                      buffer: new Float32Array(arrayBuffer, colorsBufferViews[i].byteOffset, colorsCounts[i] * 4),
+                      count: colorsCounts[i],
+                      componentType: 5126,
+                      size: 4
+                    });
+                  }
+                }
+
                 callback({ meshData: [ meshData ]});
-                
+
             }).catch(function(error) {
                 console.error("Unable to fetch data buffer from model");
             });
-    
+
         }).catch(function(error) {
             console.error("Unable to load model at " + uri);
         });
     };
-    
+
     return exports;
 })();
+
 },{}],12:[function(require,module,exports){
 var Physics = module.exports = (function(){
   // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
@@ -1091,7 +1222,7 @@ var Physics = module.exports = (function(){
   // For now a box is an AABB - in future we'll need to allow rotation
   var Box = exports.Box = require('./bounds');
 
-  var Sphere =exports.Sphere = (function() {
+  var Sphere = exports.Sphere = (function() {
   	let exports = {};
   	let prototype = {};
 
@@ -1119,7 +1250,11 @@ var Physics = module.exports = (function(){
   		} else {
   			sphere.center = vec3.create();
   		}
-  		sphere.radius = parameters.radius | 0;
+      if (parameters.radius) {
+        sphere.radius = parameters.radius;
+      } else {
+        sphere.radius = 0;
+      }
 
   		return sphere;
   	};
@@ -1624,7 +1759,7 @@ var Scene = module.exports = function() {
 
 		var createObjectBounds = function(object, mesh, rotation) {
 			// If object is static and not rotated, create object AABB from mesh bounds
-			if (!forceSphereCulling && object.static && (!rotation || Maths.quatIdentity(rotation))) {
+			if (!forceSphereCulling && object.static && (!rotation || Maths.quatIsIdentity(rotation))) {
 				// TODO: Allow for calculation of AABB of rotated meshes
 				let center = vec3.clone(mesh.bounds.center);
 				vec3.add(center, center, object.transform.position);

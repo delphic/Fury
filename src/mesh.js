@@ -58,18 +58,18 @@ var Mesh = module.exports = function(){
 			// or we should use the existing buffer and bind different data
 		},
 		updateTextureCoordinates: function() {
-		  // TODO: If uvBuffer exists we should delete the existing buffer?
-		  // or we should use the existing buffer and bind different data
+			// TODO: If uvBuffer exists we should delete the existing buffer?
+			// or we should use the existing buffer and bind different data
 			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
 		},
 		updateNormals: function() {
-		  // TODO: If normalBuffer exists we should delete the existing buffer?
-		  // or we should use the existing buffer and bind different data
+			// TODO: If normalBuffer exists we should delete the existing buffer?
+			// or we should use the existing buffer and bind different data
 			this.normalBuffer = r.createBuffer(this.normals, 3);
 		},
 		updateIndexBuffer: function() {
-		  // TODO: If indexBuffer exists we should delete the existing buffer?
-		  // or we should use the existing buffer and bind different data
+			// TODO: If indexBuffer exists we should delete the existing buffer?
+			// or we should use the existing buffer and bind different data
 			this.indexBuffer = r.createBuffer(this.indices, 1, true);
 			this.indexed = true;
 		}
@@ -90,46 +90,63 @@ var Mesh = module.exports = function(){
 			mesh.boundingRadius = parameters.boundingRadius | 0;
 
 			if (parameters.buffers) {
-			    // NOTE: update<X> methods will not work when providing buffers directly
-			    // if the mesh needs to be manipulated at run time, it's best to convert the buffers
-			    // to JS arrays create the mesh data with that.
-			    if (parameters.vertices && parameters.vertexCount) {
-							mesh.vertices = parameters.vertices;
-							mesh.calculateBounds();
-			        mesh.vertexBuffer = r.createArrayBuffer(parameters.vertices, 3, parameters.vertexCount);
-			    }
-			    if (parameters.textureCoordinates && parameters.textureCoordinatesCount) {
-			        mesh.textureBuffer = r.createArrayBuffer(parameters.textureCoordinates, 2, parameters.textureCoordinatesCount);
-			    }
-			    if (parameters.normals && parameters.normalsCount) {
-			        mesh.normalBuffer = r.createArrayBuffer(parameters.normals, 3, parameters.normalsCount);
-			    }
-			    if (parameters.indices && parameters.indexCount) {
-			        mesh.indexBuffer = r.createElementArrayBuffer(parameters.indices, 1, parameters.indexCount);
-			        mesh.indexed = true;
-			    } else {
-			        mesh.indexed = false;
-			    }
-			} else {
-			    if (parameters.vertices) {
-    				mesh.vertices = parameters.vertices;
+					// NOTE: update<X> methods will not work when providing buffers directly
+					// if the mesh needs to be manipulated at run time, it's best to convert the buffers
+					// to JS arrays create the mesh data with that.
+					if (parameters.vertices && parameters.vertexCount) {
+						mesh.vertices = parameters.vertices;
 						mesh.calculateBounds();
-    				mesh.updateVertices();
-    			}
-    			if (parameters.textureCoordinates) {
-    				mesh.textureCoordinates = parameters.textureCoordinates;
-    				mesh.updateTextureCoordinates();
-    			}
-    			if (parameters.normals) {
-    				mesh.normals = parameters.normals;
-    				mesh.updateNormals();
-    			}
-    			if (parameters.indices) {
-    				mesh.indices = parameters.indices;
-    				mesh.updateIndexBuffer();
-    			} else {
-    				mesh.indexed = false;
-    			}
+						mesh.vertexBuffer = r.createArrayBuffer(parameters.vertices, 3, parameters.vertexCount);
+					}
+					if (parameters.textureCoordinates && parameters.textureCoordinatesCount) {
+						mesh.textureBuffer = r.createArrayBuffer(parameters.textureCoordinates, 2, parameters.textureCoordinatesCount);
+					}
+					if (parameters.normals && parameters.normalsCount) {
+						mesh.normalBuffer = r.createArrayBuffer(parameters.normals, 3, parameters.normalsCount);
+					}
+
+					if (parameters.customBuffers && parameters.customBuffers.length) {
+						mesh.customBuffers = [];
+						for (let i = 0, l = parameters.customBuffers.length; i < l; i++) {
+							let customBuffer = parameters.customBuffers[i];
+							switch (customBuffer.componentType) {
+								case 5126: // Float32
+									mesh.customBuffers[customBuffer.name] = r.createArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+									break;
+								case 5123: // Int16
+									mesh.customBuffers[customBuffer.name] = r.createElementArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+									// UNTESTED
+									break;
+							}
+						}
+					}
+
+					if (parameters.indices && parameters.indexCount) {
+						mesh.indexBuffer = r.createElementArrayBuffer(parameters.indices, 1, parameters.indexCount);
+						mesh.indexed = true;
+					} else {
+						mesh.indexed = false;
+					}
+			} else {
+					if (parameters.vertices) {
+						mesh.vertices = parameters.vertices;
+						mesh.calculateBounds();
+						mesh.updateVertices();
+					}
+					if (parameters.textureCoordinates) {
+						mesh.textureCoordinates = parameters.textureCoordinates;
+						mesh.updateTextureCoordinates();
+					}
+					if (parameters.normals) {
+						mesh.normals = parameters.normals;
+						mesh.updateNormals();
+					}
+					if (parameters.indices) {
+						mesh.indices = parameters.indices;
+						mesh.updateIndexBuffer();
+					} else {
+						mesh.indexed = false;
+					}
 			}
 		}
 		return mesh;
