@@ -115,7 +115,7 @@ var Input = module.exports = function() {
 
 	var mouseDown = exports.mouseDown = function(button, thisFrame) {
 		if (!thisFrame) {
-			return mousePressed;
+			return mousePressed(button);
 		} else {
 			if (!isNaN(button) && !button.length) {
 				return downMouse[button];
