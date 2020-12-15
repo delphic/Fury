@@ -52,7 +52,7 @@ _Primary focus is on the renderer_. Physics, Input and Sound helpers may be adde
 (Use of libraries is acceptable if they don't violate the guiding principles of this project, e.g. [GamePad.js](https://github.com/sgraham/gamepad.js/)).
 
 ## Demos
-[View Completed Demos](http://delphic.me.uk/fury-demos/)
+[View Completed Demos](http://delphic.me.uk/fury/demos/)
 * ✓ Arbitrary shader demo
 * ✓ Simple spinning create demo
 * ✓ Instancing / prefab demo
