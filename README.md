@@ -1,5 +1,4 @@
-Fury
-====
+# Fury
 
 Fury (as in the mythical creature) - a WebGL based game engine / framework.
 
@@ -11,4 +10,12 @@ A single vector implementation across rendering, physics and game logic (glMatri
 
 Focus on fast JavaScript, low garbage allocations, without compromising readability.
 
-For more information look in the docs folder.
+Examples available in [fury-demos](https://github.com/fury-demos).
+
+## Usage
+
+[Browserify](http://browserify.org/) `src/client.js` to create an 'old school' library.
+
+That is a JavaScript file which can be imported as a script tag and sets a `Fury` global which can be used.
+
+Use Common JS with `src/fury.js` to include Fury in a more modern manner.

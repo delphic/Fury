@@ -1,1 +1,0 @@
-browserify src/client.js -o fury.js > build.log

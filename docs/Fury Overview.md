@@ -8,22 +8,17 @@ A focus on procedural content, no artists required. (e.g. Voxels for terrain).
 
 Open Source - we're doing this for fun. This means git hub.
 
-Using ES5 and unashamedly using JQuery & Underscore, if need be.
+Using ES5 and standards focused - i.e using WebGL2 and Web Audio API without fall backs.
 
-Modular, Testable Code is a strong focus. (Check out [https://ci.testling.com/](https://ci.testling.com/))
+A single vector implementation across rendering, physics and game logic - use glMatrix.
 
-Using a dependency manager browserify, the resulting file(s) should be importable as dependencies themselves.
-
-Standards or GTFO - This means WebGL and Web Audio API (without fall backs).
+Using a Common JS and browserify.
 
 Documentation, Documentation, Documentation
 * Would like a code documentation generation system
 * Going to write out thoughts / reasoning on each area of code, we should separate user documentation to musings
 
-A single vector implementation across rendering, physics and game logic - use glMatrix.
-
 Focus fast JavaScript, low GC (e.g. parameter objects only on init functions (or memoised), avoid creating objects or vectors in frame), whilst maintaining readability.
-
 
 ## Feature Overview
 
@@ -37,7 +32,7 @@ Focus fast JavaScript, low GC (e.g. parameter objects only on init functions (or
 * ✓ The separation of Shader set up code (which requires the gl object) and GLSL code from the rest of the renderer.  The glsl files need to be able to be saved as separate files. The possibility of shader code reuse be kept in mind.
 * ✓ A stack of objects to render minimising the number of texture assignments
 * ✓ Alpha transparency (and the ordering to allow this properly)
-* Basic scene management (Frustum Culling)
+* ✓ Basic scene management (Frustum Culling)
 * Multi-texturing
 * Specular mapping
 * Normal mapping
@@ -57,7 +52,7 @@ _Primary focus is on the renderer_. Physics, Input and Sound helpers may be adde
 (Use of libraries is acceptable if they don't violate the guiding principles of this project, e.g. [GamePad.js](https://github.com/sgraham/gamepad.js/)).
 
 ## Demos
-[View Completed Demos](http://delphic.me.uk/Fury/demos/)
+[View Completed Demos](http://delphic.me.uk/fury-demos/)
 * ✓ Arbitrary shader demo
 * ✓ Simple spinning create demo
 * ✓ Instancing / prefab demo
