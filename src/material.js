@@ -41,6 +41,7 @@ var Material = module.exports = function(){
 				}
 			}
 		}
+		// TODO: Need to copy other properties for this to be useful could use Object.assign?
 		return copy;
 	};
 

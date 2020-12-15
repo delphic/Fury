@@ -3,6 +3,7 @@ var Input = module.exports = function() {
 
 	var pointerLocked = false;
 	var mouseState = [], currentlyPressedKeys = [];	// probably shouldn't use arrays lots of empty space
+	var downMouse = [], upMouse = [];
 	var downKeys = [], upKeys = []; // Keys pressed or released this frame
 	var canvas;
 	var init = exports.init = function(targetCanvas) {
@@ -86,7 +87,7 @@ var Input = module.exports = function() {
 		}
 	};
 
-	var mouseDown = exports.mouseDown = function(button) {
+	var mousePressed = function(button) {
 		if (!isNaN(button) && !button.length) {
 			return mouseState[button];
 		}
@@ -97,6 +98,36 @@ var Input = module.exports = function() {
 		else {
 			return false;
 		}
+	}
+
+	var mouseUp = exports.mouseUp = function(button) {
+		if (!isNaN(button) && !button.length) {
+			return upMouse[button];
+		}
+		else if (button) {
+			var map = DescriptionToMouseButton[button];
+			return (!isNaN(map)) ? upMouse[map] : false;
+		}
+		else {
+			return false;
+		}
+	};
+
+	var mouseDown = exports.mouseDown = function(button, thisFrame) {
+		if (!thisFrame) {
+			return mousePressed;
+		} else {
+			if (!isNaN(button) && !button.length) {
+				return downMouse[button];
+			}
+			else if (button) {
+				var map = DescriptionToMouseButton[button];
+				return (!isNaN(map)) ? downMouse[map] : false;
+			}
+			else {
+				return false;
+			}
+		}
 	};
 
 	exports.handleFrameFinished = function() {
@@ -104,6 +135,8 @@ var Input = module.exports = function() {
 		MouseDelta[1] = 0;
 		downKeys.length = 0;
 		upKeys.length = 0;
+		downMouse.length = 0;
+		upMouse.length = 0;
 	};
 
 	var handleKeyDown = function(event) {
@@ -120,6 +153,10 @@ var Input = module.exports = function() {
 	};
 
 	var handleBlur = function(event) {
+		downMouse.length = 0;
+		mouseState.length = 0;
+		upMouse.length = 0;
+
 		downKeys.length = 0;
 		currentlyPressedKeys.length = 0;
 		upKeys.length = 0;	// Q: Should we be copying currently pressed Keys as they've kinda been released?
@@ -131,12 +168,16 @@ var Input = module.exports = function() {
 	};
 
 	var handleMouseDown = function(event) {
+		if (!mouseState[event.button]) {
+			downMouse[event.button] = true;
+		}
 		mouseState[event.button] = true;
 		return false;
 	};
 
 	var handleMouseUp = function(event) {
 		mouseState[event.button] = false;
+		upMouse[event.button] = true;
 	};
 
 	// TODO: Add Numpad Keys
