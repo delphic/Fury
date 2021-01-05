@@ -11,10 +11,7 @@ var Input = module.exports = function() {
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
 			canvas.addEventListener("mouseup", handleMouseUp);
-			canvas.addEventListener('mousemove', (event) => {
-				MouseDelta[0] += event.movementX;
-				MouseDelta[1] += event.movementY;
-			});
+
 			document.addEventListener('pointerlockchange', (event) => {
 				pointerLocked = !!(document.pointerLockElement || document.mozPointerLockElement); // polyfill
 			});
@@ -164,7 +161,9 @@ var Input = module.exports = function() {
 
 	var handleMouseMove = function(event) {
 		MousePosition[0] = event.pageX;
-		MousePosition[1] = event.pageY;
+		MousePosition[1] = event.pageY;		
+		MouseDelta[0] += event.movementX;
+		MouseDelta[1] += event.movementY;
 	};
 
 	var handleMouseDown = function(event) {
