@@ -225,7 +225,7 @@ var Scene = module.exports = function() {
 		scene.render = function(cameraName) {
 			var camera = cameras[cameraName ? cameraName : mainCameraName];
 			if (scene.enableFrustumCulling) {
-				camera.calculateFrustrum();
+				camera.calculateFrustum();
 			}
 			camera.getProjectionMatrix(pMatrix);
 			// Camera Matrix should transform world space -> camera space

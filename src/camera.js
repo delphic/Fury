@@ -17,7 +17,8 @@ var Camera = module.exports = function() {
 		// Set Rotation from Euler
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
-		calculateFrustrum: function() {
+		calculateFrustum: function() {
+			// TODO: Update to work for orthonormal projection as well
 			Maths.quatLocalAxes(this.rotation, localX, localY, localZ);
 
 			// Calculate Planes
@@ -121,10 +122,9 @@ var Camera = module.exports = function() {
 			return out;
 		},
 		viewportToWorld: function(out, viewPort, z) {
-			if(this.type == Camerea.Type.Orthonormal) {
-				// TODO: Actually test this...
-				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5) / 2.0;
-				out[1] = this.height * (viewPort[1] - 0.5) / 2.0;
+			if(this.type == Camera.Type.Orthonormal) {
+				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5);
+				out[1] = this.height * (0.5 - viewPort[1]);	// measuring viewport from top-left this seems correct!
 				out[2] = (z || 0);
 				vec3.transformQuat(out, out, this.rotation);
 				vec3.add(out, out, this.position);
@@ -165,7 +165,6 @@ var Camera = module.exports = function() {
 		for (let i = 0; i < 8; i++) {
 			camera.points[i] = vec3.create();
 		}
-		camera.calculateFrustrum(); // TEST - REMOVE
 
 		// TODO: Add Clear Color
 

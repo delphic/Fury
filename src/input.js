@@ -161,7 +161,7 @@ var Input = module.exports = function() {
 
 	var handleMouseMove = function(event) {
 		MousePosition[0] = event.pageX;
-		MousePosition[1] = event.pageY;		
+		MousePosition[1] = event.pageY;
 		MouseDelta[0] += event.movementX;
 		MouseDelta[1] += event.movementY;
 	};
@@ -177,6 +177,14 @@ var Input = module.exports = function() {
 	var handleMouseUp = function(event) {
 		mouseState[event.button] = false;
 		upMouse[event.button] = true;
+	};
+
+	exports.getMouseViewportX = function() {
+		return MousePosition[0] / canvas.clientWidth;
+	};
+
+	exports.getMouseViewportY = function() {
+		return MousePosition[1] / canvas.clientHeight;
 	};
 
 	// TODO: Add Numpad Keys
