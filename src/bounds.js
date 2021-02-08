@@ -62,6 +62,43 @@ var Bounds = module.exports = (function() {
 			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
 	}
 
+	exports.rayCast = function(out, origin, direction, box) {
+		// Using 0 to imply no intersection so we can return distance (if normalized)
+		// Wouldn't work if we included origin touching as impact
+
+		// Check we aren't in the box - note also includes touching
+		if (exports.contains(origin, box)) {
+			return 0;
+		}
+
+		// AABB: is box center in at least one direction from origin?
+		for (let i = 0; i < 3; i++) {
+			if (Math.sign(box.center[i] - origin[i]) == Math.sign(direction[i])
+				&& !(origin[i] >= box.min[i] && origin[i] <= box.max[i])) { // and NOT INSIDE the box on this axis
+				axis = i;
+
+				// Move along that axis to find the intersection point on this axis
+				let ip = box.center[axis] - Math.sign(direction[axis]) * box.extents[axis];
+				let s = ip - origin[axis];	// distance to intersection
+				let k = s / direction[axis];	// how many dir vectors to get to ip
+				// ^^ may need to do abs on these but I think they cancel
+
+				// calculate the intersection point
+				vec3.scaleAndAdd(out, origin, direction, k);
+
+				let isHit = (axis == 0 || (out[0] >= box.min[0] && out[0] <= box.max[0]))
+					&& (axis == 1 || (out[1] >= box.min[1] && out[1] <= box.max[1]))
+					&& (axis == 2 || (out[2] >= box.min[2] && out[2] <= box.max[2]));
+
+				if (isHit) {
+					return k;
+				}
+				// If it doesn't collide on this face, maybe it collides on another, keep going!
+			}
+		}
+		return 0;
+	}
+
 	exports.intersectSphere = function(sphere, box) {
 		// closest point on box to sphere center
 		let x = Math.max(box.min[0], Math.min(sphere.center[0], box.max[0]));
@@ -82,9 +119,9 @@ var Bounds = module.exports = (function() {
 
 			if (parameters.center || parameters.size || parameters.extents) {
 				if (parameters.center) {
-          aabb.center = parameters.center;
+					aabb.center = parameters.center;
 				} else {
-          aabb.center = vec3.create();
+					aabb.center = vec3.create();
 				}
 
 				if (parameters.size) {

@@ -47,6 +47,8 @@ let Maths = module.exports = (function() {
 
   let equals = glMatrix.glMatrix.equals;
 
+	exports.vec3ToString = (v) => { return "(" + v[0] + ", " + v[1] + ", " + v[2] + ")"; };
+
   exports.quatEuler = function(x, y, z) {
     let q = glMatrix.quat.create();
     glMatrix.quat.fromEuler(q, x, y, z);
