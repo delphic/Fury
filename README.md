@@ -10,7 +10,7 @@ A single vector implementation across rendering, physics and game logic (glMatri
 
 Focus on fast JavaScript, low garbage allocations, without compromising readability.
 
-Examples available in [fury-demos](https://github.com/fury-demos).
+Examples available in [fury-demos](https://github.com/delphic/fury-demos).
 
 ## Usage
 
