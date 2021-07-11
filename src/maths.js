@@ -47,6 +47,12 @@ let Maths = module.exports = (function() {
 
   let equals = glMatrix.glMatrix.equals;
 
+  exports.lerp = (a, b, r) => { return r * (b - a) + a; };
+
+  exports.clamp = (x, min, max) => { return Math.max(Math.min(max, x), min); };
+
+  exports.clamp01 = (x) => { return exports.clamp(x, 0, 1); };
+
 	exports.vec3ToString = (v) => { return "(" + v[0] + ", " + v[1] + ", " + v[2] + ")"; };
 
   exports.quatEuler = function(x, y, z) {
