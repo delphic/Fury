@@ -129,20 +129,20 @@ exports.createElementArrayBuffer = function(data, itemSize, numItems) {
 var TextureLocations = exports.TextureLocations = [];
 
 var TextureQuality = exports.TextureQuality = {
-	Pixel: "pixel",		// Uses Mips and nearest pixel
-	Highest: "highest",	// Uses Mips & Interp (trilinear)
+	Pixel: "pixel",			// Uses Mips and nearest pixel
+	Highest: "highest",		// Uses Mips & Interp (trilinear)
 	High: "high",			// Uses Mips & Interp (bilinear)
 	Medium: "medium",		// Linear Interp
 	Low: "low"				// Uses nearest pixel
 };
 
-exports.createTexture = function(source, quality, clamp) {
+exports.createTexture = function(source, quality, clamp, disableAniso) {
 	var texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 
-	setTextureQuality(gl.TEXTURE_2D, quality);
+	setTextureQuality(gl.TEXTURE_2D, quality, disableAniso);
 
 	if (clamp) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -173,40 +173,38 @@ exports.createTextureArray = function(source, width, height, imageCount, quality
 	return texture;
 };
 
-var setTextureQuality = function(glTextureType, quality) {
-	if (quality === TextureQuality.Pixel) {
-		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
-		// Might be able to use dFdx / dFdy to determine MIPMAP level and use two textures
-		// and blend the samples based of if it'd be mipmap level 0 or not
-		// Or use multiple samplers in an version 300 ES shader
+var setTextureQuality = function(glTextureType, quality, disableAniso) {
+	if (quality == TextureQuality.Pixel) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
+		if (!disableAniso && anisotropyExt) {
+			// Unfortunately you can't use MAG_FILTER NEAREST with MIN_FILTER MIPMAP when using the anisotropy extension
+			// you can without it however, so there is a trade off on crisp near pixels against blurry textures at severe angles
+			
+			// Could investigate using multiple samplers in a version 300 ES Shader and blending between them,
+			// or using multiple texture with different settings, potentially using dFdx and dFdy to determine / estimate MIPMAP level
+			// TODO: arguement to enable or disable anisotropy for pixel 
 			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 		}
 		gl.generateMipmap(glTextureType);
-	}
-	else if (quality === TextureQuality.Highest) {
+	} else if (quality === TextureQuality.Highest) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
+		if (!disableAniso && anisotropyExt) {
 			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 		}
 		gl.generateMipmap(glTextureType);
-	}
-	else if (quality === TextureQuality.High) {
+	} else if (quality === TextureQuality.High) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-		if (anisotropyExt) {
+		if (!disableAniso && anisotropyExt) {
 			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
 		}
 		gl.generateMipmap(glTextureType);
-	}
-	else if (quality === TextureQuality.Medium) {
+	} else if (quality === TextureQuality.Medium) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	}
-	else {
+	} else {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	}
