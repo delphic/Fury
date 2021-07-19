@@ -86,7 +86,7 @@ let Maths = module.exports = (function() {
       return b;
     }
 
-    let smoothTime = Math.max(0.0001, smoothTime); // minimum smooth time of 0.0001
+    smoothTime = Math.max(0.0001, smoothTime); // minimum smooth time of 0.0001
     let omega = 2.0 / smoothTime;
     let x = omega * elapsed;
     let exp = 1.0 / (1.0 * x + 0.48 * x * X + 0.245 * x * x * x);
@@ -151,7 +151,7 @@ let Maths = module.exports = (function() {
     }; 
   })();
 
-  exports.vec3RotateTorwards = (() => {
+  exports.vec3RotateTowards = (() => {
     let an = glMatrix.vec3.create();
     let bn = glMatrix.vec3.create();
     let cross = glMatrix.ve3.create();
