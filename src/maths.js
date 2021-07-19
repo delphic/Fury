@@ -115,7 +115,7 @@ let Maths = module.exports = (function() {
   // TODO: Tests
 
   exports.vec3Slerp = (() => {
-    let an = vec3.create(), bn = vec3.create();
+    let an = glMatrix.vec3.create(), bn = glMatrix.vec3.create();
     return (out, a, b, t) => {
       glMatrix.vec3.normlize(an, a);
       glMatrix.vec3.normlize(bn, b);
@@ -154,7 +154,7 @@ let Maths = module.exports = (function() {
   exports.vec3RotateTowards = (() => {
     let an = glMatrix.vec3.create();
     let bn = glMatrix.vec3.create();
-    let cross = glMatrix.ve3.create();
+    let cross = glMatrix.vec3.create();
     let q = glMatrix.quat.create();
     return (out, a, b, maxRadiansDelta, maxMagnitudeDelta) => {
       let vec3 = glMatrix.vec3;
