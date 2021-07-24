@@ -7,6 +7,8 @@ let Ease = module.exports = (function() {
     // Comparison: easeBack has more terms when from haiyang.me,
     // formulation of bounce has been rearranged but is probably the same.
 
+    let exports = {};
+
     // Ease Back Consts
     const c1 = 1.70158;
     const c2 = c1 * 1.525;
@@ -28,7 +30,7 @@ let Ease = module.exports = (function() {
             return n1 * (t - 2.625) / d1 * (t - 2.625) + 0.984375;
         }
     };
-
+    exports.smoothStep = t => t * t * (3 - 2 * t);
     exports.inQuad = t => t * t;
     exports.outQuad = t =>  t * ( 2 - t ); // 1 - (1 - t) * (1 - t)
     exports.inOutQuad = t => t < 0.5 
@@ -77,4 +79,6 @@ let Ease = module.exports = (function() {
     exports.inOutBounce = t => t < 0.5 
         ? (1 - bounce(1 - 2 * t)) * 0.5
         : (1 + bounce(2 * t - 1)) * 0.5;
+
+    return exports;
 })();

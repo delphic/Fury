@@ -35,9 +35,10 @@ let Maths = module.exports = (function() {
     quat2: glMatrix.quat2,
     vec2: glMatrix.vec2,
     vec3: glMatrix.vec3,
-    vec4:  glMatrix.vec4,
-    Ease: require('./ease')
+    vec4:  glMatrix.vec4
   };
+
+  exports.Ease = require('./ease');
 
   // TODO: Add plane 'class' - it's a vec4 with 0-2 being the normal vector and 3 being the distance to the origin from the plane along the normal vector
   // I.e. the dot product of the offset point?

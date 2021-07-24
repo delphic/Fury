@@ -4,8 +4,13 @@ var Input = module.exports = function() {
 	var pointerLocked = false;
 	var mouseState = [], currentlyPressedKeys = [];	// probably shouldn't use arrays lots of empty space
 	var downMouse = [], upMouse = [];
+	var downMouseTimes = [], upMouseTimes = [];
 	var downKeys = [], upKeys = []; // Keys pressed or released this frame
+	var downKeyTimes = [], upKeyTimes = []; // Time key was last pressed or released
 	var canvas;
+
+	let defaultTime = Date.now(); // Just return start of program rather than start of epoch if keys never pressed
+
 	var init = exports.init = function(targetCanvas) {
 			canvas = targetCanvas;
 			canvas.addEventListener("mousemove", handleMouseMove);
@@ -36,10 +41,6 @@ var Input = module.exports = function() {
 
 	var MouseDelta = exports.MouseDelta = [0, 0];
 	var MousePosition = exports.MousePosition = [0, 0];
-
-	// TODO: Add signalEndFrame and store keyDown [] and keyUp[] array for
-	// querying as well, although the option of just subscribing to the events
-	// in game code is also there but need to use DescriptionToKeyCode
 
 	var keyPressed = function(key) {
 		if (!isNaN(key) && !key.length) {
@@ -83,6 +84,28 @@ var Input = module.exports = function() {
 			}
 		}
 	};
+
+	exports.keyDownTime = function(key) {
+		if (!isNaN(key) && !key.length) {
+			return downKeyTimes[key];
+		} else if (key) {
+			var map = DescriptionToKeyCode[key];
+			return map ? downKeyTimes[map] : defaultTime;
+		} else {
+			return defaultTime;
+		}
+	}
+
+	exports.keyUpTime = function(key) {
+		if (!isNaN(key) && !key.length) {
+			return upKeyTimes[key];
+		} else if (key) {
+			var map = DescriptionToKeyCode[key];
+			return map ? upKeyTimes[map] : defaultTime;
+		} else {
+			return defaultTime;
+		}
+	}
 
 	var mousePressed = function(button) {
 		if (!isNaN(button) && !button.length) {
@@ -140,12 +163,14 @@ var Input = module.exports = function() {
 		// keyDown event can get called multiple times after a short delay
 		if (!currentlyPressedKeys[event.keyCode]) {
 			downKeys[event.keyCode] = true;
+			downKeyTimes[event.keyCode] = Date.now();
 		}
 		currentlyPressedKeys[event.keyCode] = true;
 	};
 
 	var handleKeyUp = function(event) {
 		currentlyPressedKeys[event.keyCode] = false;
+		upKeyTimes[event.keyCode] = Date.now();
 		upKeys[event.keyCode] = true;
 	};
 
@@ -169,6 +194,7 @@ var Input = module.exports = function() {
 	var handleMouseDown = function(event) {
 		if (!mouseState[event.button]) {
 			downMouse[event.button] = true;
+			downMouseTimes[event.button] = Date.now();
 		}
 		mouseState[event.button] = true;
 		return false;
@@ -176,6 +202,7 @@ var Input = module.exports = function() {
 
 	var handleMouseUp = function(event) {
 		mouseState[event.button] = false;
+		upMouseTimes[event.button] = Date.now();
 		upMouse[event.button] = true;
 	};
 
