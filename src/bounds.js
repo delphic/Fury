@@ -32,9 +32,15 @@ var Bounds = module.exports = (function() {
 			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
 	};
 
+	// Return true if box b and box a overlap on provided axis 
 	exports.intersectsAxis = function(a, b, axis) {
-		return (a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis]);
-	}
+		return a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis];
+	};
+
+	// Returns true if box b offset by provided displacement would intersect box a on provided axis 
+	exports.intersectsAxisOffset = function(a, b, axis, displacement) {
+		return a.min[axis] < b.max[axis] + displacement && a.max[axis] > b.min[axis] + displacement;
+	};
 
 	// Enters functions return true if box b did not intersect box a on specified axis
 	// before displacement but would afterwards. Calculating the point of entry could be useful.
