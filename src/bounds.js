@@ -32,35 +32,23 @@ var Bounds = module.exports = (function() {
 			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
 	};
 
+	exports.intersectsAxis = function(a, b, axis) {
+		return (a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis]);
+	}
+
 	// Enters functions return true if box b did not intersect box a on specified axis
 	// before displacement but would afterwards. Calculating the point of entry could be useful.
 	// If it's always needed we could return the distance and use > 0 check for does enter
-	exports.entersX = function(a, b, displacement) {
-		return !(a.min[0] < b.max[0] && a.max[0] > b.min[0])
-			&& (a.min[0] < b.max[0] + displacement && a.max[0] > b.min[0] + displacement);
-	};
-	exports.entersY = function(a, b, displacement) {
-		return !(a.min[1] < b.max[1] && a.max[1] > b.min[1])
-			&& (a.min[1] < b.max[1] + displacement && a.max[1] > b.min[1] + displacement);
-	};
-	exports.entersZ = function(a, b, displacement) {
-		return !(a.min[2] < b.max[2] && a.max[2] > b.min[2])
-			&& (a.min[2] < b.max[2] + displacement && a.max[2] > b.min[2] + displacement);
+	exports.entersAxis = function(a, b, axis, displacement) {
+		return !(a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis])
+			&& (a.min[axis] < b.max[axis] + displacement && a.max[axis] > b.min[axis] + displacement);
 	};
 
 	// Entered is the same as enters but it assumes you've already moved the box
-	exports.enteredX = function(a, b, displacement) {
-		return !(a.min[0] < b.max[0] - displacement && a.max[0] > b.min[0] - displacement)
-			&& (a.min[0] < b.max[0] && a.max[0] > b.min[0]);
-	}
-	exports.enteredY = function(a, b, displacement) {
-		return !(a.min[1] < b.max[1] - displacement && a.max[1] > b.min[1] - displacement)
-			&& (a.min[1] < b.max[1] && a.max[0] > b.min[1]);
-	}
-	exports.enteredZ = function(a, b, displacement) {
-		return !(a.min[2] < b.max[2] - displacement && a.max[2] > b.min[2] - displacement)
-			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
-	}
+	exports.enteredAxis = function(a, b, axis, displacement) {
+		return !(a.min[axis] < b.max[axis] - displacement && a.max[axis] > b.min[axis] - displacement)
+			&& (a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis]);
+	};
 
 	exports.rayCast = function(out, origin, direction, box) {
 		// Using 0 to imply no intersection so we can return distance (if normalized)
