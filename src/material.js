@@ -34,8 +34,8 @@ var Material = module.exports = function(){
 			material._properties = keys; // Store custom properties for the copy method
 		}
 
-		if (shader.validateMaterial) {
-			shader.validateMaterial(material);
+		if (material.shader.validateMaterial) {
+			material.shader.validateMaterial(material);
 		}
 
 		return material;
