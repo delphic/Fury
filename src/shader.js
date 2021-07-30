@@ -52,6 +52,10 @@ var Shader = module.exports = function() {
 		}
 		shader.bindBuffers = parameters.bindBuffers;
 
+		if (parameters.validateMaterial && typeof(parameters.validateMaterial) === 'function') {
+			shader.validateMaterial = parameters.validateMaterial;
+		}
+
 		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
 		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
 		shader.nMatrixUniformName = parameters.nMatrixUniformName;
