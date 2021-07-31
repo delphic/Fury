@@ -47,7 +47,7 @@ var Mesh = module.exports = function(){
 			this.boundingRadius = calculateBoundingRadius(this.vertices);
 			calculateMinVertex(this.bounds.min, this.vertices);
 			calculateMaxVertex(this.bounds.max, this.vertices);
-			this.bounds.calculateExtents(this.bounds.min, this.bounds.max);
+			this.bounds.recalculateExtents();
 		},
 		calculateNormals: function() {
 			// TODO: Calculate Normals from Vertex information

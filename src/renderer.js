@@ -183,7 +183,6 @@ var setTextureQuality = function(glTextureType, quality, disableAniso) {
 			
 			// Could investigate using multiple samplers in a version 300 ES Shader and blending between them,
 			// or using multiple texture with different settings, potentially using dFdx and dFdy to determine / estimate MIPMAP level
-			// TODO: arguement to enable or disable anisotropy for pixel 
 			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 		}
 		gl.generateMipmap(glTextureType);

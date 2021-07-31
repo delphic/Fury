@@ -116,7 +116,7 @@ var Scene = module.exports = function() {
 				// Need to recalculate extents as well as center if rotation is not identity
 				// => need to transform all mesh vertices in order to recalculate accurate AABB
 				vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
-				object.bounds.calculateMinMax(object.bounds.center, object.bounds.extents)
+				object.bounds.recalculateMinMax();
 			}
 		};
 
