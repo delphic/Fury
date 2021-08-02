@@ -6,6 +6,7 @@ var Fury = module.exports = (function() {
 	// Modules
 	Fury.Bounds = require('./bounds');
 	Fury.Camera = require('./camera');
+	Fury.GameLoop = require('./gameLoop');
 	Fury.Input = require('./input');
 	Fury.Material = require('./material');
 	Fury.Maths = require('./maths');
@@ -31,8 +32,19 @@ var Fury = module.exports = (function() {
 		}
 	};
 
-	// Public functions
-	Fury.init = function(canvasId, contextAttributes, preloadShaders) {
+	Fury.init = function(parameters) {
+		let lightWeightInit = false;
+		let canvasId = null;
+		let contextAttributes = null;
+
+		if (typeof(parameters) == 'string') {
+			lightWeightInit = true;
+			canvasId = parameters;
+		} else {
+			canvasId = parameters.canvasId;
+			contextAttributes = parameters.glContextAttributes;
+		}
+
 		canvas = document.getElementById(canvasId);
 		try {
 			Fury.Renderer.init(canvas, contextAttributes);
@@ -41,7 +53,13 @@ var Fury = module.exports = (function() {
 			return false;
 		}
 		Fury.Input.init(canvas);
-		Fury.Shaders.createShaders();
+
+		if (!lightWeightInit) {
+			Fury.Shaders.createShaders();
+			if (parameters.gameLoop) {
+				Fury.GameLoop.init(parameters.gameLoop);
+			}
+		}
 		return true;
 	};
 
