@@ -18,6 +18,7 @@ var Fury = module.exports = (function() {
 	Fury.Shader = require('./shader');
 	Fury.Shaders = require('./shaders');
 	Fury.Transform = require('./transform');
+	Fury.Utils = require('./utils');
 
 	Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
 
@@ -27,8 +28,6 @@ var Fury = module.exports = (function() {
 			throw new Error("Please provide a valid and unique name parameter for your prefab");
 		} else {
 			prefabs[parameters.name] = parameters;
-			// TODO: If we move to using a component system will need to transfer from parameter flat structure to a gameobject like structure, for now these are the same.
-			// Note that each component class should deal with setting up that component instance from supplied parameters itself
 		}
 	};
 
