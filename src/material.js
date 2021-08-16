@@ -3,7 +3,28 @@ var Material = module.exports = function(){
 	var prototype = {
 		blendEquation: "FUNC_ADD",
 		sourceBlendType: "SRC_ALPHA",
-		destinationBlendType: "ONE_MINUS_SRC_ALPHA"
+		destinationBlendType: "ONE_MINUS_SRC_ALPHA",
+		setTexture: function(texture, uniformName) {
+			if (uniformName) {
+				this.textures[uniformName] = texture;
+			} else {
+				this.textures[this.shader.textureUniformNames[0]] = texture;
+			}
+		},
+		setTextures: function(textures) {
+			for (var i = 0, l = textures.length; i < l; i++) {
+				if (textures[i].uniformName && textures[i].texture) {
+					// Array of uniform name to texture objects
+					this.textures[textures[i].uniformName] = textures[i].texture;
+				} else if (i < this.shader.textureUniformNames.length) {
+					// Assume array of textures - use uniform names
+					this.textures[this.shader.textureUniformNames[i]] = textures[i];
+				} else {
+					throw new Error("Textures parameter must be either an array of objects containing uniformName and texture properties," 
+						+ " or an array textures of length no greater than the provided shader's uniform names array");
+				}
+			}
+		}
 	};
 
 	var create = exports.create = function(parameters) {
@@ -15,15 +36,8 @@ var Material = module.exports = function(){
 		material.shader = parameters.shader;
 
 		material.textures = {};
-		if(parameters.textures) {
-			var textures = parameters.textures;
-			for(var i = 0, l = textures.length; i < l; i++) {
-				if(textures[i].uniformName && textures[i].texture) {
-					material.textures[textures[i].uniformName] = textures[i].texture;
-				} else {
-					throw new Error("Texture Array must contain objects with properties 'uniformName' and 'texture'");
-				}
-			}
+		if (parameters.textures) {
+			material.setTextures(parameters.textures);
 		}
 
 		if (parameters.properties) {
