@@ -57,6 +57,8 @@ var Material = module.exports = function(){
 
 	var copy = exports.copy = function(material) {
 		var copy = Object.create(prototype);
+		// Note this is explicit rather than automatic using reflection
+		// as we do not want to copy any dynamically appended properties (i.e. id)
 		copy.shader = material.shader;
 		copy.textures = {};
 		if(material.textures) {

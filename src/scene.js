@@ -26,6 +26,17 @@ var Scene = module.exports = function() {
 	var shaders = indexedMap.create();
 	var textures = indexedMap.create();
 
+	// Note: clears all resources - any uncleared existing scenes will break
+	exports.clearResources = function() {
+		meshes.clear();
+		materials.clear();
+		shaders.clear();
+		textures.clear();
+	};
+
+	// TODO: Add clearUnusedResources - which enumerates through scene renderObjects / prefab instances 
+	// to check objects are used or reference count them - will need to track created scenes
+
 	var create = exports.create = function(parameters) {
 		var sceneId = (nextSceneId++).toString();
 		var cameras = {};
@@ -52,7 +63,7 @@ var Scene = module.exports = function() {
 			for(var i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
 				var uniformName = material.shader.textureUniformNames[i];
 				var texture = material.textures[uniformName];
-				if(texture) {
+				if (texture) {
 					textures.add(texture);
 					bindTextureToLocation(texture);
 				}
@@ -61,17 +72,19 @@ var Scene = module.exports = function() {
 		};
 
 		var bindTextureToLocation = function(texture) {
-			if(currentTextureLocations.length < r.TextureLocations.length) {
-				r.setTexture(currentTextureLocations.length, texture);
-				currentTextureBindings[texture.id] = currentTextureLocations.length;
-				currentTextureLocations.push(texture.id);
-			} else {
-				// replace an existing texture
-				delete currentTextureBindings[currentTextureLocations[nextTextureLocation]];
-				r.setTexture(nextTextureLocation, texture);
-				currentTextureBindings[texture.id] = nextTextureLocation;
-				currentTextureLocations[nextTextureLocation] = texture.id;
-				nextTextureLocation = (nextTextureLocation+1)%r.TextureLocations.length;
+			if (currentTextureBindings[texture.id] === undefined) {
+				if (currentTextureLocations.length < r.TextureLocations.length) {
+					r.setTexture(currentTextureLocations.length, texture);
+					currentTextureBindings[texture.id] = currentTextureLocations.length;
+					currentTextureLocations.push(texture.id);
+				} else {
+					// replace an existing texture
+					delete currentTextureBindings[currentTextureLocations[nextTextureLocation]];
+					r.setTexture(nextTextureLocation, texture);
+					currentTextureBindings[texture.id] = nextTextureLocation;
+					currentTextureLocations[nextTextureLocation] = texture.id;
+					nextTextureLocation = (nextTextureLocation+1) % r.TextureLocations.length;
+				}
 			}
 		};
 
@@ -128,8 +141,7 @@ var Scene = module.exports = function() {
 			}
 		};
 
-		// Add Object
-		// TODO: RenderObject / Component should have its own class
+		// Add Render Object
 		scene.add = function(parameters) {
 			var object = {};
 			if(!parameters || !parameters.mesh || !parameters.material) {
@@ -139,9 +151,10 @@ var Scene = module.exports = function() {
 			object.material = parameters.material;
 			object.mesh = parameters.mesh;
 
+			// Note: indexedMap.add adds id property to object added and does not add duplicates
 			object.meshId = meshes.add(object.mesh);
 			object.materialId = materials.add(object.material);
-			object.shaderId = shaders.add(object.material.shader);
+			object.shaderId = shaders.add(object.material.shader); 
 			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
@@ -171,6 +184,17 @@ var Scene = module.exports = function() {
 			}
 		};
 
+		scene.clear = function() {
+			// Note: This does not free up the resources (e.g. mesh and material references remain) in the scene, may need to reference count these and delete
+			renderObjects.clear();
+			alphaRenderObjects.length = 0;
+			if (prefabs.keys.length) {
+				// Recreate prefab object - i.e. remove all prefabs and instances in one swoop.
+				prefabs = { keys: [] }; 
+			}
+		};
+
+		// Instantiate prefab instance
 		scene.instantiate = function(parameters) {
 			var prefab;
 			if(!parameters || !parameters.name || !Fury.prefabs[parameters.name]) {
