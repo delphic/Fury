@@ -58,7 +58,7 @@ let GameLoop = module.exports = (function() {
 		lastTime += elapsed;
 
 		if (elapsed == 0) {
-			console.error("elapsed time of 0, skipping frame");
+			console.warn("elapsed time of 0, skipping frame");
 			requestAnimationFrame(loop);
 			return;
 		}
