@@ -1,7 +1,7 @@
 let Utils = module.exports = (function(){
-    let exports = {};
+	let exports = {};
 
-    exports.createScaledImage = (config) => {
+	exports.createScaledImage = (config) => {
 		let canvas = document.createElement("canvas");
 		canvas.style = "display: none";
 		canvas.width = config.image.width * config.scale;
@@ -14,5 +14,5 @@ let Utils = module.exports = (function(){
 		return canvas;
 	};
 
-    return exports
+	return exports
 })();
