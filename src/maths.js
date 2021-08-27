@@ -47,6 +47,46 @@ let Maths = module.exports = (function() {
   var vec3Y = exports.vec3Y = glMatrix.vec3.fromValues(0,1,0);
   var vec3Z = exports.vec3Z = glMatrix.vec3.fromValues(0,0,1);
 
+  exports.vec3Pool = (function(){
+    let stack = [];
+    let count = 5;
+    for (let i = 0; i < count; i++) {
+      stack.push(glMatrix.vec3.create());
+    }
+    
+    return {
+      return: (v) => { count = stack.push(v); },
+      request: () => {
+        if (count > 0) {
+          let v = stack[--count];
+          stack.length = count;
+          return v;
+        }
+        return glMatrix.vec3.create();
+      }
+    }
+  })();
+
+  exports.quatPool = (function(){
+    let stack = [];
+    let count = 5;
+    for (let i = 0; i < count; i++) {
+      stack.push(glMatrix.quat.create());
+    }
+    
+    return {
+      return: (v) => { count = stack.push(v); },
+      request: () => {
+        if (count > 0) {
+          let v = stack[--count];
+          stack.length = count;
+          return v;
+        }
+        return glMatrix.quat.create();
+      }
+    }
+  })();
+
   let equals = glMatrix.glMatrix.equals;
 
   let approximately = exports.approximately = (a, b, epsilon) => {
