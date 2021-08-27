@@ -1,3 +1,5 @@
+var Maths = require('./maths');
+
 var Input = module.exports = function() {
 	var exports = {};
 
