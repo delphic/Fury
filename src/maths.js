@@ -49,18 +49,15 @@ let Maths = module.exports = (function() {
 
   exports.vec3Pool = (function(){
     let stack = [];
-    let count = 5;
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < 5; i++) {
       stack.push(glMatrix.vec3.create());
     }
     
     return {
-      return: (v) => { count = stack.push(v); },
+      return: (v) => { stack.push(v); },
       request: () => {
-        if (count > 0) {
-          let v = stack[--count];
-          stack.length = count;
-          return v;
+        if (stack.length > 0) {
+          return stack.pop();
         }
         return glMatrix.vec3.create();
       }
@@ -69,18 +66,15 @@ let Maths = module.exports = (function() {
 
   exports.quatPool = (function(){
     let stack = [];
-    let count = 5;
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < 5; i++) {
       stack.push(glMatrix.quat.create());
     }
     
     return {
-      return: (v) => { count = stack.push(v); },
+      return: (v) => { stack.push(v); },
       request: () => {
-        if (count > 0) {
-          let v = stack[--count];
-          stack.length = count;
-          return v;
+        if (stack.length > 0) {
+          return stack.pop();
         }
         return glMatrix.quat.create();
       }
