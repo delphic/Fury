@@ -103,9 +103,9 @@ var Scene = module.exports = function() {
 					itteration++;
 					var step = Math.ceil(alphaRenderObjects.length/(2*itteration));
 					if(!less) {
-						index -= step;
+						index = Math.max(0, index - step);
 					} else {
-						index += step;
+						index = Math.min(alphaRenderObjects.length, index + step);
 					}
 				}
 			}
