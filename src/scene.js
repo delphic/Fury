@@ -37,6 +37,10 @@ var Scene = module.exports = function() {
 	// TODO: Add clearUnusedResources - which enumerates through scene renderObjects / prefab instances 
 	// to check objects are used or reference count them - will need to track created scenes
 
+	// glState Tracking - shared across scenes
+	var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
+	var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
+
 	var create = exports.create = function(parameters) {
 		var sceneId = (nextSceneId++).toString();
 		var cameras = {};
@@ -44,8 +48,7 @@ var Scene = module.exports = function() {
 		var mainCameraName = "main";
 		// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
 		var pMatrix = mat4.create(), mvMatrix = mat4.create(), nMatrix = mat3.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
-		var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
-		var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
+		
 
 		var scene = Object.create(prototype);
 
@@ -234,6 +237,7 @@ var Scene = module.exports = function() {
 		};
 
 		// Add Camera
+		// Arguably camera.render(scene) would be a preferable pattern
 		scene.addCamera = function(camera, name) {
 			var key = name ? name : "main";
 			if(cameraNames.length === 0) {
@@ -269,8 +273,9 @@ var Scene = module.exports = function() {
 			// An extension would be to batch materials such that shaders that textures used overlap
 
 			// This batching by shader / material / mesh may need to be combined with scene management techniques
-
-			r.clear();
+			if (camera.clear) {
+				r.clear();
+			}
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
@@ -282,7 +287,11 @@ var Scene = module.exports = function() {
 				}
 				if (!culled && renderObject.active) {
 					if(renderObject.material.alpha) {
-						addToAlphaList(renderObject, camera.getDepth(renderObject));
+						let sortPosition = renderObject.transform.position
+						if (renderObject.bounds) {
+							sortPosition = renderObject.bounds.center;
+						}
+						addToAlphaList(renderObject, camera.getDepth(sortPosition));
 					} else {
 						bindAndDraw(renderObject);
 					}
@@ -297,7 +306,11 @@ var Scene = module.exports = function() {
 					}
 					if (!culled && instance.active) {
 						if(instance.material.alpha) {
-							addToAlphaList(instance, camera.getDepth(instance));
+							let sortPosition = instance.transform.position;
+							if (instance.bounds) {
+								sortPosition = instance.bounds.center;
+							}
+							addToAlphaList(instance, camera.getDepth(sortPosition));
 						} else {
 							bindAndDraw(instance);
 						}
