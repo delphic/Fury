@@ -84,19 +84,10 @@ let Maths = module.exports = (function() {
   let equals = glMatrix.glMatrix.equals;
 
   let approximately = exports.approximately = (a, b, epsilon) => {
-    // See https://floating-point-gui.de/errors/comparison/ for explaination of logic
+    // Was using adpated version of https://floating-point-gui.de/errors/comparison/
+    // However, it's behaviour is somewhat unintuative and honestly more helpful just to have straight threshold check 
     if (!epsilon) epsilon = Number.EPSILON;
-    const absA = Math.abs(a);
-    const absB = Math.abs(b);
-    const diff = Math.abs(a - b);
-
-    if (a === b) {
-      return true;
-    } else if (a === 0 || y === 0 || diff < Number.MIN_VALUE) {
-      return diff < (epsilon * Number.MIN_VALUE);
-    } else {
-      return diff / Math.min(absA + absB, Number.MAX_VALUE) < epsilon;
-    }
+    return Math.abs(a - b) <  epsilon;
   };
 
   let clamp = exports.clamp = (x, min, max) => { return Math.max(Math.min(max, x), min); };
