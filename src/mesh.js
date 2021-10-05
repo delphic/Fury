@@ -5,7 +5,7 @@ var vec3 = require('./maths').vec3;
 var Mesh = module.exports = function(){
 	exports = {};
 
-	let calculateMinVertex = function(out, vertices) {
+	let calculateMinPoint = exports.calculateMinPoint = function(out, vertices) {
 		var i, l, v1 = Number.MAX_VALUE, v2 = Number.MAX_VALUE, v3 = Number.MAX_VALUE;
 		for(i = 0, l = vertices.length; i < l; i += 3) {
 			v1 = Math.min(v1, vertices[i]);
@@ -15,7 +15,7 @@ var Mesh = module.exports = function(){
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
 
-	let calculateMaxVertex = function(out, vertices) {
+	let calculateMaxPoint = exports.calculateMaxPoint = function(out, vertices) {
 		var i, l, v1 = Number.MIN_VALUE, v2 = Number.MIN_VALUE, v3 = Number.MIN_VALUE;
 		for(i = 0, l = vertices.length; i < l; i += 3) {
 			v1 = Math.max(v1, vertices[i]);
@@ -45,8 +45,8 @@ var Mesh = module.exports = function(){
 		calculateBounds: function() {
 			// NOTE: all bounds in local space
 			this.boundingRadius = calculateBoundingRadius(this.vertices);
-			calculateMinVertex(this.bounds.min, this.vertices);
-			calculateMaxVertex(this.bounds.max, this.vertices);
+			calculateMinPoint(this.bounds.min, this.vertices);
+			calculateMaxPoint(this.bounds.max, this.vertices);
 			this.bounds.recalculateExtents();
 		},
 		calculateNormals: function() {
