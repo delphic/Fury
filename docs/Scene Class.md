@@ -34,7 +34,7 @@ Initially items with back faces just won't work, an extension would be to split 
 ## Note on Textures:
 We bind multiple textures and store the place it's been bound so it can be reused.
 Note each individual shader can only use the maximum number of bound shaders, when needing to bind a texture not yet bound and all 'slots' are currently taken, the scene must make sure all textures for that material are bound.
-	E.g. you might find all but on texture was bound, but then when you then bound the last texture you have to make sure you don't replace another texture you needed!
+	E.g. you might find all but one texture was bound, but then when you then bound the last texture you have to make sure you don't replace another texture you needed!
 
 ## Note on ordering:
 The simplest grouping as by having the same material and the same mesh.

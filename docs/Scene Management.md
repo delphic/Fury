@@ -10,26 +10,16 @@ There is further question when implementing, that is if when using hierarchical 
 
 This does not however allow for ordering of rendering by scene graph, (e.g. render closer opaque objects first), this would require we combine both. Given that we're aiming for a configurable and flexible solution (i.e. could equally use oct-trees, quad-tree, frustum culling or none) this seems like something we're going to have to skip on.
 
-Another consideration we need to make with scene graphs (used for visibility determination as opposed to the batching by material) is the concept of static versus dynamic objects.
-It's almost certainly impractical to recalculate the scene graph on the fly every frame (although we should obviously test this) so treating all objects as dynamic is almost certainly out, and given we've opted not to use setters then we would need to provide an update function to call if the user changed the position such that it invalidated the scene graph.
+Another consideration we need to make with scene graphs (used for visibility determination as opposed to the batching by material) is the concept of static versus dynamic objects. It's almost certainly impractical to recalculate the scene graph on the fly every frame (although we should obviously test this) so treating all objects as dynamic is almost certainly out, and given we've opted not to use setters then we would need to provide an update function to call if the user changed the position such that it invalidated the scene graph.
 
-The possibly more sensible option is to require objects are added to the scene graph, so the user would only add static objects and it's implicitly their responsibility to update the
-scene graph if they alter the objects which they've added to the graph (the update function would presumably live on the graph taking a sceneId rather than on the object). Further
-user overhead and responsibility is unavoidable if we're going to give the flexibility to choose their scene graph.
+The possibly more sensible option is to require objects are added to the scene graph, so the user would only add static objects and it's implicitly their responsibility to update the scene graph if they alter the objects which they've added to the graph (the update function would presumably live on the graph taking a sceneId rather than on the object). Further user overhead and responsibility is unavoidable if we're going to give the flexibility to choose their scene graph.
 
-However the static versus dynamic object is likely to come up again if we have any 'offline' rendering methods, e.g. lightmaps / shadowmaps, so perhaps introducing the distinction and
-automatically including all static objects in the scene graph of choice is viable. Dynamic objects presumably would be perhaps frustum and portal culled and we should consider the
-possibility that updating the position in scene graph of all dynamic objects each frame might be viable.
+However the static versus dynamic object is likely to come up again if we have any 'offline' rendering methods, e.g. lightmaps / shadowmaps, so perhaps introducing the distinction and automatically including all static objects in the scene graph of choice is viable. Dynamic objects presumably would be perhaps frustum and portal culled and we should consider the possibility that updating the position in scene graph of all dynamic objects each frame might be viable.
 
-So we've got a number of options here, actual tests and code are going to be need to choose the best approach (I'm leaning towards a static / dynamic distinction and automatic adding to
-graph and update each frame of dynamic objects, atm). It is also imperative that we include some level of profiling (FPS at the least!), so perhaps providing the awake / loop functions
-within fury is the next step as this'll allow us to add at the very least a console.log of the FPS.
+So we've got a number of options here, actual tests and code are going to be need to choose the best approach (I'm leaning towards a static / dynamic distinction and automatic adding to graph and update each frame of dynamic objects, atm). It is also imperative that we include some level of profiling (FPS at the least!), so perhaps providing the awake / loop functions within fury is the next step as this'll allow us to add at the very least a console.log of the FPS.
 
 ## Further Thoughts
 
-The required data structure to perform the grouping as described in the Scene Class was more complex than I originally gave it credit for, this has made me want to re-evaluate the concept
-of two graphs, one for grouping by shader / material / mesh and another for determining visibility in the scene. I'm still erring towards two graphs because then each would have its own
-responsibility, but we should probably wait until we have some tools to test and compare performance before making that choice... we might be able to avoid looping over *every* object if
-we use a single graph for both purposes (although with a single graph you've got to presume there with be some churn in the GC as you'd likely need to build the grouping graph each frame).
+The required data structure to perform the grouping as described in the Scene Class was more complex than I originally gave it credit for, this has made me want to re-evaluate the concept of two graphs, one for grouping by shader / material / mesh and another for determining visibility in the scene. I'm still erring towards two graphs because then each would have its own responsibility, but we should probably wait until we have some tools to test and compare performance before making that choice... we might be able to avoid looping over *every* object if we use a single graph for both purposes (although with a single graph you've got to presume there with be some churn in the GC as you'd likely need to build the grouping graph each frame).
 
-Regardless, we still need to adjust the existing code for the faulty assumption that you always need rebind uniforms when switching back to a shaderprogram, perhaps we should do this first.  
+Regardless, we still need to adjust the existing code for the faulty assumption that you always need rebind uniforms when switching back to a shaderprogram, perhaps we should do this first.

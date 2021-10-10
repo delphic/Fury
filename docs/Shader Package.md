@@ -29,7 +29,6 @@ Wait... why are putting in this layer? Why don't we just pass attribute names an
 So pretty much how the shader was specified but with values instead of bind functions.
 > Update - this isn't practical as the structure of the render object should be uniform across different shaders, so the first one should work better and other custom uniforms will need to be event / material driven for bindings
 
-
 This is all very nice, but it's quite literal, we may have to redesign when we try to optimise (e.g. geometry instances, grouping by texture) rather than just binding everything, every time, every object. Let's cross that bridge when we come to it eh?
 
 Also are we not giving attributes the extra specialness they deserve? Whilst just referencing by name is all very good and generic, the concept of vertex / normals / texture coords are pretty static. Let's go with the generic and see how it goes, I have a hunch separating them from attributes is sufficient distinction.
