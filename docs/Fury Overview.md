@@ -10,7 +10,7 @@ Open Source - we're doing this for fun.
 
 Using ES5+ and standards focused - i.e using WebGL2 and Web Audio API without fall backs.
 
-A single vector implementation across rendering, physics and game logic - use glMatrix.
+A single vector implementation across rendering, physics and game logic - [glMatrix](https://github.com/toji/gl-matrix).
 
 Using a Common JS and browserify, allowing either direct inclusion or build single file.
 

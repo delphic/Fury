@@ -1,12 +1,12 @@
 # Fury
 
-Fury (as in the mythical creature) - a WebGL based game engine / framework.
+Fury a web tech based game engine / framework.
 
-The ideal being to allow easy low level access to WebGL, whilst not to forcing any unnecessary abstractions upon the user.
+The ideal being to allow easier low level access to WebGL and similar APIs, whilst not to forcing any unnecessary abstractions upon the user.
 
 Standards Focused - using WebGL2 and Web Audio API without fall backs.
 
-A single vector implementation across rendering, physics and game logic (glMatrix).
+A single vector implementation across rendering, physics and game logic ([glMatrix](https://github.com/toji/gl-matrix)).
 
 Focus on fast JavaScript, low garbage allocations, without compromising readability.
 
