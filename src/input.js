@@ -34,7 +34,7 @@ var Input = module.exports = function() {
 	};
 
 	exports.requestPointerLock = function() {
-		canvas.requestPointerLock();
+		return canvas.requestPointerLock();
 	};
 
 	exports.releasePointerLock = function() {
