@@ -10,6 +10,7 @@ let GameLoop = module.exports = (function() {
 	};
 
 	let state = State.Paused;
+	let stopCount = 0;
 
 	let maxFrameTimeMs = null;
 	let loopDelegate = null;
@@ -35,18 +36,23 @@ let GameLoop = module.exports = (function() {
 	};
 
 	exports.start = () => {
-		switch (state) {
-			case State.Paused:
-				state = State.Running;
-				window.requestAnimationFrame(loop);
-				break;
-			case State.RequestPause:
-				state = State.Running;
-				break;
+		stopCount = Math.max(0, stopCount - 1);
+		if (stopCount == 0) {
+			switch (state) {
+				case State.Paused:
+					state = State.Running;
+					Input.handleFrameFinished(); // clear any input that happened since pause
+					window.requestAnimationFrame(loop);
+					break;
+				case State.RequestPause:
+					state = State.Running;
+					break;
+			}
 		}
 	};
 
 	exports.stop = () => {
+		stopCount += 1;
 		if (state != State.Paused) {
 			state = State.RequestPause;
 		}
