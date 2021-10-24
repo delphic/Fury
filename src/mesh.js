@@ -162,6 +162,15 @@ var Mesh = module.exports = function(){
 					mesh.indexed = false;
 				}
 
+				if (parameters.customAttributes && parameters.customAttributes.length) {
+					for (let i = 0, l = parameters.customAttributes.length; i < l; i++) {
+						let a = parameters.customAttributes[i]; 
+						// Maybe should validate name isn't already used?
+						mesh[a.name] = r.createBuffer(parameters[a.source], a.size);
+						// Note - dynamic not currently supported for custom attributes
+					}
+				}
+
 				if (!parameters.dynamic) {
 					// clear mesh data if not mesh does not need to be dynamically updated
 					mesh.vertices = null;
