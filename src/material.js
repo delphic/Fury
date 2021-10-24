@@ -38,6 +38,8 @@ var Material = module.exports = function(){
 		material.textures = {};
 		if (parameters.textures) {
 			material.setTextures(parameters.textures);
+		} else if (parameters.texture) {
+			material.setTexture(parameters.texture);
 		}
 
 		if (parameters.properties) {
