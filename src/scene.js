@@ -205,14 +205,14 @@ var Scene = module.exports = function() {
 			}
 			if(!prefabs[parameters.name]) {
 				var defn = Fury.prefabs[parameters.name];
-				if(!defn.material || !defn.mesh) {
-					throw new Error("Requested prefab must have a material and a mesh present");
+				if(!defn.materialConfig || !defn.meshConfig) {
+					throw new Error("Requested prefab must have a material and a mesh config present");
 				}
 				prefab = {
 					name: parameters.name,
 					instances: indexedMap.create(),
-					mesh: Mesh.copy(defn.mesh),
-					material: Material.copy(defn.material)
+					mesh: Mesh.create(defn.meshConfig),
+					material: Material.create(defn.materialConfig)
 				};
 				prefab.meshId = meshes.add(prefab.mesh);
 				prefab.materialId = materials.add(prefab.material);

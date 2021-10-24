@@ -56,33 +56,6 @@ var Material = module.exports = function(){
 
 		return material;
 	};
-
-	var copy = exports.copy = function(material) {
-		var copy = Object.create(prototype);
-		// Note this is explicit rather than automatic using reflection
-		// as we do not want to copy any dynamically appended properties (i.e. id)
-		copy.shader = material.shader;
-		copy.textures = {};
-		if(material.textures) {
-			var textures = material.textures;
-			for(var key in textures) {
-				if(textures.hasOwnProperty(key)) {
-					copy.textures[key] = textures[key];
-				}
-			}
-		}
-
-		if (material._properties) {
-			// Note this will assign the same to the copy for reference types, rather than performing a deep clone
-			// additionally it will not copy across any dynamically added properties 
-			// TODO: Support dynamic properties via Object.assign ? 
-			for (let i = 0, l = material._properties.length; i < l; i++) {
-				copy[material._properties[i]] = material[material._properties[i]];
-			}
-		}
 	
-		return copy;
-	};
-
 	return exports;
 }();

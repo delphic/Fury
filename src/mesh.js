@@ -162,51 +162,16 @@ var Mesh = module.exports = function(){
 					mesh.indexed = false;
 				}
 
-				/*
 				if (!parameters.dynamic) {
 					// clear mesh data if not mesh does not need to be dynamically updated
 					mesh.vertices = null;
 					mesh.textureCoordinates = null;
 					mesh.normals = null;
 					mesh.indices = null;
-				} */ 
-				// TODO: Check that scene does not make use of methods which need these arrays - It does, it uses Copy for Prefabs
-				// TODO: Update copy method to duplicate buffer? doesn't seem to be possible. We need to keep the data for any mesh intend to copy, either prefabs
-				// mush have dynamic set *or* perhaps we do away with mesh copy and have prefabs store their mesh creation data and make new mesh instances instead,
-				// same for material - I think this is cleaner, lets do that.
-				// TODO: Check demos for dynamic mesh manipulation
+				}
 			}
 		}
 		return mesh;
-	};
-
-	var copy = exports.copy = function(mesh) {
-		var copy = Object.create(prototype);
-		// Note this is explicit rather than automatic using reflection
-		// as we do not want to copy any dynamically appended properties (i.e. id)
-		copy.indexed = mesh.indexed;
-		copy.renderMode = mesh.renderMode;
-		copy.boundingRadius = mesh.boundingRadius;
-		copy.bounds = Bounds.create({ min: mesh.bounds.min, max: mesh.bounds.max }) ;
-		if (mesh.vertices) {
-			copy.vertices = mesh.vertices.slice(0);
-			copy.updateVertices();
-		}
-		if (mesh.textureCoordinates) {
-			copy.textureCoordinates = mesh.textureCoordinates.slice(0);
-			copy.updateTextureCoordinates();
-		}
-		if (mesh.normals) {
-			copy.normals = mesh.normals.slice(0);
-			copy.updateNormals();
-		}
-		if (mesh.indices) {
-			copy.indices = mesh.indices.slice(0);
-			copy.updateIndexBuffer();
-		}
-		// TODO: Copy custom buffers
-
-		return copy;
 	};
 
 	return exports;
