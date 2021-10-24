@@ -49,29 +49,43 @@ var Mesh = module.exports = function(){
 			calculateMaxPoint(this.bounds.max, this.vertices);
 			this.bounds.recalculateExtents();
 		},
-		calculateNormals: function() {
-			// TODO: Calculate Normals from Vertex information
-		},
+		// TODO: Method to calculate normals from vertex information + winding info
 		updateVertices: function() {
-			this.vertexBuffer = r.createBuffer(this.vertices, 3);
 			// TODO: If vertexBuffers exists we should delete the existing buffer?
 			// or we should use the existing buffer and bind different data
+			if (this.vertices) {
+				this.vertexBuffer = r.createBuffer(this.vertices, 3);
+			} else {
+				console.warn("Unable to update vertexBuffer from mesh vertices, ensure mesh was created with dynamic parameter");
+			}
 		},
 		updateTextureCoordinates: function() {
 			// TODO: If uvBuffer exists we should delete the existing buffer?
 			// or we should use the existing buffer and bind different data
-			this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
+			if (this.textureCoordinates) {
+				this.textureBuffer = r.createBuffer(this.textureCoordinates, 2);
+			} else {
+				console.warn("Unable to update textureBuffer from texture coordinates, ensure mesh was created with dynamic parameter");
+			}
 		},
 		updateNormals: function() {
 			// TODO: If normalBuffer exists we should delete the existing buffer?
 			// or we should use the existing buffer and bind different data
-			this.normalBuffer = r.createBuffer(this.normals, 3);
+			if (this.normals) {
+				this.normalBuffer = r.createBuffer(this.normals, 3);
+			} else {
+				console.warn("Unable to update normalBuffer from mesh normals, ensure mesh was created with dynamic parameter");
+			}
 		},
 		updateIndexBuffer: function() {
 			// TODO: If indexBuffer exists we should delete the existing buffer?
 			// or we should use the existing buffer and bind different data
-			this.indexBuffer = r.createBuffer(this.indices, 1, true);
-			this.indexed = true;
+			if (this.indices) {
+				this.indexBuffer = r.createBuffer(this.indices, 1, true);
+				this.indexed = true;	
+			} else {
+				console.warn("Unable to update indexBuffer from mesh indices, ensure mesh was created with dynamic parameter");
+			}
 		}
 	};
 
@@ -90,63 +104,77 @@ var Mesh = module.exports = function(){
 			mesh.boundingRadius = parameters.boundingRadius | 0;
 
 			if (parameters.buffers) {
-					// NOTE: update<X> methods will not work when providing buffers directly
-					// if the mesh needs to be manipulated at run time, it's best to convert the buffers
-					// to JS arrays create the mesh data with that.
-					if (parameters.vertices && parameters.vertexCount) {
-						mesh.vertices = parameters.vertices;
-						mesh.calculateBounds();
-						mesh.vertexBuffer = r.createArrayBuffer(parameters.vertices, 3, parameters.vertexCount);
-					}
-					if (parameters.textureCoordinates && parameters.textureCoordinatesCount) {
-						mesh.textureBuffer = r.createArrayBuffer(parameters.textureCoordinates, 2, parameters.textureCoordinatesCount);
-					}
-					if (parameters.normals && parameters.normalsCount) {
-						mesh.normalBuffer = r.createArrayBuffer(parameters.normals, 3, parameters.normalsCount);
-					}
+				// NOTE: update<X> methods will not work when providing buffers directly
+				// if the mesh needs to be manipulated at run time, it's best to convert the buffers
+				// to JS arrays create the mesh data with that.
+				if (parameters.vertices && parameters.vertexCount) {
+					mesh.vertices = parameters.vertices;
+					mesh.calculateBounds();
+					mesh.vertexBuffer = r.createArrayBuffer(parameters.vertices, 3, parameters.vertexCount);
+				}
+				if (parameters.textureCoordinates && parameters.textureCoordinatesCount) {
+					mesh.textureBuffer = r.createArrayBuffer(parameters.textureCoordinates, 2, parameters.textureCoordinatesCount);
+				}
+				if (parameters.normals && parameters.normalsCount) {
+					mesh.normalBuffer = r.createArrayBuffer(parameters.normals, 3, parameters.normalsCount);
+				}
 
-					if (parameters.customBuffers && parameters.customBuffers.length) {
-						mesh.customBuffers = [];
-						for (let i = 0, l = parameters.customBuffers.length; i < l; i++) {
-							let customBuffer = parameters.customBuffers[i];
-							switch (customBuffer.componentType) {
-								case 5126: // Float32
-									mesh.customBuffers[customBuffer.name] = r.createArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
-									break;
-								case 5123: // Int16
-									mesh.customBuffers[customBuffer.name] = r.createElementArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
-									// UNTESTED
-									break;
-							}
+				if (parameters.customBuffers && parameters.customBuffers.length) {
+					mesh.customBuffers = [];
+					for (let i = 0, l = parameters.customBuffers.length; i < l; i++) {
+						let customBuffer = parameters.customBuffers[i];
+						switch (customBuffer.componentType) {
+							case 5126: // Float32
+								mesh.customBuffers[customBuffer.name] = r.createArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+								break;
+							case 5123: // Int16
+								mesh.customBuffers[customBuffer.name] = r.createElementArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+								// UNTESTED
+								break;
 						}
 					}
+				}
 
-					if (parameters.indices && parameters.indexCount) {
-						mesh.indexBuffer = r.createElementArrayBuffer(parameters.indices, 1, parameters.indexCount);
-						mesh.indexed = true;
-					} else {
-						mesh.indexed = false;
-					}
+				if (parameters.indices && parameters.indexCount) {
+					mesh.indexBuffer = r.createElementArrayBuffer(parameters.indices, 1, parameters.indexCount);
+					mesh.indexed = true;
+				} else {
+					mesh.indexed = false;
+				}
 			} else {
-					if (parameters.vertices) {
-						mesh.vertices = parameters.vertices;
-						mesh.calculateBounds();
-						mesh.updateVertices();
-					}
-					if (parameters.textureCoordinates) {
-						mesh.textureCoordinates = parameters.textureCoordinates;
-						mesh.updateTextureCoordinates();
-					}
-					if (parameters.normals) {
-						mesh.normals = parameters.normals;
-						mesh.updateNormals();
-					}
-					if (parameters.indices) {
-						mesh.indices = parameters.indices;
-						mesh.updateIndexBuffer();
-					} else {
-						mesh.indexed = false;
-					}
+				if (parameters.vertices) {
+					mesh.vertices = parameters.vertices;
+					mesh.calculateBounds();
+					mesh.updateVertices();
+				}
+				if (parameters.textureCoordinates) {
+					mesh.textureCoordinates = parameters.textureCoordinates;
+					mesh.updateTextureCoordinates();
+				}
+				if (parameters.normals) {
+					mesh.normals = parameters.normals;
+					mesh.updateNormals();
+				}
+				if (parameters.indices) {
+					mesh.indices = parameters.indices;
+					mesh.updateIndexBuffer();
+				} else {
+					mesh.indexed = false;
+				}
+
+				/*
+				if (!parameters.dynamic) {
+					// clear mesh data if not mesh does not need to be dynamically updated
+					mesh.vertices = null;
+					mesh.textureCoordinates = null;
+					mesh.normals = null;
+					mesh.indices = null;
+				} */ 
+				// TODO: Check that scene does not make use of methods which need these arrays - It does, it uses Copy for Prefabs
+				// TODO: Update copy method to duplicate buffer? doesn't seem to be possible. We need to keep the data for any mesh intend to copy, either prefabs
+				// mush have dynamic set *or* perhaps we do away with mesh copy and have prefabs store their mesh creation data and make new mesh instances instead,
+				// same for material - I think this is cleaner, lets do that.
+				// TODO: Check demos for dynamic mesh manipulation
 			}
 		}
 		return mesh;
@@ -176,6 +204,7 @@ var Mesh = module.exports = function(){
 			copy.indices = mesh.indices.slice(0);
 			copy.updateIndexBuffer();
 		}
+		// TODO: Copy custom buffers
 
 		return copy;
 	};
