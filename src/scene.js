@@ -319,8 +319,13 @@ var Scene = module.exports = function() {
 			}
 			for(i = 0, l = alphaRenderObjects.length; i < l; i++) {
 				var renderObject = alphaRenderObjects[i];
+				let m = renderObject.material; 
 				// Could probably do this in bind and draw method
-				r.enableBlending(renderObject.material.sourceBlendType, renderObject.material.destinationBlendType, renderObject.material.blendEquation);
+				if (!m.blendSeparate) {
+					r.enableBlending(m.sourceBlendType, m.destinationBlendType, m.blendEquation);
+				} else {
+					r.enableSeparateBlending(m.sourceColorBlendType, m.destinationColorBlendType, m.sourceAlphaBlendType, m.destinationAlphaBlendType, m.blendEquation);
+				}
 				bindAndDraw(renderObject);
 			}
 			r.disableBlending();

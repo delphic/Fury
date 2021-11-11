@@ -1,9 +1,16 @@
 var Material = module.exports = function(){
 	var exports = {};
 	var prototype = {
+		blendSeparate: false, // Toggles use of blendFunc vs. blendFuncSeparate
 		blendEquation: "FUNC_ADD",
+		// blendFunc Parameters
 		sourceBlendType: "SRC_ALPHA",
 		destinationBlendType: "ONE_MINUS_SRC_ALPHA",
+		// blendFuncSeparate Parameters 
+		sourceColorBlendType: "SRC_ALPHA",
+		destinationColorBlendType: "ONE_MINUS_SRC_ALPHA",
+		sourceAlphaBlendType: "ZERO",
+		destinationAlphaBlendType: "DST_ALPHA",
 		setTexture: function(texture, uniformName) {
 			if (uniformName) {
 				this.textures[uniformName] = texture;

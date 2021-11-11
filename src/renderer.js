@@ -248,8 +248,19 @@ exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
 	}
 	gl.enable(gl.BLEND);
 	gl.depthMask(false);
-
 };
+
+exports.enableSeparateBlending = function(sourceColorBlend, destinationColorBlend, sourceAlphaBlend, destinationAlphaBlend, equation) {
+	gl.enable(gl.BLEND);
+	if (equation) {
+		// Does WebGL support separate blend equations? Do we want to?
+		gl.blendEquation(gl[equation]);
+	}
+	if (sourceColorBlend && sourceAlphaBlend && destinationColorBlend && destinationAlphaBlend) {
+		gl.blendFuncSeparate(gl[sourceColorBlend], gl[destinationColorBlend], gl[sourceAlphaBlend], gl[destinationAlphaBlend]);
+	}
+	gl.depthMask(false);
+}
 
 exports.disableBlending = function() {
 	gl.disable(gl.BLEND);
