@@ -92,9 +92,11 @@ var Scene = module.exports = function() {
 		};
 
 		var addToAlphaList = function(object, depth) {
+			// TODO: Profile using Array sort instead of insertion sorting, also test add/remove from list rather than clear
 			depths[object.sceneId] = depth;
 			// Binary search
-			// Could technically do better by batching up items with the same depth according to material / mesh like sence graph
+			// Could technically do better by batching up items with the same depth according to material / mesh like scene graph
+			// However this is only relevant for 2D games with orthographic projection
 			var less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
 			while(!inserted) {
 				less = (index === 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
@@ -144,6 +146,16 @@ var Scene = module.exports = function() {
 			}
 		};
 
+		var sortByMaterial = function(a, b) {
+			if (a.materialId == b.materialId) {
+				return 0;
+			} else if (a.materialId < b.materialId) { // Note: will not order strings by their parsed numberical value, however this is not required.
+				return +1;
+			} else {
+				return -1;
+			}
+		};
+
 		// Add Render Object
 		scene.add = function(parameters) {
 			var object = {};
@@ -166,7 +178,10 @@ var Scene = module.exports = function() {
 			// as the renderer requires it.
 			object.transform = Transform.create(parameters);
 
-			object.sceneId = renderObjects.add(object);
+			// For now just sort by material on add
+			object.sceneId = renderObjects.add(object, sortByMaterial); 
+			// Would probably be more performant to dynamic changes if kept a record of start and end index
+			// of all materials and could simply inject at the correct point - TODO: Profile
 			object.static = !!parameters.static;
 			object.active = parameters.active === undefined || !!parameters.active;
 
@@ -262,8 +277,7 @@ var Scene = module.exports = function() {
 			mat4.translate(cameraMatrix, cameraMatrix, vec3.set(cameraOffset, -camera.position[0], -camera.position[1], -camera.position[2]));
 
 			pMatrixRebound = false;
-			alphaRenderObjects.length = 0;
-			// Simple checks for now - no ordering
+			alphaRenderObjects.length = 0; 
 
 			// TODO: Scene Graph
 			// Batched first by Shader
@@ -281,6 +295,7 @@ var Scene = module.exports = function() {
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
 			var culled = false;
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
+				// TODO: Detect if resorting is necessary (check +1 and -1 in array against sort function)
 				var renderObject = renderObjects[renderObjects.keys[i]];
 				if (scene.enableFrustumCulling) {
 					culled = isCulledByFrustrum(camera, renderObject);
