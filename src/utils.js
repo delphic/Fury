@@ -1,4 +1,5 @@
-let Utils = module.exports = (function(){
+// Utils
+module.exports = (function(){
 	let exports = {};
 
 	exports.createScaledImage = (config) => {

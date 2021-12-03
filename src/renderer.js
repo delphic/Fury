@@ -1,17 +1,6 @@
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
-
-var Maths = require('./maths');
-var mat2 = Maths.mat2,
-	mat3 = Maths.mat3,
-	mat4 = Maths.mat4,
-	quat = Maths.quat,
-	quat2 = Maths.quat2,
-	vec2 = Maths.vec2,
-	vec3 = Maths.vec3,
-	vec4 = Maths.vec4;
-
 var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas, contextAttributes) {
@@ -215,13 +204,13 @@ exports.setTexture = function(location, texture) {
 };
 
 // Blending
-var BlendEquation = exports.BlendEquation = {
+exports.BlendEquation = {
 	Add: "FUNC_ADD",
 	Subtract: "FUNC_SUBTRACT",
 	ReverseSubtract: "FUNC_REVERSE_SUBTRACT"
 };
 
-var BlendType = exports.BlendType = {
+exports.BlendType = {
 	Zero: "ZERO",
 	One: "ONE",
 	ConstantAlpha: "CONSTANT_ALPHA",
