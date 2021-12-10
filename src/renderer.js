@@ -25,6 +25,7 @@ exports.init = function(canvas, contextAttributes) {
 	}
 };
 
+// TODO: This cshould be called setClearColor
 exports.clearColor = function(r,g,b,a) {
 	gl.clearColor(r, g, b, a);
 };
@@ -32,6 +33,10 @@ exports.clearColor = function(r,g,b,a) {
 exports.clear = function() {
 	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight); // TODO: this isn't necessary every frame
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+};
+
+exports.clearDepth = function() {
+	gl.clear(gl.DEPTH_BUFFER_BIT);
 };
 
 // Shader / Shader Programs
@@ -130,6 +135,8 @@ exports.createTexture = function(source, quality, clamp, disableAniso) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+	// If we want to create mipmaps manually provide an array source and put them into
+	// different levels in texImage2D - you must provide all mipmap levels
 
 	setTextureQuality(gl.TEXTURE_2D, quality, disableAniso);
 

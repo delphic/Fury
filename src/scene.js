@@ -289,6 +289,8 @@ var Scene = module.exports = function() {
 			// This batching by shader / material / mesh may need to be combined with scene management techniques
 			if (camera.clear) {
 				r.clear();
+			} else if (camera.clearDepth) {
+				r.clearDepth();
 			}
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
