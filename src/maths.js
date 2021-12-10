@@ -48,6 +48,8 @@ module.exports = (function() {
 	var vec3X = exports.vec3X = glMatrix.vec3.fromValues(1,0,0);
 	var vec3Y = exports.vec3Y = glMatrix.vec3.fromValues(0,1,0);
 	var vec3Z = exports.vec3Z = glMatrix.vec3.fromValues(0,0,1);
+	exports.vec3Zero = glMatrix.vec3.fromValues(0,0,0);
+	exports.vec3One = glMatrix.vec3.fromValues(1,1,1);
 
 	exports.vec3Pool = (function(){
 		let stack = [];
