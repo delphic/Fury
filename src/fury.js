@@ -13,23 +13,13 @@ var Fury = module.exports = (function() {
 	Fury.Mesh = require('./mesh');
 	Fury.Model = require('./model');
 	Fury.Physics = require('./physics');
+	Fury.Prefab = require('./prefab');
 	Fury.Renderer = require('./renderer');
 	Fury.Scene = require('./scene');
 	Fury.Shader = require('./shader');
 	Fury.Shaders = require('./shaders');
 	Fury.Transform = require('./transform');
 	Fury.Utils = require('./utils');
-
-	Fury.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
-
-	Fury.createPrefab = function(parameters) {
-		var prefabs = Fury.prefabs;
-		if(!parameters || !parameters.name || prefabs[parameters.name]) {
-			throw new Error("Please provide a valid and unique name parameter for your prefab");
-		} else {
-			prefabs[parameters.name] = parameters;
-		}
-	};
 
 	Fury.init = function(parameters) {
 		let disableShaderPreload = false;

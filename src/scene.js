@@ -2,6 +2,7 @@ var r = require('./renderer');
 var indexedMap = require('./indexedMap');
 var Material = require('./material');
 var Mesh = require('./mesh');
+var Prefab = require('./prefab');
 var Transform = require('./transform');
 var Maths = require('./maths');
 var Bounds = require('./bounds');
@@ -200,11 +201,11 @@ var Scene = module.exports = function() {
 		// Instantiate prefab instance
 		scene.instantiate = function(parameters) {
 			var prefab;
-			if(!parameters || !parameters.name || !Fury.prefabs[parameters.name]) {
+			if(!parameters || !parameters.name || !Prefab.prefabs[parameters.name]) {
 				throw new Error("You must provide a valid prefab name");
 			}
 			if(!prefabs[parameters.name]) {
-				var defn = Fury.prefabs[parameters.name];
+				var defn = Prefab.prefabs[parameters.name];
 				if(!defn.materialConfig || !defn.meshConfig) {
 					throw new Error("Requested prefab must have a material and a mesh config present");
 				}
