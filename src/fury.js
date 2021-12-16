@@ -1,5 +1,5 @@
 // Fury Module can be used with 'require'
-var Fury = module.exports = (function() {
+module.exports = (function() {
 	let Fury = {};
 	let canvas;
 

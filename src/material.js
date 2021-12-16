@@ -1,9 +1,16 @@
 var Material = module.exports = function(){
 	var exports = {};
 	var prototype = {
+		blendSeparate: false, // Toggles use of blendFunc vs. blendFuncSeparate
 		blendEquation: "FUNC_ADD",
+		// blendFunc Parameters
 		sourceBlendType: "SRC_ALPHA",
 		destinationBlendType: "ONE_MINUS_SRC_ALPHA",
+		// blendFuncSeparate Parameters 
+		sourceColorBlendType: "SRC_ALPHA",
+		destinationColorBlendType: "ONE_MINUS_SRC_ALPHA",
+		sourceAlphaBlendType: "ZERO",
+		destinationAlphaBlendType: "DST_ALPHA",
 		setTexture: function(texture, uniformName) {
 			if (uniformName) {
 				this.textures[uniformName] = texture;
@@ -24,6 +31,12 @@ var Material = module.exports = function(){
 						+ " or an array textures of length no greater than the provided shader's uniform names array");
 				}
 			}
+		},
+		setProperties: function(properties) {
+			let keys = Object.keys(properties);
+			for (let i = 0, l = keys.length; i < l; i++) {
+				this[keys[i]] = properties[keys[i]];
+			}
 		}
 	};
 
@@ -43,11 +56,7 @@ var Material = module.exports = function(){
 		}
 
 		if (parameters.properties) {
-			let keys = Object.keys(parameters.properties);
-			for (let i = 0, l = keys.length; i < l; i++) {
-				material[keys[i]] = parameters.properties[keys[i]];
-			}
-			material._properties = keys; // Store custom properties for the copy method
+			material.setProperties(parameters.properties);
 		}
 
 		if (material.shader.validateMaterial) {

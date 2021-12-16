@@ -18,6 +18,7 @@ var Input = module.exports = function() {
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
 			canvas.addEventListener("mouseup", handleMouseUp);
+			canvas.addEventListener("wheel", handleMouseWheel);
 
 			document.addEventListener('pointerlockchange', (event) => {
 				pointerLocked = !!(document.pointerLockElement || document.mozPointerLockElement); // polyfill
@@ -43,6 +44,7 @@ var Input = module.exports = function() {
 
 	var MouseDelta = exports.MouseDelta = [0, 0];
 	var MousePosition = exports.MousePosition = [0, 0];
+	var MouseWheel = exports.MouseWheel = [0, 0, 0];
 
 	var keyPressed = function(key) {
 		if (!isNaN(key) && !key.length) {
@@ -177,8 +179,8 @@ var Input = module.exports = function() {
 	};
 
 	exports.handleFrameFinished = function() {
-		MouseDelta[0] = 0;
-		MouseDelta[1] = 0;
+		MouseDelta[0] = MouseDelta[1] = 0;
+		MouseWheel[0] = MouseWheel[1] = MouseWheel[2] = 0;
 		downKeys.length = 0;
 		upKeys.length = 0;
 		downMouse.length = 0;
@@ -230,6 +232,13 @@ var Input = module.exports = function() {
 		mouseState[event.button] = false;
 		upMouseTimes[event.button] = Date.now();
 		upMouse[event.button] = true;
+	};
+
+	var handleMouseWheel = function(event) {
+		MouseWheel[0] += event.deltaX;
+		MouseWheel[1] += event.deltaY;
+		MouseWheel[2] += event.deltaZ;
+		// Note event.deltaMode determines if values are pixels, lines or pages, assumed pixels here
 	};
 
 	exports.getMouseViewportX = function() {

@@ -57,6 +57,10 @@ let GameLoop = module.exports = (function() {
 			state = State.RequestPause;
 		}
 	};
+
+	exports.isRunning = () => {
+		return state === State.Running;
+	};
 	
 	let onWindowBlur = (event) => {
 		exports.stop();

@@ -1,6 +1,6 @@
 var vec3 = require('./maths').vec3;
 
-var Bounds = module.exports = (function() {
+module.exports = (function() {
 	let exports = {};
 	let prototype = {
 		recalculateMinMax: function() {
@@ -69,7 +69,7 @@ var Bounds = module.exports = (function() {
 		for (let i = 0; i < 3; i++) {
 			if (Math.sign(box.center[i] - origin[i]) == Math.sign(direction[i])
 				&& !(origin[i] >= box.min[i] && origin[i] <= box.max[i])) { // and NOT INSIDE the box on this axis
-				axis = i;
+				let axis = i;
 
 				// Move along that axis to find the intersection point on this axis
 				let ip = box.center[axis] - Math.sign(direction[axis]) * box.extents[axis];
@@ -100,7 +100,7 @@ var Bounds = module.exports = (function() {
 		let z = Math.max(box.min[2], Math.min(sphere.center[2], box.max[2]));
 
 		let sqrDistance = (x - sphere.center[0]) * (x - sphere.center[0]) +
-		 	(y - sphere.center[1]) * (y - sphere.center[1]) +
+			(y - sphere.center[1]) * (y - sphere.center[1]) +
 			(z - sphere.center[2]) * (z - sphere.center[2]);
 
 		return sqrDistance < sphere.radius * sphere.radius;

@@ -16,14 +16,24 @@ var IndexedMap = module.exports = function(){
 	// but I don't think it does any harm :shrug:
 
 	var prototype = {
-		add: function(item) {
+		add: function(item, sortFunction) {
 			if (!item.id || !this[item.id]) {
 				var key = (nextKey++).toString();
 				item.id = key;
 				this[key] = item;
 				this.keys.push(key);
+				if (sortFunction) {
+					this.keys.sort(sortFunction);
+				}
 			}
 			return item.id;
+		},
+		sort: function(sortFunction) {
+			if (sortFunction) {
+				this.keys.sort(sortFunction);
+			} else {
+				this.keys.sort();
+			}
 		},
 		remove: function(key) {
 			if(key != "keys" && this.hasOwnProperty(key)) {

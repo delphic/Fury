@@ -1,17 +1,6 @@
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
-
-var Maths = require('./maths');
-var mat2 = Maths.mat2,
-	mat3 = Maths.mat3,
-	mat4 = Maths.mat4,
-	quat = Maths.quat,
-	quat2 = Maths.quat2,
-	vec2 = Maths.vec2,
-	vec3 = Maths.vec3,
-	vec4 = Maths.vec4;
-
 var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas, contextAttributes) {
@@ -36,6 +25,7 @@ exports.init = function(canvas, contextAttributes) {
 	}
 };
 
+// TODO: This cshould be called setClearColor
 exports.clearColor = function(r,g,b,a) {
 	gl.clearColor(r, g, b, a);
 };
@@ -43,6 +33,10 @@ exports.clearColor = function(r,g,b,a) {
 exports.clear = function() {
 	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight); // TODO: this isn't necessary every frame
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+};
+
+exports.clearDepth = function() {
+	gl.clear(gl.DEPTH_BUFFER_BIT);
 };
 
 // Shader / Shader Programs
@@ -141,6 +135,8 @@ exports.createTexture = function(source, quality, clamp, disableAniso) {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+	// If we want to create mipmaps manually provide an array source and put them into
+	// different levels in texImage2D - you must provide all mipmap levels
 
 	setTextureQuality(gl.TEXTURE_2D, quality, disableAniso);
 
@@ -215,13 +211,13 @@ exports.setTexture = function(location, texture) {
 };
 
 // Blending
-var BlendEquation = exports.BlendEquation = {
+exports.BlendEquation = {
 	Add: "FUNC_ADD",
 	Subtract: "FUNC_SUBTRACT",
 	ReverseSubtract: "FUNC_REVERSE_SUBTRACT"
 };
 
-var BlendType = exports.BlendType = {
+exports.BlendType = {
 	Zero: "ZERO",
 	One: "ONE",
 	ConstantAlpha: "CONSTANT_ALPHA",
@@ -248,8 +244,19 @@ exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
 	}
 	gl.enable(gl.BLEND);
 	gl.depthMask(false);
-
 };
+
+exports.enableSeparateBlending = function(sourceColorBlend, destinationColorBlend, sourceAlphaBlend, destinationAlphaBlend, equation) {
+	gl.enable(gl.BLEND);
+	if (equation) {
+		// Does WebGL support separate blend equations? Do we want to?
+		gl.blendEquation(gl[equation]);
+	}
+	if (sourceColorBlend && sourceAlphaBlend && destinationColorBlend && destinationAlphaBlend) {
+		gl.blendFuncSeparate(gl[sourceColorBlend], gl[destinationColorBlend], gl[sourceAlphaBlend], gl[destinationAlphaBlend]);
+	}
+	gl.depthMask(false);
+}
 
 exports.disableBlending = function() {
 	gl.disable(gl.BLEND);

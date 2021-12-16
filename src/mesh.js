@@ -2,7 +2,7 @@ var r = require('./renderer');
 var Bounds = require('./bounds');
 var vec3 = require('./maths').vec3;
 
-var Mesh = module.exports = function(){
+module.exports = function(){
 	exports = {};
 
 	let calculateMinPoint = exports.calculateMinPoint = function(out, vertices) {
@@ -89,7 +89,7 @@ var Mesh = module.exports = function(){
 		}
 	};
 
-	var create = exports.create = function(parameters) {
+	exports.create = function(parameters) {
 		var mesh = Object.create(prototype);
 
 		mesh.bounds = Bounds.create({ min: vec3.create(), max: vec3.create() });
@@ -160,6 +160,15 @@ var Mesh = module.exports = function(){
 					mesh.updateIndexBuffer();
 				} else {
 					mesh.indexed = false;
+				}
+
+				if (parameters.customAttributes && parameters.customAttributes.length) {
+					for (let i = 0, l = parameters.customAttributes.length; i < l; i++) {
+						let a = parameters.customAttributes[i]; 
+						// Maybe should validate name isn't already used?
+						mesh[a.name] = r.createBuffer(parameters[a.source], a.size);
+						// Note - dynamic not currently supported for custom attributes
+					}
 				}
 
 				if (!parameters.dynamic) {

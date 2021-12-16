@@ -17,6 +17,7 @@ var Camera = module.exports = function() {
 		// Set Rotation from Euler
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
+		// TODO: Review depth and frustrum to make sure they deal with look in -z correctly
 		calculateFrustum: function() {
 			// TODO: Update to work for orthonormal projection as well
 			Maths.quatLocalAxes(this.rotation, localX, localY, localZ);
@@ -109,6 +110,10 @@ var Camera = module.exports = function() {
 				l0 = position[0], l1 = position[1], l2 = position[2];
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
 		},
+		getLookDirection: function(out) {
+			vec3.transformQuat(out, Maths.vec3Z, this.rotation);
+			vec3.negate(out, out); // Camera faces in -z
+		},
 		getProjectionMatrix: function(out) {
 			if(this.type == Camera.Type.Perspective) {
 				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
@@ -133,10 +138,12 @@ var Camera = module.exports = function() {
 			}
 		}
 	};
+
 	var Type = exports.Type = {
 		Perspective: "Perspective",
 		Orthonormal: "Orthonormal"
 	};
+
 	var create = exports.create = function(parameters) {
 		var camera = Object.create(prototype);
 		// TODO: Arguement Checking
