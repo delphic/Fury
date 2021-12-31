@@ -1,40 +1,38 @@
 // Shader Class for use with Fury Scene
-var r = require('./renderer');
+const r = require('./renderer');
 
-var Shader = module.exports = function() {
-	var exports = {};
-	var prototype = {};
+module.exports = (function() {
+	let exports = {};
 
-	var create = exports.create = function(parameters) {
-		var i, l;
-		var shader = Object.create(prototype);
+	exports.create = function(parameters) {
+		let shader = {};
 
 		// Argument Validation
-		if(!parameters) {
+		if (!parameters) {
 			throw new Error("No paramter object supplied, shader source must be provided");
 		}
-		if(!parameters.vsSource) {
+		if (!parameters.vsSource) {
 			throw new Error("No Vertex Shader Source 'vsSource'");
 		}
-		if(!parameters.fsSource) {
+		if (!parameters.fsSource) {
 			throw new Error("No Fragment Shader Source 'fsSource'");
 		}
 
 		shader.vs = r.createShader("vertex", parameters.vsSource);
 		shader.fs = r.createShader("fragment", parameters.fsSource);
 		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
-		if(parameters.attributeNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.attributeNames.length; i < l; i++) {
+		if (parameters.attributeNames) {	// Could parse these from the shader
+			for (let i = 0, l = parameters.attributeNames.length; i < l; i++) {
 				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
 			}
 		}
-		if(parameters.uniformNames) {	// Could parse these from the shader
-			for(i = 0, l = parameters.uniformNames.length; i < l; i++) {
+		if (parameters.uniformNames) {	// Could parse these from the shader
+			for (let i = 0, l = parameters.uniformNames.length; i < l; i++) {
 				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
 			}
 		}
-		if(parameters.textureUniformNames) {
-			if(parameters.textureUniformNames.length > r.TextureLocations.length) {
+		if (parameters.textureUniformNames) {
+			if (parameters.textureUniformNames.length > r.TextureLocations.length) {
 				throw new Error("Shader can not use more texture than total texture locations (" + r.TextureLocations.length + ")");
 			}
 			shader.textureUniformNames = parameters.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
@@ -42,12 +40,12 @@ var Shader = module.exports = function() {
 			shader.textureUniformNames = [];
 		}
 
-		if(!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
+		if (!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
 			throw new Error("You must provide a material binding function 'bindMaterial'");
 		}
 		shader.bindMaterial = parameters.bindMaterial;
 
-		if(!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
+		if (!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
 			throw new Error("You must provide a mesh binding function 'bindBuffers'");
 		}
 		shader.bindBuffers = parameters.bindBuffers;
@@ -67,4 +65,4 @@ var Shader = module.exports = function() {
 	};
 
 	return exports;
-}();
+})();

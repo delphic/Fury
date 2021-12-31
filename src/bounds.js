@@ -1,4 +1,4 @@
-var vec3 = require('./maths').vec3;
+const vec3 = require('./maths').vec3;
 
 module.exports = (function() {
 	let exports = {};
@@ -17,7 +17,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.contains = function(point, box) {
+	exports.contains = (point, box) => {
 		return point[0] >= box.min[0] && point[0] <= box.max[0]
 			&& point[1] >= box.min[1] && point[1] <= box.max[1]
 			&& point[2] >= box.min[2] && point[2] <= box.max[2];
@@ -26,37 +26,37 @@ module.exports = (function() {
 	// TODO: Adds Touches methods which use <= and >=
 	// Note - ray casts should probably return true for touches
 
-	exports.intersect = function(a, b) {
+	exports.intersect = (a, b) => {
 		return (a.min[0] < b.max[0] && a.max[0] > b.min[0])
 			&& (a.min[1] < b.max[1] && a.max[1] > b.min[1])
 			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
 	};
 
 	// Return true if box b and box a overlap on provided axis 
-	exports.intersectsAxis = function(a, b, axis) {
+	exports.intersectsAxis = (a, b, axis) => {
 		return a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis];
 	};
 
 	// Returns true if box b offset by provided displacement would intersect box a on provided axis 
-	exports.intersectsAxisOffset = function(a, b, axis, displacement) {
+	exports.intersectsAxisOffset = (a, b, axis, displacement) => {
 		return a.min[axis] < b.max[axis] + displacement && a.max[axis] > b.min[axis] + displacement;
 	};
 
 	// Enters functions return true if box b did not intersect box a on specified axis
 	// before displacement but would afterwards. Calculating the point of entry could be useful.
 	// If it's always needed we could return the distance and use > 0 check for does enter
-	exports.entersAxis = function(a, b, axis, displacement) {
+	exports.entersAxis = (a, b, axis, displacement) => {
 		return !(a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis])
 			&& (a.min[axis] < b.max[axis] + displacement && a.max[axis] > b.min[axis] + displacement);
 	};
 
 	// Entered is the same as enters but it assumes you've already moved the box
-	exports.enteredAxis = function(a, b, axis, displacement) {
+	exports.enteredAxis = (a, b, axis, displacement) => {
 		return !(a.min[axis] < b.max[axis] - displacement && a.max[axis] > b.min[axis] - displacement)
 			&& (a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis]);
 	};
 
-	exports.rayCast = function(out, origin, direction, box) {
+	exports.rayCast = (out, origin, direction, box) => {
 		// Using 0 to imply no intersection so we can return distance (if normalized)
 		// Wouldn't work if we included origin touching as impact
 
@@ -93,7 +93,7 @@ module.exports = (function() {
 		return 0;
 	}
 
-	exports.intersectSphere = function(sphere, box) {
+	exports.intersectSphere = (sphere, box) => {
 		// closest point on box to sphere center
 		let x = Math.max(box.min[0], Math.min(sphere.center[0], box.max[0]));
 		let y = Math.max(box.min[1], Math.min(sphere.center[1], box.max[1]));
@@ -106,7 +106,7 @@ module.exports = (function() {
 		return sqrDistance < sphere.radius * sphere.radius;
 	};
 
-	exports.create = function(parameters) {
+	exports.create = (parameters) => {
 			// Note - you are expected to recalculate min/max when position or extents change
 			// or alternatively if you change min/max you can recalculate extents/size/center
 			let aabb = Object.create(prototype);

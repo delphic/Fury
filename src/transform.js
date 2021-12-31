@@ -1,22 +1,21 @@
-var Maths = require('./maths');
-var quat = Maths.quat, vec3 = Maths.vec3;
+const Maths = require('./maths');
+const quat = Maths.quat, vec3 = Maths.vec3;
 
-var Transform = module.exports = function() {
-	var exports = {};
-	var prototype = {};
+module.exports = (function() {
+	let exports = {};
 	exports.create = function(parameters) {
-		var transform = Object.create(prototype);
-		if(!parameters.position) {
+		let transform = {};
+		if (!parameters.position) {
 			transform.position = vec3.create();
-		}  else {
+		} else {
 			transform.position = parameters.position;
 		}
-		if(!parameters.rotation) {
+		if (!parameters.rotation) {
 			transform.rotation = quat.create();
 		} else {
 			transform.rotation = parameters.rotation;
 		}
-		if(!parameters.scale) {
+		if (!parameters.scale) {
 			transform.scale = vec3.fromValues(1.0, 1.0, 1.0);
 		} else {
 			transform.scale = parameters.scale;
@@ -24,4 +23,4 @@ var Transform = module.exports = function() {
 		return transform;
 	};
 	return exports;
-}();
+})();

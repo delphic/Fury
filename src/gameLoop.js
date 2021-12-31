@@ -1,6 +1,6 @@
-let Input = require('./input');
+const Input = require('./input');
 
-let GameLoop = module.exports = (function() {
+module.exports = (function() {
 	let exports = {};
 
 	let State = {
@@ -62,10 +62,10 @@ let GameLoop = module.exports = (function() {
 		return state === State.Running;
 	};
 	
-	let onWindowBlur = (event) => {
+	let onWindowBlur = () => {
 		exports.stop();
 	}; 
-	let onWindowFocus = (event) => {
+	let onWindowFocus = () => {
 		exports.start();
 	};
 

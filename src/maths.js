@@ -2,8 +2,6 @@
 // Also provides a helper for globalizing for ease of use
 let glMatrix = require('../libs/gl-matrix-min');
 
-// Created here so that any local variables in the Maths Module
-// does not stop the globalising of the variable.
 let globalize = () => {
 	// Lets create some globals!
 	if (window) {
@@ -16,8 +14,6 @@ let globalize = () => {
 		window.vec3 = glMatrix.vec3;
 		window.vec4 = glMatrix.vec4;
 	}
-	// Would be nice if there was a way to add to the context a function
-	// was called in but don't think that's possible?
 };
 
 // Use of object freeze has funnily enough frozen these objects
@@ -45,9 +41,9 @@ module.exports = (function() {
 	// TODO: Add plane 'class' - it's a vec4 with 0-2 being the normal vector and 3 being the distance to the origin from the plane along the normal vector
 	// I.e. the dot product of the offset point?
 
-	var vec3X = exports.vec3X = glMatrix.vec3.fromValues(1,0,0);
-	var vec3Y = exports.vec3Y = glMatrix.vec3.fromValues(0,1,0);
-	var vec3Z = exports.vec3Z = glMatrix.vec3.fromValues(0,0,1);
+	let vec3X = exports.vec3X = glMatrix.vec3.fromValues(1,0,0);
+	let vec3Y = exports.vec3Y = glMatrix.vec3.fromValues(0,1,0);
+	let vec3Z = exports.vec3Z = glMatrix.vec3.fromValues(0,0,1);
 	exports.vec3Zero = glMatrix.vec3.fromValues(0,0,0);
 	exports.vec3One = glMatrix.vec3.fromValues(1,1,1);
 
@@ -182,8 +178,8 @@ module.exports = (function() {
 	})();
 
 	exports.vec3RotateTowards = (() => {
-		//let an = glMatrix.vec3.create();
-		//let bn = glMatrix.vec3.create();
+		let an = glMatrix.vec3.create();
+		let bn = glMatrix.vec3.create();
 		let cross = glMatrix.vec3.create();
 		let q = glMatrix.quat.create();
 		return (out, a, b, maxRadiansDelta, maxMagnitudeDelta) => {
@@ -192,8 +188,8 @@ module.exports = (function() {
 
 			let aLen = vec3.length(a);
 			let bLen = vec3.length(b);
-			let an = vec3.normlize(a);
-			let bn = vec3.normlize(b);
+			vec3.normlize(an, a);
+			vec3.normlize(bn, b);
 
 			// check for magnitude overshoot via move towards
 			let targetLen = moveTowards(aLen, bLen, maxMagnitudeDelta);
@@ -269,26 +265,26 @@ module.exports = (function() {
 
 	exports.vec3ToString = (v) => { return "(" + v[0] + ", " + v[1] + ", " + v[2] + ")"; };
 
-	exports.quatEuler = function(x, y, z) {
+	exports.quatEuler = (x, y, z) => {
 		let q = glMatrix.quat.create();
 		glMatrix.quat.fromEuler(q, x, y, z);
 		return q;
 	};
 
-	exports.quatIsIdentity = function(q) {
+	exports.quatIsIdentity = (q) => {
 		// Is the provided quaterion identity
 		return (equals(q[0], 0) && equals(q[1], 0) && equals(q[2], 0) && equals(q[3], 1));
 	};
 
 	exports.quatRotate = (function() {
-		var i = glMatrix.quat.create();
-		return function(out, q, rad, axis) {
+		let i = glMatrix.quat.create();
+		return (out, q, rad, axis) => {
 			glMatrix.quat.setAxisAngle(i, axis, rad);
 			return glMatrix.quat.multiply(out, i, q);
 		};
 	})();
 
-	exports.quatLocalAxes = function(q, localX, localY, localZ) {
+	exports.quatLocalAxes = (q, localX, localY, localZ) => {
 		glMatrix.vec3.transformQuat(localX, vec3X, q);
 		glMatrix.vec3.transformQuat(localY, vec3Y, q);
 		glMatrix.vec3.transformQuat(localZ, vec3Z, q);
@@ -302,13 +298,13 @@ module.exports = (function() {
 	// I attempted to swap and rearrange some of the formula so pitch could be -pi/2 to pi/2 range
 	// and yaw would be -pi to pi but naively swapping the formula according to the apparent pattern did not work
 	// c.f. 7dfps player class for hacky work around - TODO: Fix these
-	exports.calculatePitch = function(q) {
+	exports.calculatePitch = (q) => {
 		// x-axis rotation
 		let w = q[3], x = q[0], y = q[1], z = q[2];
 		return Math.atan2(2 * (w*x + y*z), 1 - 2 * (x*x + y*y)); // use atan and probably would get -90:90?
 	};
 
-	exports.calculateYaw = function(q) {
+	exports.calculateYaw = (q) => {
 		// y-axis rotation
 		let w = q[3], x = q[0], y = q[1], z = q[2];
 		let sinp = 2 * (w*y - z*x);
@@ -316,7 +312,7 @@ module.exports = (function() {
 		return Math.asin(sinp) // returns pi/2 -> - pi/2 range
 	};
 
-	exports.calculateRoll = function(q) {
+	exports.calculateRoll = (q) => {
 		// z-axis rotation
 		let w = q[3], x = q[0], y = q[1], z = q[2];
 		return Math.atan2(2 * (w*z + x*y), 1 - 2 * (y*y + z*z));

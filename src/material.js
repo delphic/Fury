@@ -1,6 +1,7 @@
-var Material = module.exports = function(){
-	var exports = {};
-	var prototype = {
+module.exports = (function(){
+	let exports = {};
+	
+	let prototype = {
 		blendSeparate: false, // Toggles use of blendFunc vs. blendFuncSeparate
 		blendEquation: "FUNC_ADD",
 		// blendFunc Parameters
@@ -40,8 +41,8 @@ var Material = module.exports = function(){
 		}
 	};
 
-	var create = exports.create = function(parameters) {
-		var material = Object.create(prototype);
+	exports.create = function(parameters) {
+		let material = Object.create(prototype);
 
 		if(!parameters.shader) {
 			throw new Error("Shader must be provided");
@@ -67,4 +68,4 @@ var Material = module.exports = function(){
 	};
 	
 	return exports;
-}();
+})();

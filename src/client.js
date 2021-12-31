@@ -2,4 +2,4 @@
 // global which you can use. 
 
 // Create Fury Global
-Fury = require('./fury.js');
+window.Fury = require('./fury.js');

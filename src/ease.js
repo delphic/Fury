@@ -1,4 +1,4 @@
-let Ease = module.exports = (function() {
+module.exports = (function() {
     // Reference:
     // https://gist.github.com/gre/1650294
     // http://haiyang.me/easing/Easings.html

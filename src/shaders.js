@@ -1,6 +1,6 @@
-let Shader = require('./shader');
+const Shader = require('./shader');
 
-let Shaders = module.exports = (function() {
+module.exports = (function() {
 	let exports = {};
 
 	let unlitColor = {

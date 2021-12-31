@@ -1,19 +1,24 @@
-var Maths = require('./maths');
-let vec3 = Maths.vec3, vec4 = Maths.vec4, mat4 = Maths.mat4, quat = Maths.quat;
+const Maths = require('./maths');
+const vec3 = Maths.vec3, vec4 = Maths.vec4, mat4 = Maths.mat4, quat = Maths.quat;
 
-var Camera = module.exports = function() {
+module.exports = (function() {
 	// NOTE: Camera points in -z direction
-	var exports = {};
+	let exports = {};
+
+	let Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
 
 	// vec3 cache for calculations
-	var localX = vec3.create();
-	var localY = vec3.create();
-	var localZ = vec3.create();
-	var vec3Cache = vec3.create();
-	var vec4Cache = vec4.create();
-	var q = quat.create();
+	let localX = vec3.create();
+	let localY = vec3.create();
+	let localZ = vec3.create();
+	let vec3Cache = vec3.create();
+	let vec4Cache = vec4.create();
+	let q = quat.create();
 
-	var prototype = {
+	let prototype = {
 		// Set Rotation from Euler
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
@@ -105,7 +110,7 @@ var Camera = module.exports = function() {
 			return true;
 		},
 		getDepth: function(position) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
+			let p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
 				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3],
 				l0 = position[0], l1 = position[1], l2 = position[2];
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
@@ -115,19 +120,19 @@ var Camera = module.exports = function() {
 			vec3.negate(out, out); // Camera faces in -z
 		},
 		getProjectionMatrix: function(out) {
-			if(this.type == Camera.Type.Perspective) {
+			if(this.type == Type.Perspective) {
 				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
 			} else {
-				var left = - (this.height * this.ratio) / 2.0;
-				var right = - left;
-				var top = this.height / 2.0;
-				var bottom = -top;
+				let left = - (this.height * this.ratio) / 2.0;
+				let right = - left;
+				let top = this.height / 2.0;
+				let bottom = -top;
 				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
 			}
 			return out;
 		},
 		viewportToWorld: function(out, viewPort, z) {
-			if(this.type == Camera.Type.Orthonormal) {
+			if(this.type == Type.Orthonormal) {
 				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5);
 				out[1] = this.height * (0.5 - viewPort[1]);	// measuring viewport from top-left this seems correct!
 				out[2] = (z || 0);
@@ -139,13 +144,8 @@ var Camera = module.exports = function() {
 		}
 	};
 
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
-	};
-
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
+	exports.create = (parameters) => {
+		let camera = Object.create(prototype);
 		// TODO: Arguement Checking
 		camera.type = parameters.type ? parameters.type : Type.Perspective;
 		camera.near = parameters.near;
@@ -158,7 +158,7 @@ var Camera = module.exports = function() {
 		} else if (camera.type == Type.Orthonormal) {
 			camera.height = parameters.height;
 		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+			throw new Error("Unrecognised Camera Type '" + camera.type + "'");
 		}
 		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
 		camera.position = parameters.position ? parameters.position : vec3.create();
@@ -180,5 +180,6 @@ var Camera = module.exports = function() {
 
 		return camera;
 	};
+	
 	return exports;
-}();
+})();
