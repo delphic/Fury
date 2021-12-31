@@ -6,16 +6,12 @@ var Prefab = require('./prefab');
 var Transform = require('./transform');
 var Maths = require('./maths');
 var Bounds = require('./bounds');
-var mat2 = Maths.mat2,
-	mat3 = Maths.mat3,
+var mat3 = Maths.mat3,
 	mat4 = Maths.mat4,
 	quat = Maths.quat,
-	quat2 = Maths.quat2,
-	vec2 = Maths.vec2,
-	vec3 = Maths.vec3,
-	vec4 = Maths.vec4;
+	vec3 = Maths.vec3;
 
-var Scene = module.exports = function() {
+module.exports = function() {
 	var nextSceneId = 0;
 	var exports = {};
 	var prototype = {};
@@ -42,8 +38,7 @@ var Scene = module.exports = function() {
 	var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 	var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
-	var create = exports.create = function(parameters) {
-		var sceneId = (nextSceneId++).toString();
+	exports.create = function(parameters) {
 		var cameras = {};
 		var cameraNames = [];
 		var mainCameraName = "main";
@@ -52,7 +47,7 @@ var Scene = module.exports = function() {
 		
 
 		var scene = Object.create(prototype);
-
+		scene.id = (nextSceneId++).toString();
 		scene.enableFrustumCulling = !!parameters.enableFrustumCulling;
 		var forceSphereCulling = !!parameters.forceSphereCulling;
 
@@ -125,17 +120,6 @@ var Scene = module.exports = function() {
 				vec3.add(center, center, object.transform.position);
 				let size = vec3.clone(mesh.bounds.size);
 				object.bounds = Bounds.create({ center: center, size: size });
-			}
-		};
-
-		var recalculateObjectBounds = function(object) {
-			if (object.bounds) {
-				// This method recalculates AABB for a translated static objects
-				// NOTE: Does not account for rotation of object :scream:
-				// Need to recalculate extents as well as center if rotation is not identity
-				// => need to transform all mesh vertices in order to recalculate accurate AABB
-				vec3.add(object.bounds.center, object.mesh.bounds.center, object.transform.position);
-				object.bounds.recalculateMinMax();
 			}
 		};
 
@@ -259,7 +243,7 @@ var Scene = module.exports = function() {
 			if(cameraNames.length === 0) {
 				mainCameraName = key;
 			}
-			if(!cameras.hasOwnProperty(key)) {
+			if(!cameras[key]) {
 				cameraNames.push(key);
 			}
 			cameras[key] = camera;
@@ -296,10 +280,10 @@ var Scene = module.exports = function() {
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
-			var culled = false;
+			var culled = false, renderObject = null;
 			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
 				// TODO: Detect if resorting is necessary (check +1 and -1 in array against sort function)
-				var renderObject = renderObjects[renderObjects.keys[i]];
+				renderObject = renderObjects[renderObjects.keys[i]];
 				if (scene.enableFrustumCulling) {
 					culled = isCulledByFrustrum(camera, renderObject);
 				}
@@ -336,7 +320,7 @@ var Scene = module.exports = function() {
 				}
 			}
 			for(i = 0, l = alphaRenderObjects.length; i < l; i++) {
-				var renderObject = alphaRenderObjects[i];
+				renderObject = alphaRenderObjects[i];
 				let m = renderObject.material; 
 				// Could probably do this in bind and draw method
 				if (!m.blendSeparate) {
@@ -403,11 +387,11 @@ var Scene = module.exports = function() {
 				// If the material has changed textures may need rebinding
 
 				// Check for gl location rebinds needed, if any needed and rebind all to make sure we don't replace a texture we're using
-				var locationRebindsNeeded = false;
+				var locationRebindsNeeded = false, uniformName = null, texture = null;
 				for(var i = 0, l = shader.textureUniformNames.length; i < l; i++) {
-					var uniformName = shader.textureUniformNames[i];
+					uniformName = shader.textureUniformNames[i];
 					if(material.textures[uniformName]) {
-						var texture = material.textures[uniformName];
+						texture = material.textures[uniformName];
 						if(!texture.id) {
 							textures.add(texture);
 							locationRebindsNeeded = true;
@@ -421,9 +405,9 @@ var Scene = module.exports = function() {
 				}
 				// Rebind if necessary and set uniforms
 				for(i = 0, l = shader.textureUniformNames.length; i < l; i++) {
-					var uniformName = shader.textureUniformNames[i];
+					uniformName = shader.textureUniformNames[i];
 					if(material.textures[uniformName]) {
-						var texture = material.textures[uniformName];
+						texture = material.textures[uniformName];
 						if(locationRebindsNeeded) {
 							bindTextureToLocation(texture);
 						}
