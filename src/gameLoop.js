@@ -17,7 +17,7 @@ module.exports = (function() {
 
 	let lastTime = 0;
 
-	exports.init = (parameters) => {
+	exports.init = function(parameters) {
 		if (parameters.maxFrameTimeMs && typeof(parameters.maxFrameTimeMs) === 'number') {
 			// Optional max frame time to keep physics calculations sane
 			maxFrameTimeMs = parameters.maxFrameTimeMs;
@@ -35,7 +35,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.start = () => {
+	exports.start = function() {
 		stopCount = Math.max(0, stopCount - 1);
 		if (stopCount == 0) {
 			switch (state) {
@@ -51,25 +51,25 @@ module.exports = (function() {
 		}
 	};
 
-	exports.stop = () => {
+	exports.stop = function() {
 		stopCount += 1;
 		if (state != State.Paused) {
 			state = State.RequestPause;
 		}
 	};
 
-	exports.isRunning = () => {
+	exports.isRunning = function() {
 		return state === State.Running;
 	};
 	
-	let onWindowBlur = () => {
+	let onWindowBlur = function() {
 		exports.stop();
 	}; 
-	let onWindowFocus = () => {
+	let onWindowFocus = function() {
 		exports.start();
 	};
 
-	let loop = () => {
+	let loop = function() {
 		if (state == State.RequestPause) {
 			state = State.Paused;
 			return;

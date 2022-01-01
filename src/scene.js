@@ -1,27 +1,26 @@
-var r = require('./renderer');
-var indexedMap = require('./indexedMap');
-var Material = require('./material');
-var Mesh = require('./mesh');
-var Prefab = require('./prefab');
-var Transform = require('./transform');
-var Maths = require('./maths');
-var Bounds = require('./bounds');
-var mat3 = Maths.mat3,
+const r = require('./renderer');
+const IndexedMap = require('./indexedMap');
+const Material = require('./material');
+const Mesh = require('./mesh');
+const Prefab = require('./prefab');
+const Transform = require('./transform');
+const Maths = require('./maths');
+const Bounds = require('./bounds');
+const mat3 = Maths.mat3,
 	mat4 = Maths.mat4,
 	quat = Maths.quat,
 	vec3 = Maths.vec3;
 
-module.exports = function() {
-	var nextSceneId = 0;
-	var exports = {};
-	var prototype = {};
+module.exports = (function() {
+	let nextSceneId = 0;
+	let exports = {};
 
 	// Note Meshes and Materials shared across scenes
 	// Going to use dictionaries but with an array of keys for enumeration (hence private with accessor methods)
-	var meshes = indexedMap.create();
-	var materials = indexedMap.create();
-	var shaders = indexedMap.create();
-	var textures = indexedMap.create();
+	let meshes = IndexedMap.create();
+	let materials = IndexedMap.create();
+	let shaders = IndexedMap.create();
+	let textures = IndexedMap.create();
 
 	// Note: clears all resources - any uncleared existing scenes will break
 	exports.clearResources = function() {
@@ -35,33 +34,33 @@ module.exports = function() {
 	// to check objects are used or reference count them - will need to track created scenes
 
 	// glState Tracking - shared across scenes
-	var currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
-	var nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
+	let currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
+	let nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
 	exports.create = function(parameters) {
-		var cameras = {};
-		var cameraNames = [];
-		var mainCameraName = "main";
+		let cameras = {};
+		let cameraNames = [];
+		let mainCameraName = "main";
 		// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
-		var pMatrix = mat4.create(), mvMatrix = mat4.create(), nMatrix = mat3.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
+		let pMatrix = mat4.create(), mvMatrix = mat4.create(), nMatrix = mat3.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
 		
 
-		var scene = Object.create(prototype);
+		let scene = {};
 		scene.id = (nextSceneId++).toString();
 		scene.enableFrustumCulling = !!parameters.enableFrustumCulling;
-		var forceSphereCulling = !!parameters.forceSphereCulling;
+		let forceSphereCulling = !!parameters.forceSphereCulling;
 
 		// these renderObjects / instances on prefabs need to contain at minimum materialId, meshId, and transform (currently object just has material and mesh as well as transform)
-		var renderObjects = indexedMap.create(); // TODO: use materialId / meshId to bind
-		var prefabs = { keys: [] };	// Arguably instances could be added to renderer objects and memory would still be saved, however keeping a separate list allows easier batching for now
+		let renderObjects = IndexedMap.create(); // TODO: use materialId / meshId to bind
+		let prefabs = { keys: [] };	// Arguably instances could be added to renderer objects and memory would still be saved, however keeping a separate list allows easier batching for now
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
-		var alphaRenderObjects = [];
-		var depths = {};
+		let alphaRenderObjects = [];
+		let depths = {};
 
-		var addTexturesToScene = function(material) {
-			for(var i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
-				var uniformName = material.shader.textureUniformNames[i];
-				var texture = material.textures[uniformName];
+		let addTexturesToScene = function(material) {
+			for (let i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
+				let uniformName = material.shader.textureUniformNames[i];
+				let texture = material.textures[uniformName];
 				if (texture) {
 					textures.add(texture);
 					bindTextureToLocation(texture);
@@ -70,7 +69,7 @@ module.exports = function() {
 			}
 		};
 
-		var bindTextureToLocation = function(texture) {
+		let bindTextureToLocation = function(texture) {
 			if (currentTextureBindings[texture.id] === undefined) {
 				if (currentTextureLocations.length < r.TextureLocations.length) {
 					r.setTexture(currentTextureLocations.length, texture);
@@ -87,17 +86,17 @@ module.exports = function() {
 			}
 		};
 
-		var addToAlphaList = function(object, depth) {
+		let addToAlphaList = function(object, depth) {
 			// TODO: Profile using Array sort instead of insertion sorting, also test add/remove from list rather than clear
 			depths[object.sceneId] = depth;
 			// Binary search
 			// Could technically do better by batching up items with the same depth according to material / mesh like scene graph
 			// However this is only relevant for 2D games with orthographic projection
-			var less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
-			while(!inserted) {
+			let less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
+			while (!inserted) {
 				less = (index === 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
 				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth);
-				if(less && more) {
+				if (less && more) {
 					alphaRenderObjects.splice(index, 0, object);
 					inserted = true;
 				} else {
@@ -112,7 +111,7 @@ module.exports = function() {
 			}
 		};
 
-		var createObjectBounds = function(object, mesh, rotation) {
+		let createObjectBounds = function(object, mesh, rotation) {
 			// If object is static and not rotated, create object AABB from mesh bounds
 			if (!forceSphereCulling && object.static && (!rotation || Maths.quatIsIdentity(rotation))) {
 				// TODO: Allow for calculation of AABB of rotated meshes
@@ -123,7 +122,7 @@ module.exports = function() {
 			}
 		};
 
-		var isCulledByFrustrum = function(camera, object) {
+		let isCulledByFrustrum = function(camera, object) {
 			if (!object.static || !object.bounds) {
 				return !camera.isSphereInFrustum(object.transform.position, object.mesh.boundingRadius);
 			} else {
@@ -131,7 +130,7 @@ module.exports = function() {
 			}
 		};
 
-		var sortByMaterial = function(a, b) {
+		let sortByMaterial = function(a, b) {
 			if (a.materialId == b.materialId) {
 				return 0;
 			} else if (a.materialId < b.materialId) { // Note: will not order strings by their parsed numberical value, however this is not required.
@@ -143,8 +142,8 @@ module.exports = function() {
 
 		// Add Render Object
 		scene.add = function(parameters) {
-			var object = {};
-			if(!parameters || !parameters.mesh || !parameters.material) {
+			let object = {};
+			if (!parameters || !parameters.mesh || !parameters.material) {
 				throw new Error("Mesh and Material must be present on the object.");
 			}
 
@@ -199,18 +198,18 @@ module.exports = function() {
 
 		// Instantiate prefab instance
 		scene.instantiate = function(parameters) {
-			var prefab;
-			if(!parameters || !parameters.name || !Prefab.prefabs[parameters.name]) {
+			let prefab;
+			if (!parameters || !parameters.name || !Prefab.prefabs[parameters.name]) {
 				throw new Error("You must provide a valid prefab name");
 			}
-			if(!prefabs[parameters.name]) {
-				var defn = Prefab.prefabs[parameters.name];
-				if(!defn.materialConfig || !defn.meshConfig) {
+			if (!prefabs[parameters.name]) {
+				let defn = Prefab.prefabs[parameters.name];
+				if (!defn.materialConfig || !defn.meshConfig) {
 					throw new Error("Requested prefab must have a material and a mesh config present");
 				}
 				prefab = {
 					name: parameters.name,
-					instances: indexedMap.create(),
+					instances: IndexedMap.create(),
 					mesh: Mesh.create(defn.meshConfig),
 					material: Material.create(defn.materialConfig)
 				};
@@ -224,7 +223,7 @@ module.exports = function() {
 			} else {
 				prefab = prefabs[parameters.name];
 			}
-			var instance = Object.create(prefab);
+			let instance = Object.create(prefab);
 			instance.transform = Transform.create(parameters);
 
 			instance.id = prefab.instances.add(instance);
@@ -239,11 +238,11 @@ module.exports = function() {
 		// Add Camera
 		// Arguably camera.render(scene) would be a preferable pattern
 		scene.addCamera = function(camera, name) {
-			var key = name ? name : "main";
-			if(cameraNames.length === 0) {
+			let key = name ? name : "main";
+			if (cameraNames.length === 0) {
 				mainCameraName = key;
 			}
-			if(!cameras[key]) {
+			if (!cameras[key]) {
 				cameraNames.push(key);
 			}
 			cameras[key] = camera;
@@ -251,7 +250,7 @@ module.exports = function() {
 
 		// Render
 		scene.render = function(cameraName) {
-			var camera = cameras[cameraName ? cameraName : mainCameraName];
+			let camera = cameras[cameraName ? cameraName : mainCameraName];
 			if (scene.enableFrustumCulling) {
 				camera.calculateFrustum();
 			}
@@ -280,8 +279,8 @@ module.exports = function() {
 
 			// TODO: Scene graph should provide these as a single thing to loop over, will then only split and loop for instances at mvMatrix binding / drawing
 			// Scene Graph should be class with enumerate() method, that way it can batch as described above and sort watch its batching / visibility whilst providing a way to simple loop over all elements
-			var culled = false, renderObject = null;
-			for(var i = 0, l = renderObjects.keys.length; i < l; i++) {
+			let culled = false, renderObject = null;
+			for (let i = 0, l = renderObjects.keys.length; i < l; i++) {
 				// TODO: Detect if resorting is necessary (check +1 and -1 in array against sort function)
 				renderObject = renderObjects[renderObjects.keys[i]];
 				if (scene.enableFrustumCulling) {
@@ -299,15 +298,15 @@ module.exports = function() {
 					}
 				}
 			}
-			for(i = 0, l = prefabs.keys.length; i < l; i++) {
-				var instances = prefabs[prefabs.keys[i]].instances;
-				for(var j = 0, n = instances.keys.length; j < n; j++) {
-					var instance = instances[instances.keys[j]];
+			for (let i = 0, l = prefabs.keys.length; i < l; i++) {
+				let instances = prefabs[prefabs.keys[i]].instances;
+				for (let j = 0, n = instances.keys.length; j < n; j++) {
+					let instance = instances[instances.keys[j]];
 					if (scene.enableFrustumCulling) {
 						culled = isCulledByFrustrum(camera, instance);
 					}
 					if (!culled && instance.active) {
-						if(instance.material.alpha) {
+						if (instance.material.alpha) {
 							let sortPosition = instance.transform.position;
 							if (instance.bounds) {
 								sortPosition = instance.bounds.center;
@@ -319,7 +318,7 @@ module.exports = function() {
 					}
 				}
 			}
-			for(i = 0, l = alphaRenderObjects.length; i < l; i++) {
+			for (let i = 0, l = alphaRenderObjects.length; i < l; i++) {
 				renderObject = alphaRenderObjects[i];
 				let m = renderObject.material; 
 				// Could probably do this in bind and draw method
@@ -333,10 +332,10 @@ module.exports = function() {
 			r.disableBlending();
 		};
 
-		var bindAndDraw = function(object) {	// TODO: Separate binding and drawing
-			var shader = object.material.shader;
-			var material = object.material;
-			var mesh = object.mesh;
+		let bindAndDraw = function(object) {	// TODO: Separate binding and drawing
+			let shader = object.material.shader;
+			let material = object.material;
+			let mesh = object.mesh;
 			// BUG:
 			// If there's only one material or one mesh in the scene real time changes to the material or mesh will not present themselves as the id will still match the currently bound
 			// mesh / material, seems like we're going need a flag on mesh / material for forceRebind for this case. (should probably be called forceRebind as it 'might' be rebound anyway)
@@ -345,9 +344,9 @@ module.exports = function() {
 			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reordering in the graph (as it's been changed).
 
-			var shaderChanged = false;
-			var materialChanged = false;
-			if(!shader.id || shader.id != currentShaderId) {
+			let shaderChanged = false;
+			let materialChanged = false;
+			if (!shader.id || shader.id != currentShaderId) {
 				shaderChanged = true;
 				if(!shader.id) {	// Shader was changed on the material since originally added to scene
 					material.shaderId = shaders.add(shader);
@@ -358,26 +357,26 @@ module.exports = function() {
 				pMatrixRebound = false;
 			}
 
-			if(!pMatrixRebound) {
+			if (!pMatrixRebound) {
 				// New Shader or New Frame, rebind projection Matrix
 				r.setUniformMatrix4(shader.pMatrixUniformName, pMatrix);
 				pMatrixRebound = true;
 			}
 
-			if(!material.id || material.id != currentMaterialId || material.dirty) {
-				if(!material.dirty) {
+			if (!material.id || material.id != currentMaterialId || material.dirty) {
+				if (!material.dirty) {
 					materialChanged = true;
 				} else {
 					material.dirty = false;
 				}
-				if(!material.id) {	// material was changed on object since originally added to scene
+				if (!material.id) {	// material was changed on object since originally added to scene
 					object.materialId = materials.add(material);
 				}
 				currentMaterialId = material.id;
 				shader.bindMaterial.call(r, material);
 			}
 
-			if(shaderChanged || materialChanged) {
+			if (shaderChanged || materialChanged) {
 				// Texture Rebinding dependencies
 				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniforms have changed since the shaderProgram was last used...
 					// NOTE Large Changes needed because of this
@@ -387,28 +386,28 @@ module.exports = function() {
 				// If the material has changed textures may need rebinding
 
 				// Check for gl location rebinds needed, if any needed and rebind all to make sure we don't replace a texture we're using
-				var locationRebindsNeeded = false, uniformName = null, texture = null;
-				for(var i = 0, l = shader.textureUniformNames.length; i < l; i++) {
+				let locationRebindsNeeded = false, uniformName = null, texture = null;
+				for (let i = 0, l = shader.textureUniformNames.length; i < l; i++) {
 					uniformName = shader.textureUniformNames[i];
-					if(material.textures[uniformName]) {
+					if (material.textures[uniformName]) {
 						texture = material.textures[uniformName];
-						if(!texture.id) {
+						if (!texture.id) {
 							textures.add(texture);
 							locationRebindsNeeded = true;
 							break;
 						}
-						if(isNaN(currentTextureBindings[texture.id])) {
+						if (isNaN(currentTextureBindings[texture.id])) {
 							locationRebindsNeeded = true;
 							break;
 						}
 					}
 				}
 				// Rebind if necessary and set uniforms
-				for(i = 0, l = shader.textureUniformNames.length; i < l; i++) {
+				for (let i = 0, l = shader.textureUniformNames.length; i < l; i++) {
 					uniformName = shader.textureUniformNames[i];
-					if(material.textures[uniformName]) {
+					if (material.textures[uniformName]) {
 						texture = material.textures[uniformName];
-						if(locationRebindsNeeded) {
+						if (locationRebindsNeeded) {
 							bindTextureToLocation(texture);
 						}
 						r.setUniformInteger(uniformName, currentTextureBindings[texture.id]);
@@ -416,8 +415,8 @@ module.exports = function() {
 				}
 			}
 
-			if(!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
-				if(!mesh.id) {	// mesh was changed on object since originally added to scene
+			if (!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
+				if (!mesh.id) {	// mesh was changed on object since originally added to scene
 					object.meshId = mesh.add(mesh);
 				}
 				currentMeshId = mesh.id;
@@ -443,7 +442,7 @@ module.exports = function() {
 			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
 
-		if(parameters && parameters.camera) {
+		if (parameters && parameters.camera) {
 			scene.addCamera(parameters.camera);
 		}
 
@@ -451,4 +450,4 @@ module.exports = function() {
 	};
 
 	return exports;
-}();
+})();

@@ -144,7 +144,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.create = (parameters) => {
+	exports.create = function(parameters) {
 		let camera = Object.create(prototype);
 		// TODO: Arguement Checking
 		camera.type = parameters.type ? parameters.type : Type.Perspective;

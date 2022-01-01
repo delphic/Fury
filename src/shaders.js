@@ -95,7 +95,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.createShaders = () => {
+	exports.createShaders = function() {
 		exports.UnlitColor = Shader.create(unlitColor);
 		exports.Sprite = Shader.create(sprite);
 	};

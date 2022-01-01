@@ -57,7 +57,7 @@ module.exports = (function(){
 		}
 	};
 
-	exports.create = () => {
+	exports.create = function() {
 		// TODO: Option to specify property name to use for id, defaulting to "id"
 		let map = Object.create(prototype);
 		map.keys = [];

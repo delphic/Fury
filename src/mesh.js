@@ -5,7 +5,7 @@ const vec3 = require('./maths').vec3;
 module.exports = (function(){
 	let exports = {};
 
-	let calculateMinPoint = exports.calculateMinPoint = (out, vertices) => {
+	let calculateMinPoint = exports.calculateMinPoint = function(out, vertices) {
 		let i, l, v1 = Number.MAX_VALUE, v2 = Number.MAX_VALUE, v3 = Number.MAX_VALUE;
 		for (i = 0, l = vertices.length; i < l; i += 3) {
 			v1 = Math.min(v1, vertices[i]);
@@ -15,7 +15,7 @@ module.exports = (function(){
 		out[0] = v1, out[1] = v2, out[2] = v3;
 	};
 
-	let calculateMaxPoint = exports.calculateMaxPoint = (out, vertices) => {
+	let calculateMaxPoint = exports.calculateMaxPoint = function(out, vertices) {
 		let i, l, v1 = Number.MIN_VALUE, v2 = Number.MIN_VALUE, v3 = Number.MIN_VALUE;
 		for (i = 0, l = vertices.length; i < l; i += 3) {
 			v1 = Math.max(v1, vertices[i]);
@@ -28,7 +28,7 @@ module.exports = (function(){
 	// Returns the furthest vertex from the local origin
 	// Note this is not the same as the furthest from the mid-point of the vertices
 	// This is necessray for the boundingRadius to remain accurate under rotation
-	let calculateBoundingRadius = (vertices) => {
+	let calculateBoundingRadius = function(vertices) {
 		var sqrResult = 0;
 		for (let i = 0, l = vertices.length; i< l; i += 3) {
 			let sqrDistance = vertices[i] * vertices[i]
@@ -89,7 +89,7 @@ module.exports = (function(){
 		}
 	};
 
-	exports.create = (parameters) => {
+	exports.create = function(parameters) {
 		let mesh = Object.create(prototype);
 
 		mesh.bounds = Bounds.create({ min: vec3.create(), max: vec3.create() });

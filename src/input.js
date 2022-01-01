@@ -13,7 +13,7 @@ module.exports = (function() {
 
 	let defaultTime = Date.now(); // Just return start of program rather than start of epoch if keys never pressed
 
-	exports.init = (targetCanvas) => {
+	exports.init = function(targetCanvas) {
 			canvas = targetCanvas;
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
@@ -30,15 +30,15 @@ module.exports = (function() {
 			window.addEventListener("blur", handleBlur);
 	};
 
-	exports.isPointerLocked = () => {
+	exports.isPointerLocked = function() {
 		return pointerLocked;
 	};
 
-	exports.requestPointerLock = () => {
+	exports.requestPointerLock = function() {
 		return canvas.requestPointerLock();
 	};
 
-	exports.releasePointerLock = () => {
+	exports.releasePointerLock = function() {
 		document.exitPointerLock();
 	};
 
@@ -46,7 +46,7 @@ module.exports = (function() {
 	let MousePosition = exports.MousePosition = [0, 0];
 	let MouseWheel = exports.MouseWheel = [0, 0, 0];
 
-	let keyPressed = (key) => {
+	let keyPressed = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return currentlyPressedKeys[key];
 		}
@@ -59,7 +59,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.keyUp = (key) => {
+	exports.keyUp = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return upKeys[key];
 		}
@@ -72,7 +72,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.keyDown = (key, thisFrame) => {
+	exports.keyDown = function(key, thisFrame) {
 		if (!thisFrame) {
 			return keyPressed(key);
 		} else {
@@ -89,7 +89,7 @@ module.exports = (function() {
 		}
 	};
 
-	let keyDownTime = exports.keyDownTime = (key) => {
+	let keyDownTime = exports.keyDownTime = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return downKeyTimes[key];
 		} else if (key) {
@@ -100,7 +100,7 @@ module.exports = (function() {
 		}
 	}
 
-	exports.keyUpTime = (key) => {
+	exports.keyUpTime = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return upKeyTimes[key];
 		} else if (key) {
@@ -111,7 +111,7 @@ module.exports = (function() {
 		}
 	}
 
-	exports.getAxis = (plusKey, minusKey, smoothTime, ease) => {
+	exports.getAxis = function(plusKey, minusKey, smoothTime, ease) {
 		let result = 0;
 		let now = Date.now();
 		if (keyPressed(plusKey)) {
@@ -135,7 +135,7 @@ module.exports = (function() {
 		return result;
 	};
 
-	let mousePressed = (button) => {
+	let mousePressed = function(button) {
 		if (!isNaN(button) && !button.length) {
 			return mouseState[button];
 		} else if (button) {
@@ -146,7 +146,7 @@ module.exports = (function() {
 		}
 	}
 
-	exports.mouseUp = (button) => {
+	exports.mouseUp = function(button) {
 		if (!isNaN(button) && !button.length) {
 			return upMouse[button];
 		} else if (button) {
@@ -157,7 +157,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.mouseDown = (button, thisFrame) => {
+	exports.mouseDown = function(button, thisFrame) {
 		if (!thisFrame) {
 			return mousePressed(button);
 		} else {
@@ -172,7 +172,7 @@ module.exports = (function() {
 		}
 	};
 
-	exports.handleFrameFinished = () => {
+	exports.handleFrameFinished = function() {
 		MouseDelta[0] = MouseDelta[1] = 0;
 		MouseWheel[0] = MouseWheel[1] = MouseWheel[2] = 0;
 		downKeys.length = 0;
@@ -181,7 +181,7 @@ module.exports = (function() {
 		upMouse.length = 0;
 	};
 
-	let handleKeyDown = (event) => {
+	let handleKeyDown = function(event) {
 		// keyDown event can get called multiple times after a short delay
 		if (!currentlyPressedKeys[event.keyCode]) {
 			downKeys[event.keyCode] = true;
@@ -190,13 +190,13 @@ module.exports = (function() {
 		currentlyPressedKeys[event.keyCode] = true;
 	};
 
-	let handleKeyUp = (event) => {
+	let handleKeyUp = function(event) {
 		currentlyPressedKeys[event.keyCode] = false;
 		upKeyTimes[event.keyCode] = Date.now();
 		upKeys[event.keyCode] = true;
 	};
 
-	let handleBlur = () => {
+	let handleBlur = function() {
 		downMouse.length = 0;
 		mouseState.length = 0;
 		upMouse.length = 0;
@@ -206,14 +206,14 @@ module.exports = (function() {
 		upKeys.length = 0;	// Q: Should we be copying currently pressed Keys as they've kinda been released?
 	};
 
-	let handleMouseMove = (event) => {
+	let handleMouseMove = function(event) {
 		MousePosition[0] = event.pageX;
 		MousePosition[1] = event.pageY;
 		MouseDelta[0] += event.movementX;
 		MouseDelta[1] += event.movementY;
 	};
 
-	let handleMouseDown = (event) => {
+	let handleMouseDown = function(event) {
 		if (!mouseState[event.button]) {
 			downMouse[event.button] = true;
 			downMouseTimes[event.button] = Date.now();
@@ -222,24 +222,24 @@ module.exports = (function() {
 		return false;
 	};
 
-	let handleMouseUp = (event) => {
+	let handleMouseUp = function(event) {
 		mouseState[event.button] = false;
 		upMouseTimes[event.button] = Date.now();
 		upMouse[event.button] = true;
 	};
 
-	let handleMouseWheel = (event) => {
+	let handleMouseWheel = function(event) {
 		MouseWheel[0] += event.deltaX;
 		MouseWheel[1] += event.deltaY;
 		MouseWheel[2] += event.deltaZ;
 		// Note event.deltaMode determines if values are pixels, lines or pages, assumed pixels here
 	};
 
-	exports.getMouseViewportX = () => {
+	exports.getMouseViewportX = function() {
 		return MousePosition[0] / canvas.clientWidth;
 	};
 
-	exports.getMouseViewportY = () => {
+	exports.getMouseViewportY = function() {
 		return MousePosition[1] / canvas.clientHeight;
 	};
 

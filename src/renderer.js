@@ -1,7 +1,7 @@
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
-var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
+let gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas, contextAttributes) {
 	gl = canvas.getContext('webgl2', contextAttributes);
@@ -18,9 +18,9 @@ exports.init = function(canvas, contextAttributes) {
 	// Now TextureLocations.length will tell you how many there are and provide
 	// a link from the integer to the actual value
 	TextureLocations.length = 0;
-	var i = 0;
-	while(gl["TEXTURE"+i.toString()]) {
-		TextureLocations.push(gl["TEXTURE"+i.toString()]);
+	let i = 0;
+	while(gl["TEXTURE" + i.toString()]) {
+		TextureLocations.push(gl["TEXTURE" + i.toString()]);
 		i++;
 	}
 };
@@ -41,19 +41,19 @@ exports.clearDepth = function() {
 
 // Shader / Shader Programs
 
-var ShaderType = exports.ShaderType = {
+let ShaderType = exports.ShaderType = {
 	Vertex: "vertex",
 	Fragment: "fragment"
 };
 
 exports.createShader = function(type, glsl) {
-	var shader;
+	let shader;
 	if (type == ShaderType.Vertex) {
 		shader = gl.createShader(gl.VERTEX_SHADER);
 	} else if (type == ShaderType.Fragment) {
 		shader = gl.createShader(gl.FRAGMENT_SHADER);
 	} else {
-		throw new Error("Unrecognised shader type '"+type+"'");
+		throw new Error("Unrecognised shader type '" + type + "'");
 	}
 	gl.shaderSource(shader, glsl);
 	gl.compileShader(shader);
@@ -63,13 +63,12 @@ exports.createShader = function(type, glsl) {
 	return shader;
 };
 
-exports.deleteShader = function(shader)
-{
+exports.deleteShader = function(shader) {
 	gl.deleteShader(shader);
 };
 
 exports.createShaderProgram = function(vertexShader, fragmentShader) {
-	var program = gl.createProgram();
+	let program = gl.createProgram();
 	gl.attachShader(program, vertexShader);
 	gl.attachShader(program, fragmentShader);
 	gl.linkProgram(program);
@@ -87,7 +86,7 @@ exports.useShaderProgram = function(shaderProgram) {
 // Buffers
 
 exports.createBuffer = function(data, itemSize, indexed) {
-	var buffer = gl.createBuffer();
+	let buffer = gl.createBuffer();
 	if (!indexed) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
@@ -101,7 +100,7 @@ exports.createBuffer = function(data, itemSize, indexed) {
 };
 
 exports.createArrayBuffer = function(data, itemSize, numItems) {
-    var buffer = gl.createBuffer();
+    let buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
     buffer.itemSize = itemSize;
@@ -110,7 +109,7 @@ exports.createArrayBuffer = function(data, itemSize, numItems) {
 };
 
 exports.createElementArrayBuffer = function(data, itemSize, numItems) {
-    var buffer = gl.createBuffer();
+    let buffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
     buffer.itemSize = itemSize;
@@ -120,9 +119,9 @@ exports.createElementArrayBuffer = function(data, itemSize, numItems) {
 
 // Textures
 
-var TextureLocations = exports.TextureLocations = [];
+let TextureLocations = exports.TextureLocations = [];
 
-var TextureQuality = exports.TextureQuality = {
+let TextureQuality = exports.TextureQuality = {
 	Pixel: "pixel",			// Uses Mips and nearest pixel
 	Highest: "highest",		// Uses Mips & Interp (trilinear)
 	High: "high",			// Uses Mips & Interp (bilinear)
@@ -131,7 +130,7 @@ var TextureQuality = exports.TextureQuality = {
 };
 
 exports.createTexture = function(source, quality, clamp, disableAniso) {
-	var texture = gl.createTexture();
+	let texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
@@ -151,7 +150,7 @@ exports.createTexture = function(source, quality, clamp, disableAniso) {
 
 /// width and height are of an individual texture
 exports.createTextureArray = function(source, width, height, imageCount, quality, clamp) {
-	var texture = gl.createTexture();
+	let texture = gl.createTexture();
 	// gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -169,7 +168,7 @@ exports.createTextureArray = function(source, width, height, imageCount, quality
 	return texture;
 };
 
-var setTextureQuality = function(glTextureType, quality, disableAniso) {
+let setTextureQuality = function(glTextureType, quality, disableAniso) {
 	if (quality == TextureQuality.Pixel) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -236,7 +235,7 @@ exports.BlendType = {
 };
 
 exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
-	if(equation) {
+	if (equation) {
 		gl.blendEquation(gl[equation]);
 	}
 	if(sourceBlend && destinationBlend) {
@@ -325,63 +324,63 @@ exports.setUniformMatrix4 = function(name, value) {
 };
 
 // Draw Functions
-var RenderMode = exports.RenderMode = {
+let RenderMode = exports.RenderMode = {
 	Triangles: "triangles",
 	TriangleStrip: "triangleStrip",
 	Lines: "lines",
 	Points: "points"
 };
 
-var drawTriangles = exports.drawTriangles = function(count) {
+let drawTriangles = exports.drawTriangles = function(count) {
 	gl.drawArrays(gl.TRIANGLES, 0, count);
 };
-var drawTriangleStrip = exports.drawTriangleStrip = function(count) {
+let drawTriangleStrip = exports.drawTriangleStrip = function(count) {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
 };
-var drawLines = exports.drawLines = function(count) {
+let drawLines = exports.drawLines = function(count) {
 	gl.drawArrays(gl.LINES, 0, count);
 };
-var drawPoints = exports.drawPoints = function(count) {
+let drawPoints = exports.drawPoints = function(count) {
 	gl.drawArrays(gl.POINTS, 0, count);
 };
-var drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
+let drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
 	gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
 };
-var drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
+let drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
 	gl.drawElements(gl.TRIANGLE_STRIP, count, gl.UNSIGNED_SHORT, offset);
 }
-var drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
+let drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
 	gl.drawElements(gl.LINES, count, gl.UNSIGNED_SHORT, offset);
 };
-var drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
+let drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
 	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
 };
 
 exports.draw = function(renderMode, count, indexed, offset) {
-	switch(renderMode) {
+	switch (renderMode) {
 		case RenderMode.Triangles:
-			if(!indexed) {
+			if (!indexed) {
 				drawTriangles(count);
 			} else {
 				drawIndexedTriangles(count, offset);
 			}
 			break;
 		case RenderMode.TriangleStrip:
-			if(!indexed) {
+			if (!indexed) {
 				drawTriangleStrip(count);
 			} else {
 				drawIndexedTriangleStrip(count);
 			}
 			break;
 		case RenderMode.Lines:
-			if(!indexed) {
+			if (!indexed) {
 				drawLines(count);
 			} else {
 				drawIndexedLines(count, offset);
 			}
 			break;
 		case RenderMode.Points:
-			if(!indexed) {
+			if (!indexed) {
 				drawPoints(count);
 			} else {
 				drawIndexedPoints(count, offset);

@@ -2,7 +2,7 @@
 module.exports = (function(){
 	let exports = {};
 
-	exports.createScaledImage = (config) => {
+	exports.createScaledImage = function(config) {
 		let canvas = document.createElement("canvas");
 		canvas.style = "display: none";
 		canvas.width = config.image.width * config.scale;
