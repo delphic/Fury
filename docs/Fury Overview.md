@@ -48,7 +48,7 @@ _Primary focus is on the renderer_. Physics, Input and Sound helpers will be add
 (Use of libraries is acceptable if they don't violate the guiding principles of this project, e.g. [GamePad.js](https://github.com/sgraham/gamepad.js/)).
 
 ## Demos
-[View Completed Demos](http://delphic.me.uk/fury/demos/)
+[View Completed Demos](https://delphic.me.uk/fury/demos/)
 * ✓ Arbitrary shader demo
 * ✓ Simple spinning create demo
 * ✓ Instancing / prefab demo
@@ -59,7 +59,7 @@ _Primary focus is on the renderer_. Physics, Input and Sound helpers will be add
 * HTML overlay demo
 * Particles demo
 * Animation demo
-* MineCraft style game - walk around on the generated terrain
+* ✓ [MineCraft style game](https://delphic.me.uk/vorld-archipelago) - walk around on the generated terrain
 * Texture blending demo - single mesh / patchwork mesh terrain with multiple textures
 
 We'll create separate demo for each set of features, essentially integration tests.
@@ -76,7 +76,7 @@ Do not create new objects during a frame unless completely unavoidable (then ref
 
 Try to keep class members public and rely on people using their head (i.e. don't enforce copy vector values, they should do that themselves). Whilst this might result in more errors, it gives greater flexibility and much more straight forward code.
 
-Avoid the new keyword where-ever possible, use literals, class format is designed accordingly.
+Avoid the new keyword where-ever possible, use literals, module format is designed accordingly.
 
 Readable variable names, everywhere, no short-hands / abbreviations, avoid jargon where possible. Only indices are allowed to be single letter.
 * Only exceptions are: variables which are used extremely often; e.g. the webGraphicsLibraryContext -> 'gl', and abbreviations which are _extremely_ well known jargon, e.g. 'fov'
@@ -86,22 +86,22 @@ No prefixes, that includes private variables with an underscore. If it has an ex
 ## Example Class Format
 
 ```javascript
-var Class = module.exports = function() {
-	var exports = {};
-	var prototype = {
+let Class = module.exports = function() {
+	let exports = {};
+	let prototype = {
 		protoMethod: function() { ... }
 	};
 
-	var privateFunc = function() { ... }; // Can be static or not depending on if you use .apply / .call
+	let privateFunc = function() { ... }; // Can be static or not depending on if you use .apply / .call
 
-	var staticFunc = exports.statFunc = function(args) {
+	let staticFunc = exports.statFunc = function(args) {
 
 	};
 
-	var create = exports.create = function(params) {
-		var object = Object.create(prototype);
+	let create = exports.create = function(params) {
+		let object = Object.create(prototype);
 
-		var privateMethod = function() { ... };
+		let privateMethod = function() { ... };
 
 		object.property = params.property;
 		object.publicMethod = function() { ... };
