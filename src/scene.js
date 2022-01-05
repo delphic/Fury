@@ -6,10 +6,7 @@ const Prefab = require('./prefab');
 const Transform = require('./transform');
 const Maths = require('./maths');
 const Bounds = require('./bounds');
-const mat3 = Maths.mat3,
-	mat4 = Maths.mat4,
-	quat = Maths.quat,
-	vec3 = Maths.vec3;
+const { mat3, mat4, quat, vec3 } = Maths;
 
 module.exports = (function() {
 	let nextSceneId = 0;
@@ -37,7 +34,7 @@ module.exports = (function() {
 	let currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 	let nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
-	exports.create = function(parameters) {
+	exports.create = function({ camera, enableFrustumCulling, forceSphereCulling}) {
 		let cameras = {};
 		let cameraNames = [];
 		let mainCameraName = "main";
@@ -47,8 +44,7 @@ module.exports = (function() {
 
 		let scene = {};
 		scene.id = (nextSceneId++).toString();
-		scene.enableFrustumCulling = !!parameters.enableFrustumCulling;
-		let forceSphereCulling = !!parameters.forceSphereCulling;
+		scene.enableFrustumCulling = !!enableFrustumCulling;
 
 		// these renderObjects / instances on prefabs need to contain at minimum materialId, meshId, and transform (currently object just has material and mesh as well as transform)
 		let renderObjects = IndexedMap.create(); // TODO: use materialId / meshId to bind
@@ -141,14 +137,15 @@ module.exports = (function() {
 		};
 
 		// Add Render Object
-		scene.add = function(parameters) {
+		scene.add = function(config) {
 			let object = {};
-			if (!parameters || !parameters.mesh || !parameters.material) {
+			
+			let { mesh, material, static = false, active = true } = config;
+			object.material = material;
+			object.mesh = mesh;
+			if (!mesh || !material) {
 				throw new Error("Mesh and Material must be present on the object.");
 			}
-
-			object.material = parameters.material;
-			object.mesh = parameters.mesh;
 
 			// Note: indexedMap.add adds id property to object added and does not add duplicates
 			object.meshId = meshes.add(object.mesh);
@@ -160,16 +157,16 @@ module.exports = (function() {
 			// Probably want to move to a stronger ECS concept
 			// Adding a transform component is probably fine
 			// as the renderer requires it.
-			object.transform = Transform.create(parameters);
+			object.transform = Transform.create(config);
 
 			// For now just sort by material on add
 			object.sceneId = renderObjects.add(object, sortByMaterial); 
 			// Would probably be more performant to dynamic changes if kept a record of start and end index
 			// of all materials and could simply inject at the correct point - TODO: Profile
-			object.static = !!parameters.static;
-			object.active = parameters.active === undefined || !!parameters.active;
+			object.static = static;
+			object.active = active;
 
-			createObjectBounds(object, object.mesh, parameters.rotation);
+			createObjectBounds(object, object.mesh, object.transform.rotation);
 
 			return object;
 		};
@@ -197,18 +194,21 @@ module.exports = (function() {
 		};
 
 		// Instantiate prefab instance
-		scene.instantiate = function(parameters) {
+		scene.instantiate = function(config) {
 			let prefab;
-			if (!parameters || !parameters.name || !Prefab.prefabs[parameters.name]) {
+
+			if (!config || !config.name || !Prefab.prefabs[config.name]) {
 				throw new Error("You must provide a valid prefab name");
 			}
-			if (!prefabs[parameters.name]) {
-				let defn = Prefab.prefabs[parameters.name];
+
+			let name = config.name;
+			if (!prefabs[name]) {
+				let defn = Prefab.prefabs[name];
 				if (!defn.materialConfig || !defn.meshConfig) {
 					throw new Error("Requested prefab must have a material and a mesh config present");
 				}
 				prefab = {
-					name: parameters.name,
+					name: name,
 					instances: IndexedMap.create(),
 					mesh: Mesh.create(defn.meshConfig),
 					material: Material.create(defn.materialConfig)
@@ -218,19 +218,20 @@ module.exports = (function() {
 				prefab.shaderId = shaders.add(prefab.material.shader);
 				prefab.material.shaderId = prefab.shaderId;
 				addTexturesToScene(prefab.material);
-				prefabs[parameters.name] = prefab;
-				prefabs.keys.push(parameters.name);
+				prefabs[name] = prefab;
+				prefabs.keys.push(name);
 			} else {
-				prefab = prefabs[parameters.name];
+				prefab = prefabs[name];
 			}
 			let instance = Object.create(prefab);
-			instance.transform = Transform.create(parameters);
+			instance.transform = Transform.create(config);
 
+			let { static = false, active = true } = config;
 			instance.id = prefab.instances.add(instance);
-			instance.static = !!parameters.static;
-			instance.active = parameters.active === undefined || !!parameters.active;
+			instance.static = static;
+			instance.active = active;
 
-			createObjectBounds(instance, prefab.mesh, parameters.rotation);
+			createObjectBounds(instance, prefab.mesh, instance.transform.rotation);
 
 			return instance;
 		};
@@ -442,8 +443,8 @@ module.exports = (function() {
 			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
 
-		if (parameters && parameters.camera) {
-			scene.addCamera(parameters.camera);
+		if (camera) {
+			scene.addCamera(camera);
 		}
 
 		return scene;

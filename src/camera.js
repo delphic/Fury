@@ -144,25 +144,31 @@ module.exports = (function() {
 		}
 	};
 
-	exports.create = function(parameters) {
+	exports.create = function(config) {
 		let camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
-		camera.clear = parameters.clear === undefined || !!parameters.clear;
 
-		if(camera.type == Type.Perspective) {
-			// vertical field of view, ratio (aspect) determines horizontal fov
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
-		} else {
-			throw new Error("Unrecognised Camera Type '" + camera.type + "'");
+		let { type = Type.Perspective, near, far, ratio = 1.0, clear = true } = config;
+		camera.type = type;
+		camera.near = near;
+		camera.far = far;
+		camera.ratio = ratio;
+		camera.clear = clear;
+
+		switch (type) {
+			case Type.Perspective:
+				// vertical field of view, ratio (aspect) determines horizontal fov
+				camera.fov = config.fov;
+				break;
+			case Type.Orthonormal:
+				camera.height = config.height;
+				break;
+			default:
+				throw new Error("Unrecognised Camera Type '" + type + "'");
 		}
-		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+
+		let { position = vec3.create(), rotation = quat.create() } = config;
+		camera.position = position;
+		camera.rotation = rotation;
 
 		camera.planes = [];
 		// Stored as plane normal, distance from plane to origin in direction of normal

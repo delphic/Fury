@@ -28,20 +28,10 @@ module.exports = (function(){
 			return Box.intersectSphere(sphere, box);
 		};
 		
-		exports.create = function(parameters) {
+		exports.create = function({ center = vec3.create(), radius = 0 }) {
 			let sphere = Object.create(prototype);
-		
-			if (parameters.center) {
-				sphere.center = parameters.center;
-			} else {
-				sphere.center = vec3.create();
-			}
-			if (parameters.radius) {
-				sphere.radius = parameters.radius;
-			} else {
-				sphere.radius = 0;
-			}
-
+			sphere.center = center;
+			sphere.radius = radius;
 			return sphere;
 		};
 	

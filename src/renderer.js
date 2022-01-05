@@ -26,7 +26,7 @@ exports.init = function(canvas, contextAttributes) {
 };
 
 // TODO: This cshould be called setClearColor
-exports.clearColor = function(r,g,b,a) {
+exports.clearColor = function(r, g, b, a) {
 	gl.clearColor(r, g, b, a);
 };
 
@@ -76,6 +76,8 @@ exports.createShaderProgram = function(vertexShader, fragmentShader) {
 		throw new Error("Could not create shader program");
 	}
 	return program;
+	// TODO: Consider returning wrapper so that additional properties are not set on the gl object
+	// See #5. https://webglfundamentals.org/webgl/lessons/webgl-anti-patterns.html
 };
 
 exports.useShaderProgram = function(shaderProgram) {
@@ -100,21 +102,21 @@ exports.createBuffer = function(data, itemSize, indexed) {
 };
 
 exports.createArrayBuffer = function(data, itemSize, numItems) {
-    let buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    buffer.itemSize = itemSize;
-    buffer.numItems = numItems;
-    return buffer;
+	let buffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+	buffer.itemSize = itemSize;
+	buffer.numItems = numItems;
+	return buffer;
 };
 
 exports.createElementArrayBuffer = function(data, itemSize, numItems) {
-    let buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    buffer.itemSize = itemSize;
-    buffer.numItems = numItems;
-    return buffer;
+	let buffer = gl.createBuffer();
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+	buffer.itemSize = itemSize;
+	buffer.numItems = numItems;
+	return buffer;
 };
 
 // Textures
@@ -387,6 +389,6 @@ exports.draw = function(renderMode, count, indexed, offset) {
 			}
 			break;
 		default:
-			throw new Error("Unrecognised renderMode '"+renderMode+"'");
+			throw new Error("Unrecognised renderMode '" + renderMode + "'");
 	}
 };

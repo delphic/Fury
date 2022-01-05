@@ -41,23 +41,23 @@ module.exports = (function(){
 		}
 	};
 
-	exports.create = function(parameters) {
+	exports.create = function({ shader, textures, texture, properties }) {
 		let material = Object.create(prototype);
 
-		if(!parameters.shader) {
+		if(!shader) {
 			throw new Error("Shader must be provided");
 		}
-		material.shader = parameters.shader;
+		material.shader = shader;
 
 		material.textures = {};
-		if (parameters.textures) {
-			material.setTextures(parameters.textures);
-		} else if (parameters.texture) {
-			material.setTexture(parameters.texture);
+		if (textures) {
+			material.setTextures(textures);
+		} else if (texture) {
+			material.setTexture(texture);
 		}
 
-		if (parameters.properties) {
-			material.setProperties(parameters.properties);
+		if (properties) {
+			material.setProperties(properties);
 		}
 
 		if (material.shader.validateMaterial) {

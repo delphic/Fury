@@ -3,11 +3,11 @@ module.exports = (function(){
 
 	let prefabs = exports.prefabs = { keys: "Can't touch this, doo doo doo, do do, do do" };
 
-	exports.create = function(parameters) {
-		if(!parameters || !parameters.name || prefabs[parameters.name]) {
+	exports.create = function(config) {
+		if (!config || !config.name || prefabs[config.name]) {
 			throw new Error("Please provide a valid and unique name parameter for your prefab");
 		} else {
-			prefabs[parameters.name] = parameters;
+			prefabs[config.name] = config;
 		}
 	};
 

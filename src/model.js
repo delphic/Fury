@@ -18,20 +18,20 @@ module.exports = (function() {
 			// TODO: Option to provide data as JS arrays (i.e. buffers: false)
 			// This is so we can have the data available to JS for runtime manipulation
 			let meshData = {
-				buffers: true
+				isTypedBuffers: true
 			};
 
 			let attributes = json.meshes[0].primitives[0].attributes;
-			let positionIndex = attributes.POSITION;    // index into accessors
-			let normalsIndex = attributes.NORMAL;       // index into accessors
-			let uvIndex = attributes.TEXCOORD_0;        // index into accessors
+			let positionIndex = attributes.POSITION;	// index into accessors
+			let normalsIndex = attributes.NORMAL;		// index into accessors
+			let uvIndex = attributes.TEXCOORD_0;		// index into accessors
 			let colorIndices = [];
 
 			let propertyName = "COLOR_";
 			let propertyNameIndex = 0;
 			while (attributes.hasOwnProperty(propertyName + propertyNameIndex)) {
-			  colorIndices.push(attributes[propertyName + propertyNameIndex]);
-			  propertyNameIndex++;
+				colorIndices.push(attributes[propertyName + propertyNameIndex]);
+				propertyNameIndex++;
 			}
 
 			let indicesIndex = json.meshes[0].primitives[0].indices;

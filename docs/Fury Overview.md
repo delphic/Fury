@@ -98,12 +98,12 @@ let Class = module.exports = function() {
 
 	};
 
-	let create = exports.create = function(params) {
+	let create = exports.create = function(config) {
 		let object = Object.create(prototype);
 
 		let privateMethod = function() { ... };
 
-		object.property = params.property;
+		object.property = config.property;
 		object.publicMethod = function() { ... };
 
 		return object;

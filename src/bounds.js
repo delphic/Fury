@@ -106,40 +106,40 @@ module.exports = (function() {
 		return sqrDistance < sphere.radius * sphere.radius;
 	};
 
-	exports.create = function(parameters) {
-			// Note - you are expected to recalculate min/max when position or extents change
-			// or alternatively if you change min/max you can recalculate extents/size/center
-			let aabb = Object.create(prototype);
+	exports.create = function({ center, size, extents, min, max }) {
+		// Note - you are expected to recalculate min/max when position or extents change
+		// or alternatively if you change min/max you can recalculate extents/size/center
+		let aabb = Object.create(prototype);
 
-			if (parameters.center || parameters.size || parameters.extents) {
-				if (parameters.center) {
-					aabb.center = parameters.center;
-				} else {
-					aabb.center = vec3.create();
-				}
-
-				if (parameters.size) {
-					aabb.size = parameters.size;
-					aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
-				} else if (parameters.extents) {
-					aabb.extents = parameters.extents;
-					aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
-				}
-				aabb.min = vec3.create();
-				aabb.max = vec3.create();
-
-				aabb.recalculateMinMax();
+		if (center || size || extents) {
+			if (center) {
+				aabb.center = center;
 			} else {
-				// Could check min < max on all axes to make this easier to use
-				aabb.min = parameters.min;
-				aabb.max = parameters.max;
 				aabb.center = vec3.create();
-				aabb.size = vec3.create();
-				aabb.extents = vec3.create();
-				aabb.recalculateExtents();
 			}
 
-			return aabb;
+			if (size) {
+				aabb.size = size;
+				aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
+			} else if (extents) {
+				aabb.extents = extents;
+				aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
+			}
+			aabb.min = vec3.create();
+			aabb.max = vec3.create();
+
+			aabb.recalculateMinMax();
+		} else {
+			// Could check min < max on all axes to make this easier to use
+			aabb.min = min;
+			aabb.max = max;
+			aabb.center = vec3.create();
+			aabb.size = vec3.create();
+			aabb.extents = vec3.create();
+			aabb.recalculateExtents();
+		}
+
+		return aabb;
 	};
 
 	return exports;

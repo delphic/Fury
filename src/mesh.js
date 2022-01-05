@@ -50,6 +50,7 @@ module.exports = (function(){
 			this.bounds.recalculateExtents();
 		},
 		// TODO: Method to calculate normals from vertex information + winding info
+		// TODO: Support updating arbitary buffers and support when meshConfig.isTypedBuffers == true
 		updateVertices: function() {
 			// TODO: If vertexBuffers exists we should delete the existing buffer?
 			// or we should use the existing buffer and bind different data
@@ -89,89 +90,87 @@ module.exports = (function(){
 		}
 	};
 
-	exports.create = function(parameters) {
+	exports.create = function(config) {
 		let mesh = Object.create(prototype);
 
 		mesh.bounds = Bounds.create({ min: vec3.create(), max: vec3.create() });
 
-		if (parameters) {
-			if (parameters.renderMode) {
-				mesh.renderMode = parameters.renderMode;
-			} else {
-				mesh.renderMode = r.RenderMode.Triangles;
-			}
+		if (config) {
+			let { renderMode = r.RenderMode.Triangles, boundingRadius = 0 } = config;
+			mesh.renderMode = renderMode;
+			mesh.boundingRadius = boundingRadius;
 
-			mesh.boundingRadius = parameters.boundingRadius | 0;
+			let { isTypedBuffers, vertices, textureCoordinates, normals, indices } = config;
+			if (isTypedBuffers) {
+				let { vertexCount, textureCoordinatesCount, normalsCount, indexCount, customBuffers } = config;
 
-			if (parameters.buffers) {
-				// NOTE: update<X> methods will not work when providing buffers directly
-				// if the mesh needs to be manipulated at run time, it's best to convert the buffers
-				// to JS arrays create the mesh data with that.
-				if (parameters.vertices && parameters.vertexCount) {
-					mesh.vertices = parameters.vertices;
+				if (vertices && vertexCount) {
+					mesh.vertices = vertices;
 					mesh.calculateBounds();
-					mesh.vertexBuffer = r.createArrayBuffer(parameters.vertices, 3, parameters.vertexCount);
+					mesh.vertexBuffer = r.createArrayBuffer(vertices, 3, vertexCount);
 				}
-				if (parameters.textureCoordinates && parameters.textureCoordinatesCount) {
-					mesh.textureBuffer = r.createArrayBuffer(parameters.textureCoordinates, 2, parameters.textureCoordinatesCount);
+				if (textureCoordinates && textureCoordinatesCount) {
+					mesh.textureBuffer = r.createArrayBuffer(textureCoordinates, 2, textureCoordinatesCount);
 				}
-				if (parameters.normals && parameters.normalsCount) {
-					mesh.normalBuffer = r.createArrayBuffer(parameters.normals, 3, parameters.normalsCount);
+				if (normals && normalsCount) {
+					mesh.normalBuffer = r.createArrayBuffer(normals, 3, normalsCount);
 				}
 
-				if (parameters.customBuffers && parameters.customBuffers.length) {
+				if (customBuffers && customBuffers.length) {
 					mesh.customBuffers = [];
-					for (let i = 0, l = parameters.customBuffers.length; i < l; i++) {
-						let customBuffer = parameters.customBuffers[i];
-						switch (customBuffer.componentType) {
+					for (let i = 0, l = customBuffers.length; i < l; i++) {
+						let { name, componentType, buffer, size, count } = customBuffers[i];
+						switch (componentType) {
 							case 5126: // Float32
-								mesh.customBuffers[customBuffer.name] = r.createArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+								mesh.customBuffers[name] = r.createArrayBuffer(buffer, size, count);
 								break;
 							case 5123: // Int16
-								mesh.customBuffers[customBuffer.name] = r.createElementArrayBuffer(customBuffer.buffer, customBuffer.size, customBuffer.count);
+								mesh.customBuffers[name] = r.createElementArrayBuffer(buffer, size, count);
 								// UNTESTED
 								break;
 						}
 					}
 				}
 
-				if (parameters.indices && parameters.indexCount) {
-					mesh.indexBuffer = r.createElementArrayBuffer(parameters.indices, 1, parameters.indexCount);
+				if (indices && indexCount) {
+					mesh.indexBuffer = r.createElementArrayBuffer(indices, 1, indexCount);
 					mesh.indexed = true;
 				} else {
 					mesh.indexed = false;
 				}
 			} else {
-				if (parameters.vertices) {
-					mesh.vertices = parameters.vertices;
+				let { customAttributes } = config;
+
+				if (vertices) {
+					mesh.vertices = vertices;
 					mesh.calculateBounds();
 					mesh.updateVertices();
 				}
-				if (parameters.textureCoordinates) {
-					mesh.textureCoordinates = parameters.textureCoordinates;
+				if (textureCoordinates) {
+					mesh.textureCoordinates = textureCoordinates;
 					mesh.updateTextureCoordinates();
 				}
-				if (parameters.normals) {
-					mesh.normals = parameters.normals;
+				if (normals) {
+					mesh.normals = normals;
 					mesh.updateNormals();
 				}
-				if (parameters.indices) {
-					mesh.indices = parameters.indices;
+				if (indices) {
+					mesh.indices = indices;
 					mesh.updateIndexBuffer();
 				} else {
 					mesh.indexed = false;
 				}
 
-				if (parameters.customAttributes && parameters.customAttributes.length) {
-					for (let i = 0, l = parameters.customAttributes.length; i < l; i++) {
-						let a = parameters.customAttributes[i]; 
+				if (customAttributes && customAttributes.length) {
+					for (let i = 0, l = customAttributes.length; i < l; i++) {
+						let { name, source, size } = customAttributes[i]; 
 						// Maybe should validate name isn't already used?
-						mesh[a.name] = r.createBuffer(parameters[a.source], a.size);
+						mesh[name] = r.createBuffer(config[source], size);
 						// Note - dynamic not currently supported for custom attributes
 					}
 				}
 
-				if (!parameters.dynamic) {
+				if (!config.dynamic) {
 					// clear mesh data if not mesh does not need to be dynamically updated
 					mesh.vertices = null;
 					mesh.textureCoordinates = null;

@@ -17,14 +17,14 @@ module.exports = (function() {
 
 	let lastTime = 0;
 
-	exports.init = function(parameters) {
-		if (parameters.maxFrameTimeMs && typeof(parameters.maxFrameTimeMs) === 'number') {
+	exports.init = function({ loop, maxFrameTimeMs: maxMs }) {
+		if (maxMs && typeof(maxMs) === 'number') {
 			// Optional max frame time to keep physics calculations sane
-			maxFrameTimeMs = parameters.maxFrameTimeMs;
+			maxFrameTimeMs = maxMs;
 		}
 
-		if (parameters.loop && typeof(parameters.loop) === 'function') {
-			loopDelegate = parameters.loop;
+		if (loop && typeof(loop) === 'function') {
+			loopDelegate = loop;
 		} else {
 			console.error("You must provide GameLoop.init with a loop parameter of type function");
 		}

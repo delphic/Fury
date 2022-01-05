@@ -4,60 +4,60 @@ const r = require('./renderer');
 module.exports = (function() {
 	let exports = {};
 
-	exports.create = function(parameters) {
+	exports.create = function(config) {
 		let shader = {};
 
 		// Argument Validation
-		if (!parameters) {
-			throw new Error("No paramter object supplied, shader source must be provided");
+		if (!config) {
+			throw new Error("No config object supplied, shader source must be provided");
 		}
-		if (!parameters.vsSource) {
+		if (!config.vsSource) {
 			throw new Error("No Vertex Shader Source 'vsSource'");
 		}
-		if (!parameters.fsSource) {
+		if (!config.fsSource) {
 			throw new Error("No Fragment Shader Source 'fsSource'");
 		}
 
-		shader.vs = r.createShader("vertex", parameters.vsSource);
-		shader.fs = r.createShader("fragment", parameters.fsSource);
+		shader.vs = r.createShader("vertex", config.vsSource);
+		shader.fs = r.createShader("fragment", config.fsSource);
 		shader.shaderProgram = r.createShaderProgram(shader.vs, shader.fs);
-		if (parameters.attributeNames) {	// Could parse these from the shader
-			for (let i = 0, l = parameters.attributeNames.length; i < l; i++) {
-				r.initAttribute(shader.shaderProgram, parameters.attributeNames[i]);
+		if (config.attributeNames) {	// Could parse these from the shader
+			for (let i = 0, l = config.attributeNames.length; i < l; i++) {
+				r.initAttribute(shader.shaderProgram, config.attributeNames[i]);
 			}
 		}
-		if (parameters.uniformNames) {	// Could parse these from the shader
-			for (let i = 0, l = parameters.uniformNames.length; i < l; i++) {
-				r.initUniform(shader.shaderProgram, parameters.uniformNames[i]);
+		if (config.uniformNames) {	// Could parse these from the shader
+			for (let i = 0, l = config.uniformNames.length; i < l; i++) {
+				r.initUniform(shader.shaderProgram, config.uniformNames[i]);
 			}
 		}
-		if (parameters.textureUniformNames) {
-			if (parameters.textureUniformNames.length > r.TextureLocations.length) {
+		if (config.textureUniformNames) {
+			if (config.textureUniformNames.length > r.TextureLocations.length) {
 				throw new Error("Shader can not use more texture than total texture locations (" + r.TextureLocations.length + ")");
 			}
-			shader.textureUniformNames = parameters.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
+			shader.textureUniformNames = config.textureUniformNames;	// Again could parse from the shader, and could also not require duplicate between uniformNames and textureUniformNames
 		} else {
 			shader.textureUniformNames = [];
 		}
 
-		if (!parameters.bindMaterial || typeof(parameters.bindMaterial) !== 'function') {
+		if (!config.bindMaterial || typeof(config.bindMaterial) !== 'function') {
 			throw new Error("You must provide a material binding function 'bindMaterial'");
 		}
-		shader.bindMaterial = parameters.bindMaterial;
+		shader.bindMaterial = config.bindMaterial;
 
-		if (!parameters.bindBuffers || typeof(parameters.bindBuffers) !== 'function') {
+		if (!config.bindBuffers || typeof(config.bindBuffers) !== 'function') {
 			throw new Error("You must provide a mesh binding function 'bindBuffers'");
 		}
-		shader.bindBuffers = parameters.bindBuffers;
+		shader.bindBuffers = config.bindBuffers;
 
-		if (parameters.validateMaterial && typeof(parameters.validateMaterial) === 'function') {
-			shader.validateMaterial = parameters.validateMaterial;
+		if (config.validateMaterial && typeof(config.validateMaterial) === 'function') {
+			shader.validateMaterial = config.validateMaterial;
 		}
 
-		shader.pMatrixUniformName = parameters.pMatrixUniformName || "pMatrix";
-		shader.mvMatrixUniformName = parameters.mvMatrixUniformName || "mvMatrix";
-		shader.nMatrixUniformName = parameters.nMatrixUniformName;
-		shader.mMatrixUniformName = parameters.mMatrixUniformName;
+		shader.pMatrixUniformName = config.pMatrixUniformName || "pMatrix";
+		shader.mvMatrixUniformName = config.mvMatrixUniformName || "mvMatrix";
+		shader.nMatrixUniformName = config.nMatrixUniformName;
+		shader.mMatrixUniformName = config.mMatrixUniformName;
 
 		// TODO: decide how to deal with non-standard uniforms
 
