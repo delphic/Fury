@@ -19,3 +19,5 @@ Fury was created for personal use and learning and as such makes minimal use of 
 That is a JavaScript file which can be imported as a script tag and sets a `Fury` global which can be used.
 
 Use Common JS with `src/fury.js` to include Fury in a more modern manner.
+
+If using npm add `"fury": "delphic/fury"` to your package.json dependencies.
