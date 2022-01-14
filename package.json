@@ -1,0 +1,13 @@
+{
+	"name": "fury",
+	"version": "0.1.0",
+	"description": "WebGL Game Engine",
+	"author": "delphic",
+	"license": "MIT",
+	"homepage": "https://delphic.me.uk/fury/",
+	"dependencies": {},
+	"private": true,
+	"devDependencies": {
+		"eslint": "^8.2.0"
+	}
+}
