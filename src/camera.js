@@ -1,22 +1,28 @@
-var Maths = require('./maths');
-let vec3 = Maths.vec3, vec4 = Maths.vec4, mat4 = Maths.mat4, quat = Maths.quat;
+const Maths = require('./maths');
+const vec3 = Maths.vec3, vec4 = Maths.vec4, mat4 = Maths.mat4, quat = Maths.quat;
 
-var Camera = module.exports = function() {
+module.exports = (function() {
 	// NOTE: Camera points in -z direction
-	var exports = {};
+	let exports = {};
+
+	let Type = exports.Type = {
+		Perspective: "Perspective",
+		Orthonormal: "Orthonormal"
+	};
 
 	// vec3 cache for calculations
-	var localX = vec3.create();
-	var localY = vec3.create();
-	var localZ = vec3.create();
-	var vec3Cache = vec3.create();
-	var vec4Cache = vec4.create();
-	var q = quat.create();
+	let localX = vec3.create();
+	let localY = vec3.create();
+	let localZ = vec3.create();
+	let vec3Cache = vec3.create();
+	let vec4Cache = vec4.create();
+	let q = quat.create();
 
-	var prototype = {
+	let prototype = {
 		// Set Rotation from Euler
 		// Set Position x, y, z
 		// Note do not have enforced copy setters, the user is responsible for this
+		// TODO: Review depth and frustrum to make sure they deal with look in -z correctly
 		calculateFrustum: function() {
 			// TODO: Update to work for orthonormal projection as well
 			Maths.quatLocalAxes(this.rotation, localX, localY, localZ);
@@ -103,26 +109,30 @@ var Camera = module.exports = function() {
 			// TODO: Add check of points too
 			return true;
 		},
-		getDepth: function(object) {
-			var p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
+		getDepth: function(position) {
+			let p0 = this.position[0], p1 = this.position[1], p2 = this.position[2],
 				q0 = this.rotation[0], q1 = this.rotation[1], q2 = this.rotation[2], q3 = this.rotation[3],
-				l0 = object.transform.position[0], l1 = object.transform.position[1], l2 = object.transform.position[2];
+				l0 = position[0], l1 = position[1], l2 = position[2];
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
 		},
+		getLookDirection: function(out) {
+			vec3.transformQuat(out, Maths.vec3Z, this.rotation);
+			vec3.negate(out, out); // Camera faces in -z
+		},
 		getProjectionMatrix: function(out) {
-			if(this.type == Camera.Type.Perspective) {
+			if(this.type == Type.Perspective) {
 				mat4.perspective(out, this.fov, this.ratio, this.near, this.far);
 			} else {
-				var left = - (this.height * this.ratio) / 2.0;
-				var right = - left;
-				var top = this.height / 2.0;
-				var bottom = -top;
+				let left = - (this.height * this.ratio) / 2.0;
+				let right = - left;
+				let top = this.height / 2.0;
+				let bottom = -top;
 				mat4.ortho(out, left, right, bottom, top, this.near, this.far);
 			}
 			return out;
 		},
 		viewportToWorld: function(out, viewPort, z) {
-			if(this.type == Camera.Type.Orthonormal) {
+			if(this.type == Type.Orthonormal) {
 				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5);
 				out[1] = this.height * (0.5 - viewPort[1]);	// measuring viewport from top-left this seems correct!
 				out[2] = (z || 0);
@@ -133,28 +143,32 @@ var Camera = module.exports = function() {
 			}
 		}
 	};
-	var Type = exports.Type = {
-		Perspective: "Perspective",
-		Orthonormal: "Orthonormal"
-	};
-	var create = exports.create = function(parameters) {
-		var camera = Object.create(prototype);
-		// TODO: Arguement Checking
-		camera.type = parameters.type ? parameters.type : Type.Perspective;
-		camera.near = parameters.near;
-		camera.far = parameters.far;
 
-		if(camera.type == Type.Perspective) {
-			// vertical field of view, ratio (aspect) determines horizontal fov
-			camera.fov = parameters.fov;
-		} else if (camera.type == Type.Orthonormal) {
-			camera.height = parameters.height;
-		} else {
-			throw new Error("Unrecognised Camera Type '"+camera.type+"'");
+	exports.create = function(config) {
+		let camera = Object.create(prototype);
+
+		let { type = Type.Perspective, near, far, ratio = 1.0, clear = true } = config;
+		camera.type = type;
+		camera.near = near;
+		camera.far = far;
+		camera.ratio = ratio;
+		camera.clear = clear;
+
+		switch (type) {
+			case Type.Perspective:
+				// vertical field of view, ratio (aspect) determines horizontal fov
+				camera.fov = config.fov;
+				break;
+			case Type.Orthonormal:
+				camera.height = config.height;
+				break;
+			default:
+				throw new Error("Unrecognised Camera Type '" + type + "'");
 		}
-		camera.ratio = parameters.ratio ? parameters.ratio : 1.0;
-		camera.position = parameters.position ? parameters.position : vec3.create();
-		camera.rotation = parameters.rotation ? parameters.rotation : quat.create();
+
+		let { position = vec3.create(), rotation = quat.create() } = config;
+		camera.position = position;
+		camera.rotation = rotation;
 
 		camera.planes = [];
 		// Stored as plane normal, distance from plane to origin in direction of normal
@@ -172,5 +186,6 @@ var Camera = module.exports = function() {
 
 		return camera;
 	};
+	
 	return exports;
-}();
+})();

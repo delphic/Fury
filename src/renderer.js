@@ -1,18 +1,7 @@
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
-
-var Maths = require('./maths');
-var mat2 = Maths.mat2,
-	mat3 = Maths.mat3,
-	mat4 = Maths.mat4,
-	quat = Maths.quat,
-	quat2 = Maths.quat2,
-	vec2 = Maths.vec2,
-	vec3 = Maths.vec3,
-	vec4 = Maths.vec4;
-
-var gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
+let gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
 
 exports.init = function(canvas, contextAttributes) {
 	gl = canvas.getContext('webgl2', contextAttributes);
@@ -29,14 +18,15 @@ exports.init = function(canvas, contextAttributes) {
 	// Now TextureLocations.length will tell you how many there are and provide
 	// a link from the integer to the actual value
 	TextureLocations.length = 0;
-	var i = 0;
-	while(gl["TEXTURE"+i.toString()]) {
-		TextureLocations.push(gl["TEXTURE"+i.toString()]);
+	let i = 0;
+	while(gl["TEXTURE" + i.toString()]) {
+		TextureLocations.push(gl["TEXTURE" + i.toString()]);
 		i++;
 	}
 };
 
-exports.clearColor = function(r,g,b,a) {
+// TODO: This cshould be called setClearColor
+exports.clearColor = function(r, g, b, a) {
 	gl.clearColor(r, g, b, a);
 };
 
@@ -45,21 +35,25 @@ exports.clear = function() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 };
 
+exports.clearDepth = function() {
+	gl.clear(gl.DEPTH_BUFFER_BIT);
+};
+
 // Shader / Shader Programs
 
-var ShaderType = exports.ShaderType = {
+let ShaderType = exports.ShaderType = {
 	Vertex: "vertex",
 	Fragment: "fragment"
 };
 
 exports.createShader = function(type, glsl) {
-	var shader;
+	let shader;
 	if (type == ShaderType.Vertex) {
 		shader = gl.createShader(gl.VERTEX_SHADER);
 	} else if (type == ShaderType.Fragment) {
 		shader = gl.createShader(gl.FRAGMENT_SHADER);
 	} else {
-		throw new Error("Unrecognised shader type '"+type+"'");
+		throw new Error("Unrecognised shader type '" + type + "'");
 	}
 	gl.shaderSource(shader, glsl);
 	gl.compileShader(shader);
@@ -69,13 +63,12 @@ exports.createShader = function(type, glsl) {
 	return shader;
 };
 
-exports.deleteShader = function(shader)
-{
+exports.deleteShader = function(shader) {
 	gl.deleteShader(shader);
 };
 
 exports.createShaderProgram = function(vertexShader, fragmentShader) {
-	var program = gl.createProgram();
+	let program = gl.createProgram();
 	gl.attachShader(program, vertexShader);
 	gl.attachShader(program, fragmentShader);
 	gl.linkProgram(program);
@@ -83,6 +76,8 @@ exports.createShaderProgram = function(vertexShader, fragmentShader) {
 		throw new Error("Could not create shader program");
 	}
 	return program;
+	// TODO: Consider returning wrapper so that additional properties are not set on the gl object
+	// See #5. https://webglfundamentals.org/webgl/lessons/webgl-anti-patterns.html
 };
 
 exports.useShaderProgram = function(shaderProgram) {
@@ -93,7 +88,7 @@ exports.useShaderProgram = function(shaderProgram) {
 // Buffers
 
 exports.createBuffer = function(data, itemSize, indexed) {
-	var buffer = gl.createBuffer();
+	let buffer = gl.createBuffer();
 	if (!indexed) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
@@ -107,42 +102,44 @@ exports.createBuffer = function(data, itemSize, indexed) {
 };
 
 exports.createArrayBuffer = function(data, itemSize, numItems) {
-    var buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    buffer.itemSize = itemSize;
-    buffer.numItems = numItems;
-    return buffer;
+	let buffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+	buffer.itemSize = itemSize;
+	buffer.numItems = numItems;
+	return buffer;
 };
 
 exports.createElementArrayBuffer = function(data, itemSize, numItems) {
-    var buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    buffer.itemSize = itemSize;
-    buffer.numItems = numItems;
-    return buffer;
+	let buffer = gl.createBuffer();
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+	buffer.itemSize = itemSize;
+	buffer.numItems = numItems;
+	return buffer;
 };
 
 // Textures
 
-var TextureLocations = exports.TextureLocations = [];
+let TextureLocations = exports.TextureLocations = [];
 
-var TextureQuality = exports.TextureQuality = {
-	Pixel: "pixel",		// Uses Mips and nearest pixel
-	Highest: "highest",	// Uses Mips & Interp (trilinear)
+let TextureQuality = exports.TextureQuality = {
+	Pixel: "pixel",			// Uses Mips and nearest pixel
+	Highest: "highest",		// Uses Mips & Interp (trilinear)
 	High: "high",			// Uses Mips & Interp (bilinear)
 	Medium: "medium",		// Linear Interp
 	Low: "low"				// Uses nearest pixel
 };
 
-exports.createTexture = function(source, quality, clamp) {
-	var texture = gl.createTexture();
+exports.createTexture = function(source, quality, clamp, disableAniso) {
+	let texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+	// If we want to create mipmaps manually provide an array source and put them into
+	// different levels in texImage2D - you must provide all mipmap levels
 
-	setTextureQuality(gl.TEXTURE_2D, quality);
+	setTextureQuality(gl.TEXTURE_2D, quality, disableAniso);
 
 	if (clamp) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -155,7 +152,7 @@ exports.createTexture = function(source, quality, clamp) {
 
 /// width and height are of an individual texture
 exports.createTextureArray = function(source, width, height, imageCount, quality, clamp) {
-	var texture = gl.createTexture();
+	let texture = gl.createTexture();
 	// gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -173,40 +170,37 @@ exports.createTextureArray = function(source, width, height, imageCount, quality
 	return texture;
 };
 
-var setTextureQuality = function(glTextureType, quality) {
-	if (quality === TextureQuality.Pixel) {
-		// Unfortunately it doesn't seem to allow MAG_FILTER nearest with MIN_FILTER MIPMAP
-		// Might be able to use dFdx / dFdy to determine MIPMAP level and use two textures
-		// and blend the samples based of if it'd be mipmap level 0 or not
-		// Or use multiple samplers in an version 300 ES shader
+let setTextureQuality = function(glTextureType, quality, disableAniso) {
+	if (quality == TextureQuality.Pixel) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
+		if (!disableAniso && anisotropyExt) {
+			// Unfortunately you can't use MAG_FILTER NEAREST with MIN_FILTER MIPMAP when using the anisotropy extension
+			// you can without it however, so there is a trade off on crisp near pixels against blurry textures at severe angles
+			
+			// Could investigate using multiple samplers in a version 300 ES Shader and blending between them,
+			// or using multiple texture with different settings, potentially using dFdx and dFdy to determine / estimate MIPMAP level
 			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 		}
 		gl.generateMipmap(glTextureType);
-	}
-	else if (quality === TextureQuality.Highest) {
+	} else if (quality === TextureQuality.Highest) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (anisotropyExt) {
+		if (!disableAniso && anisotropyExt) {
 			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 		}
 		gl.generateMipmap(glTextureType);
-	}
-	else if (quality === TextureQuality.High) {
+	} else if (quality === TextureQuality.High) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-		if (anisotropyExt) {
+		if (!disableAniso && anisotropyExt) {
 			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
 		}
 		gl.generateMipmap(glTextureType);
-	}
-	else if (quality === TextureQuality.Medium) {
+	} else if (quality === TextureQuality.Medium) {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	}
-	else {
+	} else {
 		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	}
@@ -218,13 +212,13 @@ exports.setTexture = function(location, texture) {
 };
 
 // Blending
-var BlendEquation = exports.BlendEquation = {
+exports.BlendEquation = {
 	Add: "FUNC_ADD",
 	Subtract: "FUNC_SUBTRACT",
 	ReverseSubtract: "FUNC_REVERSE_SUBTRACT"
 };
 
-var BlendType = exports.BlendType = {
+exports.BlendType = {
 	Zero: "ZERO",
 	One: "ONE",
 	ConstantAlpha: "CONSTANT_ALPHA",
@@ -243,7 +237,7 @@ var BlendType = exports.BlendType = {
 };
 
 exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
-	if(equation) {
+	if (equation) {
 		gl.blendEquation(gl[equation]);
 	}
 	if(sourceBlend && destinationBlend) {
@@ -251,8 +245,19 @@ exports.enableBlending = function(sourceBlend, destinationBlend, equation) {
 	}
 	gl.enable(gl.BLEND);
 	gl.depthMask(false);
-
 };
+
+exports.enableSeparateBlending = function(sourceColorBlend, destinationColorBlend, sourceAlphaBlend, destinationAlphaBlend, equation) {
+	gl.enable(gl.BLEND);
+	if (equation) {
+		// Does WebGL support separate blend equations? Do we want to?
+		gl.blendEquation(gl[equation]);
+	}
+	if (sourceColorBlend && sourceAlphaBlend && destinationColorBlend && destinationAlphaBlend) {
+		gl.blendFuncSeparate(gl[sourceColorBlend], gl[destinationColorBlend], gl[sourceAlphaBlend], gl[destinationAlphaBlend]);
+	}
+	gl.depthMask(false);
+}
 
 exports.disableBlending = function() {
 	gl.disable(gl.BLEND);
@@ -321,69 +326,69 @@ exports.setUniformMatrix4 = function(name, value) {
 };
 
 // Draw Functions
-var RenderMode = exports.RenderMode = {
+let RenderMode = exports.RenderMode = {
 	Triangles: "triangles",
 	TriangleStrip: "triangleStrip",
 	Lines: "lines",
 	Points: "points"
 };
 
-var drawTriangles = exports.drawTriangles = function(count) {
+let drawTriangles = exports.drawTriangles = function(count) {
 	gl.drawArrays(gl.TRIANGLES, 0, count);
 };
-var drawTriangleStrip = exports.drawTriangleStrip = function(count) {
+let drawTriangleStrip = exports.drawTriangleStrip = function(count) {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
 };
-var drawLines = exports.drawLines = function(count) {
+let drawLines = exports.drawLines = function(count) {
 	gl.drawArrays(gl.LINES, 0, count);
 };
-var drawPoints = exports.drawPoints = function(count) {
+let drawPoints = exports.drawPoints = function(count) {
 	gl.drawArrays(gl.POINTS, 0, count);
 };
-var drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
+let drawIndexedTriangles = exports.drawIndexedTriangles = function(count, offset) {
 	gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
 };
-var drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
+let drawIndexedTriangleStrip = exports.drawIndexedTriangleStrip = function(count, offset) {
 	gl.drawElements(gl.TRIANGLE_STRIP, count, gl.UNSIGNED_SHORT, offset);
 }
-var drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
+let drawIndexedLines = exports.drawIndexedLines = function(count, offset) {
 	gl.drawElements(gl.LINES, count, gl.UNSIGNED_SHORT, offset);
 };
-var drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
+let drawIndexedPoints = exports.drawIndexedPoints = function(count, offset) {
 	gl.drawElements(gl.POINTS, count, gl.UNSIGNED_SHORT, offset);
 };
 
 exports.draw = function(renderMode, count, indexed, offset) {
-	switch(renderMode) {
+	switch (renderMode) {
 		case RenderMode.Triangles:
-			if(!indexed) {
+			if (!indexed) {
 				drawTriangles(count);
 			} else {
 				drawIndexedTriangles(count, offset);
 			}
 			break;
 		case RenderMode.TriangleStrip:
-			if(!indexed) {
+			if (!indexed) {
 				drawTriangleStrip(count);
 			} else {
 				drawIndexedTriangleStrip(count);
 			}
 			break;
 		case RenderMode.Lines:
-			if(!indexed) {
+			if (!indexed) {
 				drawLines(count);
 			} else {
 				drawIndexedLines(count, offset);
 			}
 			break;
 		case RenderMode.Points:
-			if(!indexed) {
+			if (!indexed) {
 				drawPoints(count);
 			} else {
 				drawIndexedPoints(count, offset);
 			}
 			break;
 		default:
-			throw new Error("Unrecognised renderMode '"+renderMode+"'");
+			throw new Error("Unrecognised renderMode '" + renderMode + "'");
 	}
 };

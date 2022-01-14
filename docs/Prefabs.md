@@ -1,15 +1,11 @@
-# Prefab Thoughts
+# Prefabs
 
-Prefabs need to be created by Fury (Fury.createPrefab), this stores the concept of that prefab and should not be affected by changes to instantiated prefabs.
+Prefabs need to be created with Fury (Fury.Preafb.create), this stores the concept of that prefab and should not be affected by changes to instantiated prefabs.
 
-An individual scene should _copy_ the information stored in Fury.prefabs into a local list of instantiatedPrefabs for that scene, when a prefab is first instantiated.
-
-Instances are created by using the scene's local copy as a prototype for the new instance object and ensure a transform on the object itself.
+The instantiate method on Fury.Scene uses the configuration information stored in Fury.Prefab.prefabs to create a prototype instance for that since when a prefab is first instantiated. Scene instances are created from this prototype with a transform component attached. 
 
 This way all manipulations / renderings / calculations on the instance use the details in the scene's local list of prefabs, i.e. meshes, materials, shaders are determined by the local copy and any changes affect all instances in that scene, but do not affect the definition of the prefab.
 
-The scene should obviously explicitly batch the rendering of prefabs together.
+The scene explicitly batches the rendering of prefabs together.
 
-In order to implement prefabs we will need to create copy methods for meshes and materials (copy of the associated shader is not performed in a material copy action, that should be a reference copy).
-
-Note that we do not need to create the buffers for the mesh in the definition copy of the prefab (stored at top level in Fury (although arguably that should be Fury.Engine, so we can have Fury.Editor at a later stage)) - they'll never be used as new ones will be created when instantiated.
+Note that the prefab definition only contains the config for mesh and material, not the mesh buffers nor the material instances themselves, as new instances are created by the scene on instantiation.

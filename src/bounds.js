@@ -1,19 +1,19 @@
-var vec3 = require('./maths').vec3;
+const vec3 = require('./maths').vec3;
 
-var Bounds = module.exports = (function() {
+module.exports = (function() {
 	let exports = {};
 	let prototype = {
-		calculateMinMax: function(center, extents) {
-			vec3.subtract(this.min, center, extents);
-			vec3.add(this.max, center, extents);
+		recalculateMinMax: function() {
+			vec3.subtract(this.min, this.center, this.extents);
+			vec3.add(this.max, this.center, this.extents);
 		},
-		calculateExtents: function(min, max) {
-			vec3.subtract(this.size, max, min);
+		recalculateExtents: function() {
+			vec3.subtract(this.size, this.max, this.min);
 			// If we had a vec3.zero vector could use scale and add
 			this.extents[0] = 0.5 * this.size[0];
 			this.extents[1] = 0.5 * this.size[1];
 			this.extents[2] = 0.5 * this.size[2];
-			vec3.add(this.center, min, this.extents);
+			vec3.add(this.center, this.min, this.extents);
 		}
 	};
 
@@ -32,35 +32,29 @@ var Bounds = module.exports = (function() {
 			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
 	};
 
+	// Return true if box b and box a overlap on provided axis 
+	exports.intersectsAxis = function(a, b, axis) {
+		return a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis];
+	};
+
+	// Returns true if box b offset by provided displacement would intersect box a on provided axis 
+	exports.intersectsAxisOffset = function(a, b, axis, displacement) {
+		return a.min[axis] < b.max[axis] + displacement && a.max[axis] > b.min[axis] + displacement;
+	};
+
 	// Enters functions return true if box b did not intersect box a on specified axis
 	// before displacement but would afterwards. Calculating the point of entry could be useful.
 	// If it's always needed we could return the distance and use > 0 check for does enter
-	exports.entersX = function(a, b, displacement) {
-		return !(a.min[0] < b.max[0] && a.max[0] > b.min[0])
-			&& (a.min[0] < b.max[0] + displacement && a.max[0] > b.min[0] + displacement);
-	};
-	exports.entersY = function(a, b, displacement) {
-		return !(a.min[1] < b.max[1] && a.max[1] > b.min[1])
-			&& (a.min[1] < b.max[1] + displacement && a.max[1] > b.min[1] + displacement);
-	};
-	exports.entersZ = function(a, b, displacement) {
-		return !(a.min[2] < b.max[2] && a.max[2] > b.min[2])
-			&& (a.min[2] < b.max[2] + displacement && a.max[2] > b.min[2] + displacement);
+	exports.entersAxis = function(a, b, axis, displacement) {
+		return !(a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis])
+			&& (a.min[axis] < b.max[axis] + displacement && a.max[axis] > b.min[axis] + displacement);
 	};
 
 	// Entered is the same as enters but it assumes you've already moved the box
-	exports.enteredX = function(a, b, displacement) {
-		return !(a.min[0] < b.max[0] - displacement && a.max[0] > b.min[0] - displacement)
-			&& (a.min[0] < b.max[0] && a.max[0] > b.min[0]);
-	}
-	exports.enteredY = function(a, b, displacement) {
-		return !(a.min[1] < b.max[1] - displacement && a.max[1] > b.min[1] - displacement)
-			&& (a.min[1] < b.max[1] && a.max[0] > b.min[1]);
-	}
-	exports.enteredZ = function(a, b, displacement) {
-		return !(a.min[2] < b.max[2] - displacement && a.max[2] > b.min[2] - displacement)
-			&& (a.min[2] < b.max[2] && a.max[2] > b.min[2]);
-	}
+	exports.enteredAxis = function(a, b, axis, displacement) {
+		return !(a.min[axis] < b.max[axis] - displacement && a.max[axis] > b.min[axis] - displacement)
+			&& (a.min[axis] < b.max[axis] && a.max[axis] > b.min[axis]);
+	};
 
 	exports.rayCast = function(out, origin, direction, box) {
 		// Using 0 to imply no intersection so we can return distance (if normalized)
@@ -75,7 +69,7 @@ var Bounds = module.exports = (function() {
 		for (let i = 0; i < 3; i++) {
 			if (Math.sign(box.center[i] - origin[i]) == Math.sign(direction[i])
 				&& !(origin[i] >= box.min[i] && origin[i] <= box.max[i])) { // and NOT INSIDE the box on this axis
-				axis = i;
+				let axis = i;
 
 				// Move along that axis to find the intersection point on this axis
 				let ip = box.center[axis] - Math.sign(direction[axis]) * box.extents[axis];
@@ -106,46 +100,46 @@ var Bounds = module.exports = (function() {
 		let z = Math.max(box.min[2], Math.min(sphere.center[2], box.max[2]));
 
 		let sqrDistance = (x - sphere.center[0]) * (x - sphere.center[0]) +
-		 	(y - sphere.center[1]) * (y - sphere.center[1]) +
+			(y - sphere.center[1]) * (y - sphere.center[1]) +
 			(z - sphere.center[2]) * (z - sphere.center[2]);
 
 		return sqrDistance < sphere.radius * sphere.radius;
 	};
 
-	exports.create = function(parameters) {
-			// Note - you are expected to recalculate min/max when position or extents change
-			// or alternatively if you change min/max you can recalculate extents/size/center
-			let aabb = Object.create(prototype);
+	exports.create = function({ center, size, extents, min, max }) {
+		// Note - you are expected to recalculate min/max when position or extents change
+		// or alternatively if you change min/max you can recalculate extents/size/center
+		let aabb = Object.create(prototype);
 
-			if (parameters.center || parameters.size || parameters.extents) {
-				if (parameters.center) {
-					aabb.center = parameters.center;
-				} else {
-					aabb.center = vec3.create();
-				}
-
-				if (parameters.size) {
-					aabb.size = parameters.size;
-					aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
-				} else if (parameters.extents) {
-					aabb.extents = parameters.extents;
-					aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
-				}
-				aabb.min = vec3.create();
-				aabb.max = vec3.create();
-
-				aabb.calculateMinMax(aabb.center, aabb.extents);
+		if (center || size || extents) {
+			if (center) {
+				aabb.center = center;
 			} else {
-				// Could check min < max on all axes to make this easier to use
-				aabb.min = parameters.min;
-				aabb.max = parameters.max;
 				aabb.center = vec3.create();
-				aabb.size = vec3.create();
-				aabb.extents = vec3.create();
-				aabb.calculateExtents(aabb.min, aabb.max);
 			}
 
-			return aabb;
+			if (size) {
+				aabb.size = size;
+				aabb.extents = vec3.fromValues(0.5 * aabb.size[0], 0.5 * aabb.size[1], 0.5 * aabb.size[2])
+			} else if (extents) {
+				aabb.extents = extents;
+				aabb.size = vec3.fromValues(2 * aabb.extents[0], 2 * aabb.extents[1], 2 * aabb.extents[2]);
+			}
+			aabb.min = vec3.create();
+			aabb.max = vec3.create();
+
+			aabb.recalculateMinMax();
+		} else {
+			// Could check min < max on all axes to make this easier to use
+			aabb.min = min;
+			aabb.max = max;
+			aabb.center = vec3.create();
+			aabb.size = vec3.create();
+			aabb.extents = vec3.create();
+			aabb.recalculateExtents();
+		}
+
+		return aabb;
 	};
 
 	return exports;

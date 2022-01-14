@@ -1,18 +1,26 @@
-var Input = module.exports = function() {
-	var exports = {};
+const Maths = require('./maths');
 
-	var pointerLocked = false;
-	var mouseState = [], currentlyPressedKeys = [];	// probably shouldn't use arrays lots of empty space
-	var downMouse = [], upMouse = [];
-	var downKeys = [], upKeys = []; // Keys pressed or released this frame
-	var canvas;
-	var init = exports.init = function(targetCanvas) {
+module.exports = (function() {
+	let exports = {};
+
+	let pointerLocked = false;
+	let mouseState = [], currentlyPressedKeys = [];	// probably shouldn't use arrays lots of empty space
+	let downMouse = [], upMouse = [];
+	let downMouseTimes = [], upMouseTimes = [];
+	let downKeys = [], upKeys = []; // Keys pressed or released this frame
+	let downKeyTimes = [], upKeyTimes = []; // Time key was last pressed or released
+	let canvas;
+
+	let defaultTime = Date.now(); // Just return start of program rather than start of epoch if keys never pressed
+
+	exports.init = function(targetCanvas) {
 			canvas = targetCanvas;
 			canvas.addEventListener("mousemove", handleMouseMove);
 			canvas.addEventListener("mousedown", handleMouseDown, true);
 			canvas.addEventListener("mouseup", handleMouseUp);
+			canvas.addEventListener("wheel", handleMouseWheel);
 
-			document.addEventListener('pointerlockchange', (event) => {
+			document.addEventListener('pointerlockchange', () => {
 				pointerLocked = !!(document.pointerLockElement || document.mozPointerLockElement); // polyfill
 			});
 			canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock; // polyfill
@@ -27,26 +35,23 @@ var Input = module.exports = function() {
 	};
 
 	exports.requestPointerLock = function() {
-		canvas.requestPointerLock();
+		return canvas.requestPointerLock();
 	};
 
 	exports.releasePointerLock = function() {
 		document.exitPointerLock();
 	};
 
-	var MouseDelta = exports.MouseDelta = [0, 0];
-	var MousePosition = exports.MousePosition = [0, 0];
+	let MouseDelta = exports.MouseDelta = [0, 0];
+	let MousePosition = exports.MousePosition = [0, 0];
+	let MouseWheel = exports.MouseWheel = [0, 0, 0];
 
-	// TODO: Add signalEndFrame and store keyDown [] and keyUp[] array for
-	// querying as well, although the option of just subscribing to the events
-	// in game code is also there but need to use DescriptionToKeyCode
-
-	var keyPressed = function(key) {
+	let keyPressed = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return currentlyPressedKeys[key];
 		}
 		else if (key) {
-			var map = DescriptionToKeyCode[key];
+			let map = DescriptionToKeyCode[key];
 			return (map) ? !!currentlyPressedKeys[map] : false;
 		}
 		else {
@@ -54,12 +59,12 @@ var Input = module.exports = function() {
 		}
 	};
 
-	var keyUp = exports.keyUp = function(key) {
+	exports.keyUp = function(key) {
 		if (!isNaN(key) && !key.length) {
 			return upKeys[key];
 		}
 		else if (key) {
-			var map = DescriptionToKeyCode[key];
+			let map = DescriptionToKeyCode[key];
 			return (map) ? !!upKeys[map] : false;
 		}
 		else {
@@ -67,7 +72,7 @@ var Input = module.exports = function() {
 		}
 	};
 
-	var keyDown = exports.keyDown = function(key, thisFrame) {
+	exports.keyDown = function(key, thisFrame) {
 		if (!thisFrame) {
 			return keyPressed(key);
 		} else {
@@ -75,7 +80,7 @@ var Input = module.exports = function() {
 				return downKeys[key];
 			}
 			else if (key) {
-				var map = DescriptionToKeyCode[key];
+				let map = DescriptionToKeyCode[key];
 				return (map) ? !!downKeys[map] : false;
 			}
 			else {
@@ -84,72 +89,114 @@ var Input = module.exports = function() {
 		}
 	};
 
-	var mousePressed = function(button) {
+	let keyDownTime = exports.keyDownTime = function(key) {
+		if (!isNaN(key) && !key.length) {
+			return downKeyTimes[key];
+		} else if (key) {
+			let map = DescriptionToKeyCode[key];
+			return map ? downKeyTimes[map] : defaultTime;
+		} else {
+			return defaultTime;
+		}
+	}
+
+	exports.keyUpTime = function(key) {
+		if (!isNaN(key) && !key.length) {
+			return upKeyTimes[key];
+		} else if (key) {
+			let map = DescriptionToKeyCode[key];
+			return map ? upKeyTimes[map] : defaultTime;
+		} else {
+			return defaultTime;
+		}
+	}
+
+	exports.getAxis = function(plusKey, minusKey, smoothTime, ease) {
+		let result = 0;
+		let now = Date.now();
+		if (keyPressed(plusKey)) {
+			let pressedTime = now - keyDownTime(plusKey);
+			let r = Maths.clamp01(pressedTime / (smoothTime * 1000));
+			if (ease) {
+				result += ease(r);
+			} else {
+				result += r;
+			}
+		} 
+		if (keyPressed(minusKey)) {
+			let pressedTime = now - keyDownTime(minusKey);
+			let r = Maths.clamp01(pressedTime / (smoothTime * 1000));
+			if (ease) {
+				result -= ease(r);
+			} else {
+				result -= r;
+			}
+		}
+		return result;
+	};
+
+	let mousePressed = function(button) {
 		if (!isNaN(button) && !button.length) {
 			return mouseState[button];
-		}
-		else if (button) {
-			var map = DescriptionToMouseButton[button];
+		} else if (button) {
+			let map = DescriptionToMouseButton[button];
 			return (!isNaN(map)) ? mouseState[map] : false;
-		}
-		else {
+		} else {
 			return false;
 		}
 	}
 
-	var mouseUp = exports.mouseUp = function(button) {
+	exports.mouseUp = function(button) {
 		if (!isNaN(button) && !button.length) {
 			return upMouse[button];
-		}
-		else if (button) {
-			var map = DescriptionToMouseButton[button];
+		} else if (button) {
+			let map = DescriptionToMouseButton[button];
 			return (!isNaN(map)) ? upMouse[map] : false;
-		}
-		else {
+		} else {
 			return false;
 		}
 	};
 
-	var mouseDown = exports.mouseDown = function(button, thisFrame) {
+	exports.mouseDown = function(button, thisFrame) {
 		if (!thisFrame) {
 			return mousePressed(button);
 		} else {
 			if (!isNaN(button) && !button.length) {
 				return downMouse[button];
-			}
-			else if (button) {
-				var map = DescriptionToMouseButton[button];
+			} else if (button) {
+				let map = DescriptionToMouseButton[button];
 				return (!isNaN(map)) ? downMouse[map] : false;
-			}
-			else {
+			} else {
 				return false;
 			}
 		}
 	};
 
 	exports.handleFrameFinished = function() {
-		MouseDelta[0] = 0;
-		MouseDelta[1] = 0;
+		MouseDelta[0] = MouseDelta[1] = 0;
+		MouseWheel[0] = MouseWheel[1] = MouseWheel[2] = 0;
 		downKeys.length = 0;
 		upKeys.length = 0;
 		downMouse.length = 0;
 		upMouse.length = 0;
 	};
 
-	var handleKeyDown = function(event) {
+	let handleKeyDown = function(event) {
 		// keyDown event can get called multiple times after a short delay
 		if (!currentlyPressedKeys[event.keyCode]) {
 			downKeys[event.keyCode] = true;
+			downKeyTimes[event.keyCode] = Date.now();
 		}
 		currentlyPressedKeys[event.keyCode] = true;
 	};
 
-	var handleKeyUp = function(event) {
+	let handleKeyUp = function(event) {
 		currentlyPressedKeys[event.keyCode] = false;
+		upKeyTimes[event.keyCode] = Date.now();
 		upKeys[event.keyCode] = true;
 	};
 
-	var handleBlur = function(event) {
+	let handleBlur = function() {
 		downMouse.length = 0;
 		mouseState.length = 0;
 		upMouse.length = 0;
@@ -159,24 +206,33 @@ var Input = module.exports = function() {
 		upKeys.length = 0;	// Q: Should we be copying currently pressed Keys as they've kinda been released?
 	};
 
-	var handleMouseMove = function(event) {
+	let handleMouseMove = function(event) {
 		MousePosition[0] = event.pageX;
 		MousePosition[1] = event.pageY;
 		MouseDelta[0] += event.movementX;
 		MouseDelta[1] += event.movementY;
 	};
 
-	var handleMouseDown = function(event) {
+	let handleMouseDown = function(event) {
 		if (!mouseState[event.button]) {
 			downMouse[event.button] = true;
+			downMouseTimes[event.button] = Date.now();
 		}
 		mouseState[event.button] = true;
 		return false;
 	};
 
-	var handleMouseUp = function(event) {
+	let handleMouseUp = function(event) {
 		mouseState[event.button] = false;
+		upMouseTimes[event.button] = Date.now();
 		upMouse[event.button] = true;
+	};
+
+	let handleMouseWheel = function(event) {
+		MouseWheel[0] += event.deltaX;
+		MouseWheel[1] += event.deltaY;
+		MouseWheel[2] += event.deltaZ;
+		// Note event.deltaMode determines if values are pixels, lines or pages, assumed pixels here
 	};
 
 	exports.getMouseViewportX = function() {
@@ -189,7 +245,7 @@ var Input = module.exports = function() {
 
 	// TODO: Add Numpad Keys
 	// TODO: Deal with shift in map (probably going to need to move to a function from JSON object for this)
-	var DescriptionToKeyCode = exports.DescriptionToKeyCode = {
+	let DescriptionToKeyCode = exports.DescriptionToKeyCode = {
 		"a": 65,
 		"b": 66,
 		"c": 67,
@@ -260,7 +316,7 @@ var Input = module.exports = function() {
 		"#": 222
 	};
 
-	var KeyCodeToDescription = exports.KeyCodeToDescription = {
+	exports.KeyCodeToDescription = {
 		65: "a",
 		66: "b",
 		67: "c",
@@ -331,17 +387,17 @@ var Input = module.exports = function() {
 		222: "#"
 	};
 
-	var MouseButtonToDescription = exports.MouseButtonToDescription = {
+	exports.MouseButtonToDescription = {
 		0: "LeftMouseButton",
 		1: "MiddleMouseButton",
 		2: "RightMouseButton"
 	};
 
-	var DescriptionToMouseButton = exports.DescriptionToMouseButton = {
+	let DescriptionToMouseButton = exports.DescriptionToMouseButton = {
 		"LeftMouseButton": 0,
 		"MiddleMouseButton": 1,
 		"RightMouseButton": 2
 	};
 
 	return exports;
-}();
+})();
