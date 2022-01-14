@@ -5,6 +5,7 @@
 	"author": "delphic",
 	"license": "MIT",
 	"homepage": "https://delphic.me.uk/fury/",
+	"main": "src/fury.js",
 	"dependencies": {},
 	"private": true,
 	"devDependencies": {
