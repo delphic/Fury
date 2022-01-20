@@ -25,6 +25,10 @@ exports.init = function(canvas, contextAttributes) {
 	}
 };
 
+exports.getContextLossExtension = function() {
+	return gl.getExtension("WEBGL_lose_context");
+};
+
 // TODO: This cshould be called setClearColor
 exports.clearColor = function(r, g, b, a) {
 	gl.clearColor(r, g, b, a);
@@ -76,8 +80,6 @@ exports.createShaderProgram = function(vertexShader, fragmentShader) {
 		throw new Error("Could not create shader program");
 	}
 	return program;
-	// TODO: Consider returning wrapper so that additional properties are not set on the gl object
-	// See #5. https://webglfundamentals.org/webgl/lessons/webgl-anti-patterns.html
 };
 
 exports.useShaderProgram = function(shaderProgram) {
