@@ -52,6 +52,14 @@ module.exports = (function() {
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
 		let alphaRenderObjects = [];
 		let depths = {};
+		depths.get = (o) => {
+			let id = o.sceneId !== undefined ? o.sceneId : o.id;
+			return depths[id];
+		};
+		depths.set = (o, depth) => {
+			let id = o.sceneId !== undefined ? o.sceneId : o.id;
+			depths[id] = depth;
+		};
 
 		let addTexturesToScene = function(material) {
 			for (let i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
@@ -84,14 +92,14 @@ module.exports = (function() {
 
 		let addToAlphaList = function(object, depth) {
 			// TODO: Profile using Array sort instead of insertion sorting, also test add/remove from list rather than clear
-			depths[object.sceneId] = depth;
+			depths.set(object, depth);
 			// Binary search
 			// Could technically do better by batching up items with the same depth according to material / mesh like scene graph
 			// However this is only relevant for 2D games with orthographic projection
 			let less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
 			while (!inserted) {
-				less = (index === 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
-				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth);
+				less = (index === 0 || depths.get(alphaRenderObjects[index-1]) <= depth);
+				more = (index >= alphaRenderObjects.length || depths.get(alphaRenderObjects[index]) >= depth);
 				if (less && more) {
 					alphaRenderObjects.splice(index, 0, object);
 					inserted = true;
