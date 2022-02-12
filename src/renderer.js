@@ -308,6 +308,9 @@ exports.setUniformFloat2 = function(name, value1, value2) {
 exports.setUniformFloat3 = function(name, value1, value2, value3) {
 	gl.uniform3f(currentShaderProgram.uniformLocations[name], value1, value2, value3);
 };
+exports.setUniformFloat4 = function(name, value1, value2, value3, value4) {
+	gl.uniform4f(currentShaderProgram.uniformLocations[name], value1, value2, value3, value4);
+}
 exports.setUniformInteger = function(name, value) {
 	gl.uniform1i(currentShaderProgram.uniformLocations[name], value);
 };

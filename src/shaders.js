@@ -67,18 +67,25 @@ module.exports = (function() {
 	
 		"uniform sampler2D uSampler;",
 	
+		"uniform vec4 uColor;",
+	
 		"void main(void) {",
-			"gl_FragColor = texture2D(uSampler, vec2(uOffset.x + (uScale.x * vTextureCoord.s), uOffset.y + (uScale.y * vTextureCoord.t)));",
+			"gl_FragColor = texture2D(uSampler, vec2(uOffset.x + (uScale.x * vTextureCoord.s), uOffset.y + (uScale.y * vTextureCoord.t))) * uColor;",
 		"}"].join('\n'),
 	
 		attributeNames: [ "aVertexPosition", "aTextureCoord" ],
-		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler", "uOffset", "uScale" ],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler", "uOffset", "uScale", "uColor" ],
 		textureUniformNames: [ "uSampler" ],
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
 		bindMaterial: function(material) {
 			this.setUniformVector2("uOffset", material.offset);
 			this.setUniformVector2("uScale", material.scale);
+			if (material.color) {
+				this.setUniformVector4("uColor", material.color);
+			} else {
+				this.setUniformFloat4("uColor", 1, 1, 1, 1);
+			}
 		},
 		bindBuffers: function(mesh) {
 			this.enableAttribute("aVertexPosition");
