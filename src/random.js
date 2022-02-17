@@ -39,8 +39,23 @@ module.exports = (function(){
 		}
 	}
 
-	let seed = xmur3("furyRandomSeed");
-	let rand = mulberry32(seed());
+	let seed = null;
+	let rand = Math.random;
+
+	exports.generateSeed = function(length) {
+		let r = rand;
+		rand = Math.random;
+		if (length === undefined) {
+			length = 8;
+		}
+		let seedStr = "";
+		for (let i = 0; i < length; i++) {
+			// 0-9 and a-z char code range 48 -> 90
+			seedStr += String.fromCharCode(exports.roll(48, 90));
+		}
+		rand = r;
+		return seedStr;
+	};
 
 	exports.setSeed = function(seed, use128) {
 		seed = xmur3("" + seed);
