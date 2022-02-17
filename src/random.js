@@ -4,7 +4,7 @@ module.exports = (function(){
 	// Hasing function (to generate good seed) and generators taken from
 	// https://github.com/bryc/code/blob/master/jshash/PRNGs.md
 	function xmur3(str) {
-		for(let i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+		for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
 			h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
 			h = h << 13 | h >>> 19;
 		} return function() {
@@ -43,15 +43,16 @@ module.exports = (function(){
 	let rand = Math.random;
 
 	exports.generateSeed = function(length) {
+		// Generates random seed string from easy to copy chars
 		let r = rand;
 		rand = Math.random;
 		if (length === undefined) {
 			length = 8;
 		}
+		let seedChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		let seedStr = "";
 		for (let i = 0; i < length; i++) {
-			// 0-9 and a-z char code range 48 -> 90
-			seedStr += String.fromCharCode(exports.roll(48, 90));
+			seedStr += seedChars[exports.integer(0, seedChars.length)];
 		}
 		rand = r;
 		return seedStr;
