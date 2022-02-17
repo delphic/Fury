@@ -14,6 +14,7 @@ module.exports = (function() {
 	Fury.Model = require('./model');
 	Fury.Physics = require('./physics');
 	Fury.Prefab = require('./prefab');
+	Fury.Random = require('./random');
 	Fury.Renderer = require('./renderer');
 	Fury.Scene = require('./scene');
 	Fury.Shader = require('./shader');
