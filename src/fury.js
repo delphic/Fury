@@ -4,6 +4,7 @@ module.exports = (function() {
 	let canvas;
 
 	// Modules
+	Fury.Atlas = require('./atlas')
 	Fury.Bounds = require('./bounds');
 	Fury.Camera = require('./camera');
 	Fury.GameLoop = require('./gameLoop');
@@ -14,11 +15,14 @@ module.exports = (function() {
 	Fury.Model = require('./model');
 	Fury.Physics = require('./physics');
 	Fury.Prefab = require('./prefab');
+	Fury.Primitives = require('./primitives');
 	Fury.Random = require('./random');
 	Fury.Renderer = require('./renderer');
 	Fury.Scene = require('./scene');
 	Fury.Shader = require('./shader');
 	Fury.Shaders = require('./shaders');
+	Fury.TextMesh = require('./textmesh');
+	Fury.TileMap = require('./tilemap');
 	Fury.Transform = require('./transform');
 	Fury.Utils = require('./utils');
 
