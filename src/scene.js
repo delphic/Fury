@@ -162,12 +162,10 @@ module.exports = (function() {
 			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
-			// Probably want to move to a stronger ECS concept
-			// Adding a transform component is probably fine
-			// as the renderer requires it.
 			object.transform = Transform.create(config);
 
 			// For now just sort by material on add
+			// Ideally would group materials with the same shader and textures together
 			object.sceneId = renderObjects.add(object, sortByMaterial); 
 			// Would probably be more performant to dynamic changes if kept a record of start and end index
 			// of all materials and could simply inject at the correct point - TODO: Profile
@@ -341,7 +339,7 @@ module.exports = (function() {
 			r.disableBlending();
 		};
 
-		let bindAndDraw = function(object) {	// TODO: Separate binding and drawing
+		let bindAndDraw = function(object) {
 			let shader = object.material.shader;
 			let material = object.material;
 			let mesh = object.mesh;
@@ -353,13 +351,21 @@ module.exports = (function() {
 			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reordering in the graph (as it's been changed).
 
-			let shaderChanged = false;
-			let materialChanged = false;
+			let shouldRebindShader = false;
+			let shouldRebindMaterial = false;
 			if (!shader.id || shader.id != currentShaderId) {
-				shaderChanged = true;
-				if(!shader.id) {	// Shader was changed on the material since originally added to scene
+				shouldRebindShader = true;
+				// Check if shader was changed on the material since originally added to scene
+				if(!shader.id) {
 					material.shaderId = shaders.add(shader);
 					object.shaderId = material.shaderId;
+				} else {
+					if (material.shaderId != shader.id) {
+						material.shaderId = shader.id;
+					} 
+					if (object.shaderId != shader.id) {
+						object.shaderId = shader.id;
+					}
 				}
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
@@ -374,18 +380,22 @@ module.exports = (function() {
 
 			if (!material.id || material.id != currentMaterialId || material.dirty) {
 				if (!material.dirty) {
-					materialChanged = true;
+					shouldRebindMaterial = true;
 				} else {
 					material.dirty = false;
 				}
-				if (!material.id) {	// material was changed on object since originally added to scene
+				// check if material was changed on object since originally 
+				// added to scene TODO: Ideally would mark object for resorting
+				if (!material.id) {
 					object.materialId = materials.add(material);
+				} else if (object.materialId != material.id) {
+					object.materialId = material.id;
 				}
 				currentMaterialId = material.id;
 				shader.bindMaterial.call(r, material);
 			}
 
-			if (shaderChanged || materialChanged) {
+			if (shouldRebindShader || shouldRebindMaterial) {
 				// Texture Rebinding dependencies
 				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniforms have changed since the shaderProgram was last used...
 					// NOTE Large Changes needed because of this
@@ -425,8 +435,11 @@ module.exports = (function() {
 			}
 
 			if (!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
-				if (!mesh.id) {	// mesh was changed on object since originally added to scene
+				// Check if mesh was changed on object since originally added to scene
+				if (!mesh.id) {
 					object.meshId = mesh.add(mesh);
+				} else if (object.meshId != mesh.id) {
+					object.meshId = mesh.id;
 				}
 				currentMeshId = mesh.id;
 				shader.bindBuffers.call(r, mesh);
