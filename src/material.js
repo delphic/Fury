@@ -66,6 +66,12 @@ module.exports = (function(){
 
 		return material;
 	};
+
+	exports.clone = function(material) {
+		let clone = Object.assign(Object.create(prototype), material);
+		clone.id = null;
+		return clone;
+	};
 	
 	return exports;
 })();
