@@ -19,9 +19,9 @@ module.exports = (function(){
 
 		let offset = 0;
 		if (alignment == Alignment.center) {
-			offset = Math.floor(text.length / 2) * atlas.tileSize;
+			offset = Math.floor(text.length / 2) * atlas.tileWidth;
 		} else if (alignment == Alignment.right) {
-			offset = text.length * atlas.tileSize;
+			offset = text.length * atlas.tileWidth;
 		}
 		let pos = vec3.fromValues(position[0] - offset, position[1], position[2]);
 

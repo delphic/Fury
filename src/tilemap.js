@@ -17,7 +17,7 @@ module.exports = (function(){
 		tileMap.width = w;
 		tileMap.height =  h;
 
-		let { tileSize } = atlas;
+		let { tileWidth, tileHeight } = atlas;
 		let position = vec3.clone(pos);
 		let tiles = [];
 
@@ -28,7 +28,7 @@ module.exports = (function(){
 				if (tiles[index]) { scene.remove(tiles[index]); }
 				tiles[index] = scene.instantiate({
 					name: name,
-					position: vec3.fromValues(position[0] + x * tileSize, position[1] + y * tileSize, position[2])
+					position: vec3.fromValues(position[0] + x * tileWidth, position[1] + y * tileHeight, position[2])
 				});
 			}
 		};
@@ -41,7 +41,7 @@ module.exports = (function(){
 					if (tiles[index]) { scene.remove(tiles[index]); }
 					tiles[x + w * y] = scene.instantiate({
 						name: name,
-						position: vec3.fromValues(position[0] + x * tileSize, position[1] + y * tileSize, position[2])
+						position: vec3.fromValues(position[0] + x * tileWidth, position[1] + y * tileHeight, position[2])
 					});
 				}
 			}

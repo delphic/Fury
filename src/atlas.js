@@ -29,21 +29,20 @@ module.exports = (function(){
 		return name;
 	}
 
-	let setMaterialOffset = (config, atlasIndex, size) => {
-		let offsetU = (atlasIndex % size) / size;
-		let offsetV = 1 - (Math.floor(atlasIndex / size) + 1) / size;
+	let setMaterialOffset = (config, atlasIndex, width, height) => {
+		let offsetU = (atlasIndex % width) / width;
+		let offsetV = 1 - (Math.floor(atlasIndex / width) + 1) / height;
 		config.properties.offset = [ offsetU, offsetV ];
 	};
 
 	exports.setMaterialOffset = (config, atlas, tile) => {
-		let size = atlas.size;
 		let atlasIndex = getAtlasIndex(atlas, tile);
-		setMaterialOffset(config, atlasIndex, size);
+		setMaterialOffset(config, atlasIndex, atlas.width, atlas.height);
 	};
 
 	exports.createTilePrefab = (config) => {
 		let { atlas, tile, color, alpha } = config;
-		let size = atlas.size;
+		let { width, height } = atlas;
 		let atlasIndex = getAtlasIndex(atlas, tile);
 		let prefabName = getPrefabName(atlas, atlasIndex, color, alpha);
 		
@@ -58,7 +57,7 @@ module.exports = (function(){
 				 // This shouldn't be necessary, however it is
 				materialConfig.properties.color = Maths.vec4.fromValues(1,1,1,1);
 			}
-			setMaterialOffset(materialConfig, atlasIndex, size);
+			setMaterialOffset(materialConfig, atlasIndex, width, height);
 
 			Prefab.create({
 				name: prefabName, 
@@ -70,6 +69,9 @@ module.exports = (function(){
 	};
 
 	exports.create = (config, image) => {
+		if (!config.id || !config.map || !config.width || !config.height || !config.tileWidth || !config.tileHeight) {
+			console.error("Invalid atlas definition provided, must contain properties: id, map, width, height, tileWidth and tileHeight");
+		}
 		let atlas = Object.create(config);
 		atlas.alpha = atlas.alpha === undefined ? true : !!atlas.alpha;
 		atlas.texture = Renderer.createTexture(image, "low");
@@ -79,10 +81,10 @@ module.exports = (function(){
 			properties: {
 				alpha: atlas.alpha,
 				offset: [ 0, 0 ],
-				scale: [ 1 / atlas.size, 1 / atlas.size ]
+				scale: [ 1 / atlas.width, 1 / atlas.height ]
 			}
 		};
-		atlas.meshConfig = Primitives.createQuadMeshConfig(atlas.tileSize, atlas.tileSize);
+		atlas.meshConfig = Primitives.createQuadMeshConfig(atlas.tileWidth, atlas.tileHeight);
 		return atlas;
 	};
 
