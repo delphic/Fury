@@ -45,7 +45,7 @@ module.exports = (function(){
 		let { width, height } = atlas;
 		let atlasIndex = getAtlasIndex(atlas, tile);
 		let prefabName = getPrefabName(atlas, atlasIndex, color, alpha);
-		
+
 		if (Prefab.prefabs[prefabName] === undefined) {
 			let materialConfig = Object.create(atlas.materialConfig);
 			if (alpha !== undefined) {
