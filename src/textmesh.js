@@ -14,6 +14,18 @@ module.exports = (function(){
 		"right": 2
 	};
 
+	// Determines how round initial left most position when aligning
+	// No rounding, floor to integer, or floor to the atlas.tileSize
+	// Note: grid only works with atlases with static tile widths
+	let AlignmentStyle = exports.AlignmentStyle = {
+		"free": 0,
+		"integer": 1,
+		"grid": 2,
+	};
+
+	// Default alignment style - Assumes UI is pixel perfect, so integer
+	exports.alignmentStyle = AlignmentStyle.integer;
+
 	let atlasWidths = {};
 
 	let generateCharWidthLookup = (atlas) => {
@@ -43,7 +55,11 @@ module.exports = (function(){
 	};
 
 	exports.create = (config) => {
-		let { text, scene, atlas, position, alignment, color, gridClamp } = config;
+		let { text, scene, atlas, position, alignment, color, alignmentStyle } = config;
+
+		if (alignmentStyle === undefined || alignmentStyle === null) {
+			alignmentStyle = exports.alignmentStyle;
+		}
 
 		if (!atlasWidths[atlas.id]) {
 			generateCharWidthLookup(atlas);
@@ -71,20 +87,28 @@ module.exports = (function(){
 			return width;
 		};
 
+		let calculateAlignmentOffset = (alignment, text) => {
+			let offset = 0;
+			if (alignment == Alignment.center) {
+				if (alignmentStyle == AlignmentStyle.grid && !hasVariableTileWidths(atlas)) {
+					offset = Math.floor(text.length / 2) * atlas.tileWidth;
+				} else {
+					offset = calculateWidth(text) / 2;
+				}
+			} else if (alignment == alignment.right) {
+				offset = calculateWidth(text);
+			}
+			if (offset && alignmentStyle == AlignmentStyle.integer) {
+				offset = Math.floor(offset);
+			}
+			return offset;
+		};
+
 		textMesh.getText = () => text;
 		textMesh.setText = (value) => {
 			textMesh.remove();
 
-			let offset = 0;
-			if (alignment == Alignment.center) {
-				if (gridClamp && !hasVariableTileWidths(atlas)) {
-					offset = Math.floor(text.length / 2) * atlas.tileWidth;
-				} else {
-					offset = Math.floor(calculateWidth(value) / 2);
-				}
-			} else if (alignment == Alignment.right) {
-				offset = calculateWidth(value);
-			}
+			let offset = calculateAlignmentOffset(alignment, value);
 			
 			let x = position[0] - offset, y = position[1], z = position[2];
 			for (let i = 0, l = value.length; i < l; i++) {
