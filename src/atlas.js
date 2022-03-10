@@ -17,7 +17,7 @@ module.exports = (function(){
 		return 0;
 	};
 
-	let getPrefabName = (atlas, atlasIndex, color, alpha) => {
+	let getPrefabName = (atlas, atlasIndex, color, alpha, centered) => {
 		let name = atlas.id + "_" + atlasIndex;
 		if (alpha !== undefined && alpha != atlas.materialConfig.properties.alpha) {
 			name += "_" + (alpha ? "a1" : "a0");
@@ -26,6 +26,11 @@ module.exports = (function(){
 		if (color !== undefined && (color[0] != 1 || color[1] != 1 || color[2] != 1 || color[3] != 1)) {
 			name += "_" + color[0] + "_" + color[1] + "_" + color[2] + "_" + color[3];
 		}
+
+		if (centered) {
+			name += "_c";
+		}
+
 		return name;
 	}
 
@@ -41,12 +46,14 @@ module.exports = (function(){
 	};
 
 	exports.createTilePrefab = (config) => {
-		let { atlas, tile, color, alpha } = config;
+		let { atlas, tile, color, alpha, centered } = config;
 		let { width, height } = atlas;
 		let atlasIndex = getAtlasIndex(atlas, tile);
-		let prefabName = getPrefabName(atlas, atlasIndex, color, alpha);
+		let prefabName = getPrefabName(atlas, atlasIndex, color, alpha, centered);
 
 		if (Prefab.prefabs[prefabName] === undefined) {
+			let meshConfig = centered ? atlas.centerdMeshConfig : atlas.meshConfig;
+
 			let materialConfig = Object.create(atlas.materialConfig);
 			if (alpha !== undefined) {
 				materialConfig.properties.alpha = alpha;
@@ -61,7 +68,7 @@ module.exports = (function(){
 
 			Prefab.create({
 				name: prefabName, 
-				meshConfig: atlas.meshConfig,
+				meshConfig: meshConfig,
 				materialConfig: materialConfig
 			});
 		}
@@ -85,6 +92,7 @@ module.exports = (function(){
 			}
 		};
 		atlas.meshConfig = Primitives.createQuadMeshConfig(atlas.tileWidth, atlas.tileHeight);
+		atlas.centerdMeshConfig = Primitives.createCenteredQuadMeshConfig(atlas.tileWidth, atlas.tileHeight);
 		return atlas;
 	};
 
