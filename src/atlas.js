@@ -34,15 +34,20 @@ module.exports = (function(){
 		return name;
 	}
 
-	let setMaterialOffset = (config, atlasIndex, width, height) => {
-		let offsetU = (atlasIndex % width) / width;
-		let offsetV = 1 - (Math.floor(atlasIndex / width) + 1) / height;
-		config.properties.offset = [ offsetU, offsetV ];
+	let setOffset = (out, atlasIndex, width, height) => {
+		out[0] = (atlasIndex % width) / width;
+		out[1] = 1 - (Math.floor(atlasIndex / width) + 1) / height;
 	};
 
-	exports.setMaterialOffset = (config, atlas, tile) => {
+	let setMaterialConfigOffset = (config, atlasIndex, width, height) => {
+		config.properties.offset = [0,0]; // Create new offset array per prefab
+		setOffset(config.properties.offset, atlasIndex, width, height);
+	};
+
+	exports.setMaterialOffset = (material, atlas, tile) => {
 		let atlasIndex = getAtlasIndex(atlas, tile);
-		setMaterialOffset(config, atlasIndex, atlas.width, atlas.height);
+		if (!material.offset) { material.offset = [0,0]; }
+		setOffset(material.offset, atlasIndex, atlas.width, atlas.height);
 	};
 
 	exports.createTilePrefab = (config) => {
@@ -64,7 +69,7 @@ module.exports = (function(){
 				 // This shouldn't be necessary, however it is
 				materialConfig.properties.color = Maths.vec4.fromValues(1,1,1,1);
 			}
-			setMaterialOffset(materialConfig, atlasIndex, width, height);
+			setMaterialConfigOffset(materialConfig, atlasIndex, width, height);
 
 			Prefab.create({
 				name: prefabName, 
