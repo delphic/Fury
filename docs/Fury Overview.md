@@ -74,7 +74,7 @@ Passing Info to Functions:
 
 Do not create new objects during a frame unless completely unavoidable (then refactor so you don't have to) or actually creating new things in the game / engine.
 
-Try to keep class members public and rely on people using their head (i.e. don't enforce copy vector values, they should do that themselves). Whilst this might result in more errors, it gives greater flexibility and much more straight forward code.
+Try to keep object and module members public and rely on people using their head (i.e. don't enforce copy vector values, they should do that themselves). Whilst this might result in more errors, it gives greater flexibility and much more straight forward code.
 
 Avoid the new keyword where-ever possible, use literals, module format is designed accordingly.
 
@@ -83,10 +83,10 @@ Readable variable names, everywhere, no short-hands / abbreviations, avoid jargo
 
 No prefixes, that includes private variables with an underscore. If it has an exports assignment or is part of a literal declaration it's public, if not, it's not. Also no prefixing of type, if you want to give the type put the word at the end of the variable name.
 
-## Example Class Format
+## Example Module Format
 
 ```javascript
-let Class = module.exports = function() {
+module.exports = function() {
 	let exports = {};
 	let prototype = {
 		protoMethod: function() { ... }
