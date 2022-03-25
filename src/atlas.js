@@ -17,7 +17,7 @@ module.exports = (function(){
 		return 0;
 	};
 
-	let getPrefabName = (atlas, atlasIndex, color, alpha) => {
+	let getPrefabName = (atlas, atlasIndex, color, alpha, centered) => {
 		let name = atlas.id + "_" + atlasIndex;
 		if (alpha !== undefined && alpha != atlas.materialConfig.properties.alpha) {
 			name += "_" + (alpha ? "a1" : "a0");
@@ -26,27 +26,39 @@ module.exports = (function(){
 		if (color !== undefined && (color[0] != 1 || color[1] != 1 || color[2] != 1 || color[3] != 1)) {
 			name += "_" + color[0] + "_" + color[1] + "_" + color[2] + "_" + color[3];
 		}
+
+		if (centered) {
+			name += "_c";
+		}
+
 		return name;
 	}
 
-	let setMaterialOffset = (config, atlasIndex, width, height) => {
-		let offsetU = (atlasIndex % width) / width;
-		let offsetV = 1 - (Math.floor(atlasIndex / width) + 1) / height;
-		config.properties.offset = [ offsetU, offsetV ];
+	let setOffset = (out, atlasIndex, width, height) => {
+		out[0] = (atlasIndex % width) / width;
+		out[1] = 1 - (Math.floor(atlasIndex / width) + 1) / height;
 	};
 
-	exports.setMaterialOffset = (config, atlas, tile) => {
+	let setMaterialConfigOffset = (config, atlasIndex, width, height) => {
+		config.properties.offset = [0,0]; // Create new offset array per prefab
+		setOffset(config.properties.offset, atlasIndex, width, height);
+	};
+
+	exports.setMaterialOffset = (material, atlas, tile) => {
 		let atlasIndex = getAtlasIndex(atlas, tile);
-		setMaterialOffset(config, atlasIndex, atlas.width, atlas.height);
+		if (!material.offset) { material.offset = [0,0]; }
+		setOffset(material.offset, atlasIndex, atlas.width, atlas.height);
 	};
 
 	exports.createTilePrefab = (config) => {
-		let { atlas, tile, color, alpha } = config;
+		let { atlas, tile, color, alpha, centered } = config;
 		let { width, height } = atlas;
 		let atlasIndex = getAtlasIndex(atlas, tile);
-		let prefabName = getPrefabName(atlas, atlasIndex, color, alpha);
+		let prefabName = getPrefabName(atlas, atlasIndex, color, alpha, centered);
 
 		if (Prefab.prefabs[prefabName] === undefined) {
+			let meshConfig = centered ? atlas.centerdMeshConfig : atlas.meshConfig;
+
 			let materialConfig = Object.create(atlas.materialConfig);
 			if (alpha !== undefined) {
 				materialConfig.properties.alpha = alpha;
@@ -57,11 +69,11 @@ module.exports = (function(){
 				 // This shouldn't be necessary, however it is
 				materialConfig.properties.color = Maths.vec4.fromValues(1,1,1,1);
 			}
-			setMaterialOffset(materialConfig, atlasIndex, width, height);
+			setMaterialConfigOffset(materialConfig, atlasIndex, width, height);
 
 			Prefab.create({
 				name: prefabName, 
-				meshConfig: atlas.meshConfig,
+				meshConfig: meshConfig,
 				materialConfig: materialConfig
 			});
 		}
@@ -85,6 +97,7 @@ module.exports = (function(){
 			}
 		};
 		atlas.meshConfig = Primitives.createQuadMeshConfig(atlas.tileWidth, atlas.tileHeight);
+		atlas.centerdMeshConfig = Primitives.createCenteredQuadMeshConfig(atlas.tileWidth, atlas.tileHeight);
 		return atlas;
 	};
 
