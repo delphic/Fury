@@ -88,6 +88,16 @@ exports.useShaderProgram = function(shaderProgram) {
 };
 
 // Buffers
+exports.DataType = {
+	"BYTE": 5120, // signed 8-bit integer
+	"SHORT": 5122, // signed 16-bit integer
+	"INT": 5124, // signed 32-bit integer
+	"UNSIGNED_BYTE": 5121, // unsigned 8-bit integer
+	"UNSIGNED_SHORT": 5123, // unsigned 16-bit integer
+	"UNSIGNED_INT": 5125, // unsigned 32-bit integer
+	"FLOAT": 5126, // 32-bit IEEE floating point number
+	"HALF_FLOAT": 5131, // 16-bit IEEE floating point number
+};
 
 exports.createBuffer = function(data, itemSize, indexed) {
 	let buffer = gl.createBuffer();
@@ -291,8 +301,18 @@ exports.setAttribute = function(name, buffer) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);
 };
+exports.setAttributeFloat = function(name, buffer, type) {
+	/* Supported types: gl.BYTE, gl.SHORT, gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT, gl.HALF_FLOAT: */
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, type, false, 0, 0);
+};
+exports.setAttributeInteger = function(name, buffer, type) {
+	/* Supported types: gl.BYTE, gl.UNSIGNED_BYTE, gl.SHORT, gl.UNSIGNED_SHORT, gl.INT, gl.UNSIGNED_INT */
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	gl.vertexAttribIPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, type, 0, 0);
+};
 
-exports.setIndexedAttribute = function(buffer) {	// Should arguably be renamed - there's isn't an index attribute
+exports.setIndexedAttribute = function(buffer) {
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
 };
 

@@ -121,10 +121,10 @@ module.exports = (function(){
 					for (let i = 0, l = customBuffers.length; i < l; i++) {
 						let { name, componentType, buffer, size, count } = customBuffers[i];
 						switch (componentType) {
-							case 5126: // Float32
+							case r.DataType.FLOAT: // Float32
 								mesh.customBuffers[name] = r.createArrayBuffer(buffer, size, count);
 								break;
-							case 5123: // Int16
+							case r.DataType.SHORT: // Int16
 								mesh.customBuffers[name] = r.createElementArrayBuffer(buffer, size, count);
 								// UNTESTED
 								break;
@@ -165,7 +165,12 @@ module.exports = (function(){
 					for (let i = 0, l = customAttributes.length; i < l; i++) {
 						let { name, source, size } = customAttributes[i]; 
 						// Maybe should validate name isn't already used?
-						mesh[name] = r.createBuffer(config[source], size);
+						let data = config[source];
+						if (data.buffer) {
+							mesh[name] = r.createArrayBuffer(data, size, data.length);
+						} else {
+							mesh[name] = r.createBuffer(data, size);
+						}
 						// Note - dynamic not currently supported for custom attributes
 					}
 				}
