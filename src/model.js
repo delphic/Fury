@@ -15,11 +15,7 @@ module.exports = (function() {
 			// TODO: Load all meshes
 			// TODO: Load all sets of texture coordinates
 
-			// TODO: Option to provide data as JS arrays (i.e. buffers: false)
-			// This is so we can have the data available to JS for runtime manipulation
-			let meshData = {
-				isTypedBuffers: true
-			};
+			let meshData = {};
 
 			let attributes = json.meshes[0].primitives[0].attributes;
 			let positionIndex = attributes.POSITION;	// index into accessors
@@ -89,35 +85,27 @@ module.exports = (function() {
 			fetch(json.buffers[positionBufferView.buffer].uri).then((response) => {
 				return response.arrayBuffer();
 			}).then((arrayBuffer) => {
-				// TODO: pick typedarray type from accessors[index].componentType (5126 => Float32, 5123 => Int16)
+				// TODO: pick typedarray type from accessors[index].componentType (5126 => Float32, 5123 => Int16 - see renderer.DataType)
 				// TODO: Get size from data from accessors[index].type rather than hardcoding
 				meshData.vertices = new Float32Array(arrayBuffer, positionBufferView.byteOffset, vertexCount * 3);
-				meshData.vertexCount = vertexCount;
 
 				if (normalsIndex !== undefined) {
 					meshData.normals = new Float32Array(arrayBuffer, normalsBufferView.byteOffset, normalsCount * 3);
-					meshData.normalsCount = normalsCount;
 				}
 
 				if (uvIndex !== undefined) {
 					meshData.textureCoordinates = new Float32Array(arrayBuffer, uvBufferView.byteOffset, uvCount * 2);
-					meshData.textureCoordinatesCount = uvCount;
 				}
 
 				meshData.indices = new Int16Array(arrayBuffer, indicesBufferView.byteOffset, indexCount);
-				meshData.indexCount = indexCount;
 
 				if(colorIndices.length > 0) {
-					meshData.customBuffers = [];
+					meshData.customAttributes = [];
 					// Assumed componentType = 5126 => Float32, type = "VEC4" => count * 4
 					for (let i = 0, l = colorIndices.length; i < l; i++) {
-						meshData.customBuffers.push({
-							name: "COLOR_" + i,
-							buffer: new Float32Array(arrayBuffer, colorsBufferViews[i].byteOffset, colorsCounts[i] * 4),
-							count: colorsCounts[i],
-							componentType: 5126,
-							size: 4
-						});
+						let name = "COLOR_" + i; 
+						meshData[name] = new Float32Array(arrayBuffer, colorsBufferViews[i].byteOffset, colorsCounts[i] * 4);
+						meshData.customAttributes.push({ name: name, source: name, size: 4 });
 					}
 				}
 
