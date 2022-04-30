@@ -107,6 +107,7 @@ module.exports = (function(){
 				if (vertices && vertexCount) {
 					mesh.vertices = vertices;
 					mesh.calculateBounds();
+					mesh.vertices = null; // Note: as dynamic not supported for isTypedBuffers - remove vertices cache
 					mesh.vertexBuffer = r.createArrayBuffer(vertices, 3, vertexCount);
 				}
 				if (textureCoordinates && textureCoordinatesCount) {
@@ -163,15 +164,22 @@ module.exports = (function(){
 
 				if (customAttributes && customAttributes.length) {
 					for (let i = 0, l = customAttributes.length; i < l; i++) {
-						let { name, source, size } = customAttributes[i]; 
-						// Maybe should validate name isn't already used?
-						let data = config[source];
-						if (data.buffer) {
-							mesh[name] = r.createArrayBuffer(data, size, data.length);
+						let { name, source, size } = customAttributes[i];
+						if (!mesh[name]) {
+							let data = config[source];
+							if (data.buffer) {
+								mesh[name] = r.createArrayBuffer(data, size, data.length);
+							} else {
+								mesh[name] = r.createBuffer(data, size);
+							}
 						} else {
-							mesh[name] = r.createBuffer(data, size);
+							console.error("Duplicate definition of '" + name + "' in mesh configuration " + JSON.stringify(customAttributes));
 						}
-						// Note - dynamic not currently supported for custom attributes
+					}
+					
+					// Note - dynamic not currently supported for custom attributes
+					if (config.dynamic) {
+						console.warn("Mesh configuration stated dynamic but passed 2 custom attributes, these buffers will need to be updated manually");
 					}
 				}
 
