@@ -109,7 +109,7 @@ module.exports = (function() {
 					}
 				}
 
-				callback({ meshData: [ meshData ]});
+				callback({ meshData: [ meshData ] });
 
 			}).catch((error) => {
 				console.error(error);

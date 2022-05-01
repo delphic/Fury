@@ -44,9 +44,9 @@ module.exports = (function(){
 	let createBuffer = function(data, size, indexed) {
 		if (data.buffer) {
 			if (!indexed) {
-				return r.createArrayBuffer(data, size, Math.round(data.length / size));
+				return r.createArrayBuffer(data, size);
 			} else {
-				return r.createElementArrayBuffer(data, size, data.length);
+				return r.createElementArrayBuffer(data, size);
 			}
 		} else {
 			return r.createBuffer(data, size, indexed);
@@ -96,7 +96,7 @@ module.exports = (function(){
 					if (!mesh[name]) {
 						let data = config[source];
 						if (data.buffer) {
-							mesh[name] = r.createArrayBuffer(data, size, data.length);
+							mesh[name] = r.createArrayBuffer(data, size);
 						} else {
 							mesh[name] = r.createBuffer(data, size);
 						}
