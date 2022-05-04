@@ -143,10 +143,12 @@ let TextureQuality = exports.TextureQuality = {
 	Low: "low"				// Uses nearest pixel
 };
 
-exports.createTexture = function(source, quality, clamp, disableAniso) {
+exports.createTexture = function(source, quality, clamp, flip, disableAniso) {
+	if (flip === undefined) flip = true;
+
 	let texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flip);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 	// If we want to create mipmaps manually provide an array source and put them into
 	// different levels in texImage2D - you must provide all mipmap levels
