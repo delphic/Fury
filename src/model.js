@@ -3,17 +3,24 @@ module.exports = (function() {
 
 	// Takes a URI of a glTF file to load
 	// Returns an object containing an array meshdata ready for use with Fury.Mesh
-	// In future can be extended to include material information
+	// As well as an array of images to use in material creation
+	// In future can be extended to include material (texture + sampler) information from the model
 	exports.load = (uri, callback) => {
 		// TODO: Check file extension, only gltf currently supported
-		// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
+		// https://github.com/KhronosGroup/glTF -> https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
+		// https://github.com/KhronosGroup/glTF/blob/main/specification/2.0/figures/gltfOverview-2.0.0b.png
+		// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html
 
+		let model = { meshData: [], images: [] };
+		
 		fetch(uri).then((response) => {
 			return response.json();
 		}).then((json) => {
 			// Find first mesh and load it
 			// TODO: Load all meshes
 			// TODO: Load all sets of texture coordinates
+			// TODO: Load TANGENT, JOINTS_n & WEIGHTS_n once supported by Fury.Mesh
+			// c.f. https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#meshes-overview
 
 			let meshData = {};
 
@@ -82,6 +89,8 @@ module.exports = (function() {
 				}
 			}
 
+			let assetsLoading = 0;
+			assetsLoading++;
 			fetch(json.buffers[positionBufferView.buffer].uri).then((response) => {
 				return response.arrayBuffer();
 			}).then((arrayBuffer) => {
@@ -109,13 +118,43 @@ module.exports = (function() {
 					}
 				}
 
-				callback({ meshData: [ meshData ] });
+				model.meshData.push(meshData);
+				assetsLoading--;
+
+				if (assetsLoading == 0) {
+					callback(model);
+				}
 
 			}).catch((error) => {
 				console.error(error);
 				console.error("Unable to fetch data buffer from model");
 			});
 
+			if (json.images && json.images.length) {
+				// TODO: Load images and using the index from textures array instead of directly
+				for (let i = 0, l = json.images.length; i < l; i++) {
+					assetsLoading++;
+					fetch(json.images[i].uri).then(response => response.blob()).then(blob => {
+						let image = new Image();
+						image.src = URL.createObjectURL(blob);
+						// Note if we wanted to unload the model
+						// we would need to call URL.revokeObjectURL(image.src)
+						image.decode().then(() => {
+							model.images.push(image);
+							assetsLoading--;
+							if (assetsLoading == 0) {
+								callback(model);
+							}
+						}).catch((error) => {
+							console.error(error);
+							console.error("Unable to decode provide image data");
+						});
+					}).catch((error) => {
+						console.error(error);
+						console.error("Unable to fetch image data from model");
+					});	
+				}
+			}
 		}).catch((error) => {
 			console.error(error);
 			console.error("Unable to load model at " + uri);
