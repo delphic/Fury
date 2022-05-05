@@ -86,7 +86,7 @@ module.exports = (function(){
 		}
 		let atlas = Object.create(config);
 		atlas.alpha = atlas.alpha === undefined ? true : !!atlas.alpha;
-		atlas.texture = Renderer.createTexture(image, "low");
+		atlas.texture = Renderer.createTexture(image, false, true);
 		atlas.materialConfig = {
 			shader: Shaders.Sprite,
 			texture: atlas.texture,
