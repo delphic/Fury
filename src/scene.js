@@ -34,7 +34,7 @@ module.exports = (function() {
 	let currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 	let nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
-	exports.create = function({ camera, enableFrustumCulling, forceSphereCulling}) {
+	exports.create = function({ camera, enableFrustumCulling, forceSphereCulling }) {
 		let cameras = {};
 		let cameraNames = [];
 		let mainCameraName = "main";
