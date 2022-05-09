@@ -66,7 +66,7 @@ module.exports = (function(){
 			if (color !== undefined) {
 				materialConfig.properties.color = color;
 			} else {
-				 // This shouldn't be necessary, however it is
+				// This shouldn't be necessary, however it is
 				materialConfig.properties.color = Maths.vec4.fromValues(1,1,1,1);
 			}
 			setMaterialConfigOffset(materialConfig, atlasIndex, width, height);
