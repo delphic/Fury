@@ -1,3 +1,5 @@
+const Transform = require('./transform');
+
 module.exports = (function() {
 	let exports = {};
 
@@ -9,6 +11,7 @@ module.exports = (function() {
 
 		let primitive = json.meshes[meshIndex].primitives[0];
 		// TODO: Consider support for multiple primitives
+		// Note createSceneHierarchy has single primitive assumption baked
 
 		let attributes = primitive.attributes;
 		let positionIndex = attributes.POSITION;	// index into accessors
@@ -26,9 +29,6 @@ module.exports = (function() {
 
 		let indicesIndex = primitive.indices;
 		// ^^ I think this is the index and not the index count, should check with a more complex / varied model
-
-		// Further baking in the assumption of 1 primitive per mesh here
-		meshData.modelMaterialIndex = primitive.material;
 
 		// Calculate bounding radius
 		let max = json.accessors[positionIndex].max;
@@ -113,6 +113,44 @@ module.exports = (function() {
 		});
 	};
 
+	let createSceneHierarchy = (json, index, parent) => {
+		let nodes = json.nodes;
+		let { name, mesh, children, translation, rotation, scale } = nodes[index];
+
+		let result = {};
+		
+		result.name = name;
+		result.modelMeshIndex = mesh;
+		if (!isNaN(mesh)) {
+			result.modelMaterialIndex = json.meshes[mesh].primitives[0].material;
+		}
+
+		result.transform = Transform.create({
+			position: translation,
+			rotation: rotation,
+			scale: scale
+		});
+
+		if (parent) {
+			result.transform.parent = parent.transform;
+		}
+		result.transform.children = [];
+		result.children = [];
+
+		if (children) {
+			for (let i = 0, l = children.length; i < l; i++) {
+				let childNode = createSceneHierarchy(
+					json,
+					children[i],
+					result);
+				result.children.push(childNode);
+				result.transform.children.push(childNode.transform);
+			}
+		}
+
+		return result;
+	};
+
 	// Takes a URI of a glTF file to load
 	// Returns an object containing an array meshdata ready for use with Fury.Mesh
 	// As well as an array of images to use in material creation
@@ -141,9 +179,16 @@ module.exports = (function() {
 			for (let i = 0, l = json.meshes.length; i < l; i++) {
 				assetsLoading++;
 				extractMeshData(json, i, (meshData) => {
-					model.meshData.push(meshData);
+					model.meshData[i] = meshData;
 					onAssetLoadComplete();
 				});
+			}
+
+			// Hierarchy information
+			if (json.scenes && json.scenes.length) {
+				let scene = json.scenes[json.scene]; // Only one scene currently supported
+				let nodeIndex = scene.nodes[0]; // Expect single scene node
+				model.hierarchy = createSceneHierarchy(json, nodeIndex);
 			}
 
 			if (json.materials && json.materials.length) {
@@ -154,7 +199,7 @@ module.exports = (function() {
 					if (material.pbrMetallicRoughness 
 						&& material.pbrMetallicRoughness.baseColorTexture) {
 						let index = material.pbrMetallicRoughness.baseColorTexture.index; 
-						textureIndex = index !== undefined && index !== null ? index : -1;
+						textureIndex = !isNaN(index) ? index : -1;
 					}
 
 					// Only texture index is currently relevant
@@ -184,7 +229,7 @@ module.exports = (function() {
 						// Note if we wanted to unload the model
 						// we would need to call URL.revokeObjectURL(image.src)
 						image.decode().then(() => {
-							model.images.push(image);
+							model.images[i] = image;
 							onAssetLoadComplete();
 						}).catch((error) => {
 							console.error(error);
