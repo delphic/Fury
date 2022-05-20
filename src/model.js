@@ -6,9 +6,11 @@ module.exports = (function() {
 
 		// TODO: Load TANGENT, JOINTS_n & WEIGHTS_n once supported by Fury.Mesh
 		// c.f. https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#meshes-overview
-		// TODO: Support multiple primitives
 
-		let attributes = json.meshes[meshIndex].primitives[0].attributes;
+		let primitive = json.meshes[meshIndex].primitives[0];
+		// TODO: Consider support for multiple primitives
+
+		let attributes = primitive.attributes;
 		let positionIndex = attributes.POSITION;	// index into accessors
 		let normalsIndex = attributes.NORMAL;		// index into accessors
 		let uvIndex = attributes.TEXCOORD_0;		// index into accessors
@@ -22,8 +24,11 @@ module.exports = (function() {
 			propertyNameIndex++;
 		}
 
-		let indicesIndex = json.meshes[meshIndex].primitives[0].indices;
+		let indicesIndex = primitive.indices;
 		// ^^ I think this is the index and not the index count, should check with a more complex / varied model
+
+		// Further baking in the assumption of 1 primitive per mesh here
+		meshData.modelMaterialIndex = primitive.material;
 
 		// Calculate bounding radius
 		let max = json.accessors[positionIndex].max;
@@ -111,14 +116,16 @@ module.exports = (function() {
 	// Takes a URI of a glTF file to load
 	// Returns an object containing an array meshdata ready for use with Fury.Mesh
 	// As well as an array of images to use in material creation
-	// In future can be extended to include material (texture + sampler) information from the model
+	// Includes a cut down set of information on materialData and textureData arrays 
+	// however these are not ready to be used with Fury.Material and Fury.Texture
+	// and must be manipulated further
 	exports.load = (uri, callback) => {
 		// TODO: Check file extension, only gltf currently supported
 		// https://github.com/KhronosGroup/glTF -> https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
 		// https://github.com/KhronosGroup/glTF/blob/main/specification/2.0/figures/gltfOverview-2.0.0b.png
 		// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html
 
-		let model = { meshData: [], images: [] };
+		let model = { meshData: [], images: [], materialData: [], textureData: [] };
 		
 		fetch(uri).then((response) => {
 			return response.json();
@@ -126,7 +133,9 @@ module.exports = (function() {
 			let assetsLoading = 0;
 			let onAssetLoadComplete = () => {
 				assetsLoading--;
-				if (assetsLoading == 0) callback(model);
+				if (assetsLoading == 0) {
+					callback(model);
+				}
 			};
 
 			for (let i = 0, l = json.meshes.length; i < l; i++) {
@@ -137,8 +146,36 @@ module.exports = (function() {
 				});
 			}
 
+			if (json.materials && json.materials.length) {
+				// As PBR is not supported flatten the material structure
+				for (let i = 0, l = json.materials.length; i < l; i++) {
+					let textureIndex = -1;
+					let material = json.materials[i];
+					if (material.pbrMetallicRoughness 
+						&& material.pbrMetallicRoughness.baseColorTexture) {
+						let index = material.pbrMetallicRoughness.baseColorTexture.index; 
+						textureIndex = index !== undefined && index !== null ? index : -1;
+					}
+
+					// Only texture index is currently relevant
+					model.materialData[i] = {
+						textureIndex: textureIndex
+					};
+				}
+			}
+
+			if (json.textures && json.textures.length) {
+				for (let i = 0, l = json.textures.length; i < l; i++) {
+					let { sampler, source, name } = json.textures[i];
+					// samplers not currently supported, so just put name and imageIndex
+					model.textureData[i] = {
+						name: name,
+						imageIndex: source 
+					};
+				}
+			}
+
 			if (json.images && json.images.length) {
-				// TODO: Load images and using the index from textures array instead of directly
 				for (let i = 0, l = json.images.length; i < l; i++) {
 					assetsLoading++;
 					fetch(json.images[i].uri).then(response => response.blob()).then(blob => {
