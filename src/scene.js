@@ -162,7 +162,11 @@ module.exports = (function() {
 			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
-			object.transform = Transform.create(config);
+			if (config.transform) {
+				object.transform = config.transform;
+			} else {
+				object.transform = Transform.create(config);
+			}
 
 			// For now just sort by material on add
 			// Ideally would group materials with the same shader and textures together
@@ -446,14 +450,12 @@ module.exports = (function() {
 				mesh.dirty = false;
 			}
 
-			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
-			mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
-			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
+			object.transform.updateMatrix();
 			if (shader.mMatrixUniformName) {
 				// TODO: Arguably should send either MV Matrix or M and V Matrices
-				r.setUniformMatrix4(shader.mMatrixUniformName, mvMatrix);
+				r.setUniformMatrix4(shader.mMatrixUniformName, object.transform.matrix);
 			}
-			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);
+			mat4.multiply(mvMatrix, cameraMatrix, object.transform.matrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 
 			if (shader.nMatrixUniformName) {
