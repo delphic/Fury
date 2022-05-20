@@ -3,7 +3,7 @@ const Transform = require('./transform');
 module.exports = (function() {
 	let exports = {};
 
-	let buildMeshData = (json, buffers, meshIndex) => {
+	let buildMeshData = (json, meshIndex, buffers) => {
 		let meshData = {};
 
 		// TODO: Load TANGENT, JOINTS_n & WEIGHTS_n once supported by Fury.Mesh
@@ -93,7 +93,61 @@ module.exports = (function() {
 		return meshData;
 	};
 
-	let createSceneHierarchy = (json, index, parent) => {
+	let calculateArrayLength = (accessor) => {
+		switch(accessor.type) {
+			case "VEC4":
+				return 4 * accessor.count;
+			case "VEC3":
+				return 3 * accessor.count;
+			case "VEC2":
+				return 2 * accessor.count;
+			default: // "SCALAR"
+				return accessor.count;
+		}
+	};
+
+	let buildAnimationData = (out, json, animationIndex, buffers, nodeList) => {
+		let animation = json.animations[animationIndex];
+		let result = {};
+
+		result.name = animation.name;
+		result.channels = [];
+		result.duration = 0;
+
+		for (let i = 0, l = animation.channels.length; i < l; i++) {
+			let channel = animation.channels[i];
+			
+			let sampler = animation.samplers[channel.sampler];
+			let times = []; // accessors at sampler.input
+			let values = []; // accessors at sampler.output
+
+			let timesAccessor = json.accessors[sampler.input];
+			let timesBufferView = json.bufferViews[timesAccessor.bufferView];
+			let valuesAccesor = json.accessors[sampler.output];
+			let valuesBufferView = json.bufferViews[valuesAccesor.bufferView];
+
+			result.duration = Math.max(result.duration, timesAccessor.max[0]);
+
+			// Could assert target.path against accessor.type (translation => VEC3, rotation => VEC4, scale => VEC3)
+
+			// Assuming float for now, should read from accessor.componentType
+			// Note: needs transforming to float as per https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#animations
+			times = new Float32Array(buffers[timesBufferView.buffer], timesBufferView.byteOffset, calculateArrayLength(timesAccessor));
+			values = new Float32Array(buffers[valuesBufferView.buffer], valuesBufferView.byteOffset, calculateArrayLength(valuesAccesor));
+
+			result.channels[i] = {
+				type: channel.target.path,
+				transform: nodeList[channel.target.node].transform,
+				times: times,
+				values: values,
+				interpolation: sampler.interpolation
+			};
+		}
+
+		out[animation.name] = result;
+	};
+
+	let createSceneHierarchy = (out, json, index, parent) => {
 		let nodes = json.nodes;
 		let { name, mesh, children, translation, rotation, scale } = nodes[index];
 
@@ -120,6 +174,7 @@ module.exports = (function() {
 		if (children) {
 			for (let i = 0, l = children.length; i < l; i++) {
 				let childNode = createSceneHierarchy(
+					out,
 					json,
 					children[i],
 					result);
@@ -127,6 +182,8 @@ module.exports = (function() {
 				result.transform.children.push(childNode.transform);
 			}
 		}
+
+		out[index] = result;
 
 		return result;
 	};
@@ -149,6 +206,7 @@ module.exports = (function() {
 
 			let model = { meshData: [], images: [], materialData: [], textureData: [] };
 			let arrayBuffers = [];
+			let nodeList = [];
 
 			let assetsLoading = 0;
 			let onAssetLoadComplete = () => {
@@ -156,7 +214,14 @@ module.exports = (function() {
 				if (assetsLoading == 0) {
 					// All buffers loaded so build mesh data
 					for(let i = 0, l = json.meshes.length; i < l; i++) {
-						model.meshData[i] = buildMeshData(json, arrayBuffers, i)
+						model.meshData[i] = buildMeshData(json, i, arrayBuffers)
+					}
+
+					if (json.animations && json.animations.length) {
+						model.animations = {};
+						for (let i = 0, l = json.animations.length; i < l; i++) {
+							buildAnimationData(model.animations, json, i, arrayBuffers, nodeList);
+						}
 					}
 					callback(model);
 				}
@@ -179,7 +244,7 @@ module.exports = (function() {
 			if (json.scenes && json.scenes.length) {
 				let scene = json.scenes[json.scene]; // Only one scene currently supported
 				let nodeIndex = scene.nodes[0]; // Expect single scene node
-				model.hierarchy = createSceneHierarchy(json, nodeIndex);
+				model.hierarchy = createSceneHierarchy(nodeList, json, nodeIndex);
 			}
 
 			if (json.materials && json.materials.length) {
