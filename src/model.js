@@ -3,7 +3,7 @@ const Transform = require('./transform');
 module.exports = (function() {
 	let exports = {};
 
-	let extractMeshData = (json, meshIndex, callback) => {
+	let buildMeshData = (json, buffers, meshIndex) => {
 		let meshData = {};
 
 		// TODO: Load TANGENT, JOINTS_n & WEIGHTS_n once supported by Fury.Mesh
@@ -43,27 +43,17 @@ module.exports = (function() {
 		let indexCount = json.accessors[indicesIndex].count;
 		let indicesBufferView = json.bufferViews[json.accessors[indicesIndex].bufferView];
 
-		if (positionBufferView.buffer != indicesBufferView.buffer) {
-			console.error("Triangle Indices Buffer Index does not match Position Buffer Index");
-		}
-
 		let normalsCount, uvCount;
 		let normalsBufferView, uvBufferView;
 
 		if (normalsIndex !== undefined) {
 			normalsCount = json.accessors[normalsIndex].count;
 			normalsBufferView = json.bufferViews[json.accessors[normalsIndex].bufferView];
-			if (positionBufferView.buffer != normalsBufferView.buffer) {
-				console.error("Normals Buffer Index does not match Position Buffer Index");
-			}
 		}
 
 		if (uvIndex !== undefined) {
 			uvCount = json.accessors[uvIndex].count;
 			uvBufferView = json.bufferViews[json.accessors[uvIndex].bufferView];
-			if (positionBufferView.buffer != uvBufferView.buffer) {
-				console.error("Texture Coordinates Buffer Index does not match Position Buffer Index");
-			}
 		}
 
 		let colorsCounts = [];
@@ -74,43 +64,33 @@ module.exports = (function() {
 			let accessor = json.accessors[colorIndex];
 			colorsCounts[i] = accessor.count;
 			colorsBufferViews[i] = json.bufferViews[accessor.bufferView];
-			if (positionBufferView.buffer != colorsBufferViews[i].buffer) {
-				console.error("The COLOR_" + i +" Buffer Index does not match Position Buffer Index");
+		}
+
+		// TODO: pick typedarray type from accessors[index].componentType (5126 => Float32, 5123 => Int16 - see renderer.DataType)
+		// TODO: Get size from data from accessors[index].type rather than hardcoding
+		meshData.vertices = new Float32Array(buffers[positionBufferView.buffer], positionBufferView.byteOffset, vertexCount * 3);
+
+		if (normalsIndex !== undefined) {
+			meshData.normals = new Float32Array(buffers[normalsBufferView.buffer], normalsBufferView.byteOffset, normalsCount * 3);
+		}
+
+		if (uvIndex !== undefined) {
+			meshData.textureCoordinates = new Float32Array(buffers[uvBufferView.buffer], uvBufferView.byteOffset, uvCount * 2);
+		}
+
+		meshData.indices = new Int16Array(buffers[indicesBufferView.buffer], indicesBufferView.byteOffset, indexCount);
+
+		if(colorIndices.length > 0) {
+			meshData.customAttributes = [];
+			// Assumed componentType = 5126 => Float32, type = "VEC4" => count * 4
+			for (let i = 0, l = colorIndices.length; i < l; i++) {
+				let name = "COLOR_" + i; 
+				meshData[name] = new Float32Array(buffers[colorsBufferViews[i].buffer], colorsBufferViews[i].byteOffset, colorsCounts[i] * 4);
+				meshData.customAttributes.push({ name: name, source: name, size: 4 });
 			}
 		}
 
-		fetch(json.buffers[positionBufferView.buffer].uri).then((response) => {
-			return response.arrayBuffer();
-		}).then((arrayBuffer) => {
-			// TODO: pick typedarray type from accessors[index].componentType (5126 => Float32, 5123 => Int16 - see renderer.DataType)
-			// TODO: Get size from data from accessors[index].type rather than hardcoding
-			meshData.vertices = new Float32Array(arrayBuffer, positionBufferView.byteOffset, vertexCount * 3);
-
-			if (normalsIndex !== undefined) {
-				meshData.normals = new Float32Array(arrayBuffer, normalsBufferView.byteOffset, normalsCount * 3);
-			}
-
-			if (uvIndex !== undefined) {
-				meshData.textureCoordinates = new Float32Array(arrayBuffer, uvBufferView.byteOffset, uvCount * 2);
-			}
-
-			meshData.indices = new Int16Array(arrayBuffer, indicesBufferView.byteOffset, indexCount);
-
-			if(colorIndices.length > 0) {
-				meshData.customAttributes = [];
-				// Assumed componentType = 5126 => Float32, type = "VEC4" => count * 4
-				for (let i = 0, l = colorIndices.length; i < l; i++) {
-					let name = "COLOR_" + i; 
-					meshData[name] = new Float32Array(arrayBuffer, colorsBufferViews[i].byteOffset, colorsCounts[i] * 4);
-					meshData.customAttributes.push({ name: name, source: name, size: 4 });
-				}
-			}
-
-			callback(meshData);
-		}).catch((error) => {
-			console.error(error);
-			console.error("Unable to fetch data buffer from model");
-		});
+		return meshData;
 	};
 
 	let createSceneHierarchy = (json, index, parent) => {
@@ -163,27 +143,35 @@ module.exports = (function() {
 		// https://github.com/KhronosGroup/glTF -> https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
 		// https://github.com/KhronosGroup/glTF/blob/main/specification/2.0/figures/gltfOverview-2.0.0b.png
 		// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html
-
-		let model = { meshData: [], images: [], materialData: [], textureData: [] };
-		
 		fetch(uri).then((response) => {
 			return response.json();
 		}).then((json) => {
+
+			let model = { meshData: [], images: [], materialData: [], textureData: [] };
+			let arrayBuffers = [];
+
 			let assetsLoading = 0;
 			let onAssetLoadComplete = () => {
 				assetsLoading--;
 				if (assetsLoading == 0) {
+					// All buffers loaded so build mesh data
+					for(let i = 0, l = json.meshes.length; i < l; i++) {
+						model.meshData[i] = buildMeshData(json, arrayBuffers, i)
+					}
 					callback(model);
 				}
 			};
 
-			for (let i = 0, l = json.meshes.length; i < l; i++) {
+			for (let i = 0, l = json.buffers.length; i < l; i++) {
 				assetsLoading++;
-				// TODO: Fetch buffer data via fetch *then* create mesh data objects
-				// Can then also decouple dependency on all bufferViews requiring the same buffer
-				extractMeshData(json, i, (meshData) => {
-					model.meshData[i] = meshData;
+				fetch(json.buffers[i].uri).then((response) => {
+					return response.arrayBuffer();
+				}).then((buffer) => { 
+					arrayBuffers[i] = buffer;
 					onAssetLoadComplete();
+				}).catch((error) => {
+					console.error(error);
+					console.error("Unable to fetch data buffer from model");
 				});
 			}
 
