@@ -2,6 +2,7 @@
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
 let gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
+let activeTexture = null;
 
 exports.init = function(canvas, contextAttributes) {
 	gl = canvas.getContext('webgl2', contextAttributes);
@@ -23,6 +24,10 @@ exports.init = function(canvas, contextAttributes) {
 		TextureLocations.push(gl["TEXTURE" + i.toString()]);
 		i++;
 	}
+};
+
+exports.getContext = function() {
+	return gl;
 };
 
 exports.getContextLossExtension = function() {
@@ -144,7 +149,8 @@ exports.FilterType = {
 
 exports.createTexture = function(source, clamp, flipY, mag, min, generateMipmap, enableAniso) {
 	let texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
+	
+	gl.bindTexture(gl.TEXTURE_2D, texture); // Binds into currently active texture location
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !!flipY);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 	// If we want to create mipmaps manually provide an array source and put them into
@@ -157,7 +163,7 @@ exports.createTexture = function(source, clamp, flipY, mag, min, generateMipmap,
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
 
-	gl.bindTexture(gl.TEXTURE_2D, null);
+	gl.bindTexture(gl.TEXTURE_2D, activeTexture); // rebind the active texture
 	texture.glTextureType = gl.TEXTURE_2D;
 	return texture;
 };
@@ -197,6 +203,7 @@ let setTextureQuality = function(glTextureType, mag, min, generateMipmap, enable
 exports.setTexture = function(location, texture) {
 	gl.activeTexture(TextureLocations[location]);
 	gl.bindTexture(texture.glTextureType, texture);
+	activeTexture = texture;
 };
 
 // Blending
