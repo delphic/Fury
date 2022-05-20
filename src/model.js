@@ -157,6 +157,7 @@ module.exports = (function() {
 	// Includes a cut down set of information on materialData and textureData arrays 
 	// however these are not ready to be used with Fury.Material and Fury.Texture
 	// and must be manipulated further
+	// Might be sensible to separate the asset load and format conversions
 	exports.load = (uri, callback) => {
 		// TODO: Check file extension, only gltf currently supported
 		// https://github.com/KhronosGroup/glTF -> https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
@@ -178,6 +179,8 @@ module.exports = (function() {
 
 			for (let i = 0, l = json.meshes.length; i < l; i++) {
 				assetsLoading++;
+				// TODO: Fetch buffer data via fetch *then* create mesh data objects
+				// Can then also decouple dependency on all bufferViews requiring the same buffer
 				extractMeshData(json, i, (meshData) => {
 					model.meshData[i] = meshData;
 					onAssetLoadComplete();
