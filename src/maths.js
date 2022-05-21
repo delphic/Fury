@@ -1,6 +1,6 @@
 // This is a centralised point for importing glMatrix
 // Also provides a helper for globalizing for ease of use
-let { glMatrix, mat2, mat3, mat4, quat, quat2, vec2, vec3, vec4  } = require('../libs/gl-matrix');
+let { glMatrix, mat2, mat3, mat4, quat, quat2, vec2, vec3, vec4  } = require('gl-matrix');
 
 let globalize = () => {
 	// Lets create some globals!
