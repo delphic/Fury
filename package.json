@@ -6,9 +6,7 @@
 	"license": "MIT",
 	"homepage": "https://delphic.me.uk/fury/",
 	"main": "src/fury.js",
-	"dependencies": {
-		"gl-matrix": "3.4.0"
-	},
+	"dependencies": {},
 	"private": true,
 	"devDependencies": {
 		"eslint": "^8.2.0"
