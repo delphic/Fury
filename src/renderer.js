@@ -132,7 +132,7 @@ exports.createElementArrayBuffer = function(data, itemSize) {
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
 	buffer.itemSize = itemSize;
-	buffer.numItems = Math.round(data.length / itemSize);;
+	buffer.numItems = Math.round(data.length / itemSize);
 	return buffer;
 };
 
