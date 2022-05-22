@@ -26,6 +26,7 @@ module.exports = (function() {
 	Fury.TileMap = require('./tilemap');
 	Fury.Transform = require('./transform');
 	Fury.Utils = require('./utils');
+	Fury.WorkerPool = require('./workerPool');
 
 	Fury.init = function(parameters) {
 		let disableShaderPreload = false;
