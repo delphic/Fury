@@ -1,7 +1,10 @@
 const Input = require('./input');
 
 module.exports = (function() {
-	let exports = {};
+	let gameTime = 0; // Time in seconds that the game loop thinks it's run (i.e. accounting for clamps, pauses / focus loss)
+	let exports = {
+		get time() { return gameTime; },
+	};
 
 	let State = {
 		Paused: 0,
@@ -16,6 +19,8 @@ module.exports = (function() {
 	let loopDelegate = null;
 
 	let lastTime = 0;
+
+	exports.timeScale = 1;
 
 	exports.init = function({ loop, maxFrameTimeMs: maxMs }) {
 		if (maxMs && typeof(maxMs) === 'number') {
@@ -84,6 +89,7 @@ module.exports = (function() {
 			return;
 		}
 
+		elapsed *= exports.timeScale;
 		if (maxFrameTimeMs && elapsed > maxFrameTimeMs) {
 			elapsed = maxFrameTimeMs;
 			// Arguably could run multiple logic updates,
@@ -92,9 +98,14 @@ module.exports = (function() {
 		}
 
 		elapsed /= 1000; // Convert elapsed to seconds
+		gameTime += elapsed;
 
-		loopDelegate(elapsed);
-
+		try {
+			loopDelegate(elapsed);
+		} catch (error) {
+			console.error(error);
+		}
+		
 		Input.handleFrameFinished();
 		window.requestAnimationFrame(loop);
 	};

@@ -34,7 +34,7 @@ module.exports = (function() {
 	let currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false;
 	let nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
 
-	exports.create = function({ camera, enableFrustumCulling, forceSphereCulling}) {
+	exports.create = function({ camera, enableFrustumCulling, forceSphereCulling }) {
 		let cameras = {};
 		let cameraNames = [];
 		let mainCameraName = "main";
@@ -52,6 +52,14 @@ module.exports = (function() {
 		// TODO: Should have an equivilent to indexedMap but where you supply the keys, keyedMap?.
 		let alphaRenderObjects = [];
 		let depths = {};
+		depths.get = (o) => {
+			let id = o.sceneId !== undefined ? o.sceneId : o.id;
+			return depths[id];
+		};
+		depths.set = (o, depth) => {
+			let id = o.sceneId !== undefined ? o.sceneId : o.id;
+			depths[id] = depth;
+		};
 
 		let addTexturesToScene = function(material) {
 			for (let i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
@@ -84,14 +92,14 @@ module.exports = (function() {
 
 		let addToAlphaList = function(object, depth) {
 			// TODO: Profile using Array sort instead of insertion sorting, also test add/remove from list rather than clear
-			depths[object.sceneId] = depth;
+			depths.set(object, depth);
 			// Binary search
 			// Could technically do better by batching up items with the same depth according to material / mesh like scene graph
 			// However this is only relevant for 2D games with orthographic projection
 			let less, more, itteration = 1, inserted = false, index = Math.floor(alphaRenderObjects.length/2);
 			while (!inserted) {
-				less = (index === 0 || depths[alphaRenderObjects[index-1].sceneId] <= depth);
-				more = (index >= alphaRenderObjects.length || depths[alphaRenderObjects[index].sceneId] >= depth);
+				less = (index === 0 || depths.get(alphaRenderObjects[index-1]) <= depth);
+				more = (index >= alphaRenderObjects.length || depths.get(alphaRenderObjects[index]) >= depth);
 				if (less && more) {
 					alphaRenderObjects.splice(index, 0, object);
 					inserted = true;
@@ -154,12 +162,14 @@ module.exports = (function() {
 			object.material.shaderId = object.shaderId;
 			addTexturesToScene(object.material);
 
-			// Probably want to move to a stronger ECS concept
-			// Adding a transform component is probably fine
-			// as the renderer requires it.
-			object.transform = Transform.create(config);
+			if (config.transform) {
+				object.transform = config.transform;
+			} else {
+				object.transform = Transform.create(config);
+			}
 
 			// For now just sort by material on add
+			// Ideally would group materials with the same shader and textures together
 			object.sceneId = renderObjects.add(object, sortByMaterial); 
 			// Would probably be more performant to dynamic changes if kept a record of start and end index
 			// of all materials and could simply inject at the correct point - TODO: Profile
@@ -333,7 +343,7 @@ module.exports = (function() {
 			r.disableBlending();
 		};
 
-		let bindAndDraw = function(object) {	// TODO: Separate binding and drawing
+		let bindAndDraw = function(object) {
 			let shader = object.material.shader;
 			let material = object.material;
 			let mesh = object.mesh;
@@ -345,13 +355,21 @@ module.exports = (function() {
 			// TODO: When scene graph implemented - check material.shaderId & object.shaderId against shader.id, and object.materialId against material.id and object.meshId against mesh.id
 			// as this indicates that this object needs reordering in the graph (as it's been changed).
 
-			let shaderChanged = false;
-			let materialChanged = false;
+			let shouldRebindShader = false;
+			let shouldRebindMaterial = false;
 			if (!shader.id || shader.id != currentShaderId) {
-				shaderChanged = true;
-				if(!shader.id) {	// Shader was changed on the material since originally added to scene
+				shouldRebindShader = true;
+				// Check if shader was changed on the material since originally added to scene
+				if(!shader.id) {
 					material.shaderId = shaders.add(shader);
 					object.shaderId = material.shaderId;
+				} else {
+					if (material.shaderId != shader.id) {
+						material.shaderId = shader.id;
+					} 
+					if (object.shaderId != shader.id) {
+						object.shaderId = shader.id;
+					}
 				}
 				currentShaderId = shader.id;
 				r.useShaderProgram(shader.shaderProgram);
@@ -366,18 +384,22 @@ module.exports = (function() {
 
 			if (!material.id || material.id != currentMaterialId || material.dirty) {
 				if (!material.dirty) {
-					materialChanged = true;
+					shouldRebindMaterial = true;
 				} else {
 					material.dirty = false;
 				}
-				if (!material.id) {	// material was changed on object since originally added to scene
+				// check if material was changed on object since originally 
+				// added to scene TODO: Ideally would mark object for resorting
+				if (!material.id) {
 					object.materialId = materials.add(material);
+				} else if (object.materialId != material.id) {
+					object.materialId = material.id;
 				}
 				currentMaterialId = material.id;
 				shader.bindMaterial.call(r, material);
 			}
 
-			if (shaderChanged || materialChanged) {
+			if (shouldRebindShader || shouldRebindMaterial) {
 				// Texture Rebinding dependencies
 				// If the shader has changed you DON'T need to rebind, you only need to rebind if the on the uniforms have changed since the shaderProgram was last used...
 					// NOTE Large Changes needed because of this
@@ -417,22 +439,23 @@ module.exports = (function() {
 			}
 
 			if (!mesh.id || mesh.id != currentMeshId || mesh.dirty) {
-				if (!mesh.id) {	// mesh was changed on object since originally added to scene
+				// Check if mesh was changed on object since originally added to scene
+				if (!mesh.id) {
 					object.meshId = mesh.add(mesh);
+				} else if (object.meshId != mesh.id) {
+					object.meshId = mesh.id;
 				}
 				currentMeshId = mesh.id;
 				shader.bindBuffers.call(r, mesh);
 				mesh.dirty = false;
 			}
 
-			// TODO: If going to use child coordinate systems then will need a stack of mvMatrices and a multiply here
-			mat4.fromRotationTranslation(mvMatrix, object.transform.rotation, object.transform.position);
-			mat4.scale(mvMatrix, mvMatrix, object.transform.scale);
+			object.transform.updateMatrix();
 			if (shader.mMatrixUniformName) {
 				// TODO: Arguably should send either MV Matrix or M and V Matrices
-				r.setUniformMatrix4(shader.mMatrixUniformName, mvMatrix);
+				r.setUniformMatrix4(shader.mMatrixUniformName, object.transform.matrix);
 			}
-			mat4.multiply(mvMatrix, cameraMatrix, mvMatrix);
+			mat4.multiply(mvMatrix, cameraMatrix, object.transform.matrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 
 			if (shader.nMatrixUniformName) {

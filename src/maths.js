@@ -1,18 +1,18 @@
 // This is a centralised point for importing glMatrix
 // Also provides a helper for globalizing for ease of use
-let glMatrix = require('../libs/gl-matrix');
+let { glMatrix, mat2, mat3, mat4, quat, quat2, vec2, vec3, vec4  } = require('../libs/gl-matrix');
 
 let globalize = () => {
 	// Lets create some globals!
 	if (window) {
-		window.mat2 = glMatrix.mat2;
-		window.mat3 = glMatrix.mat3;
-		window.mat4 = glMatrix.mat4;
-		window.quat = glMatrix.quat;
-		window.quat2 = glMatrix.quat2;
-		window.vec2 = glMatrix.vec2;
-		window.vec3 = glMatrix.vec3;
-		window.vec4 = glMatrix.vec4;
+		window.mat2 = mat2;
+		window.mat3 = mat3;
+		window.mat4 = mat4;
+		window.quat = quat;
+		window.quat2 = quat2;
+		window.vec2 = vec2;
+		window.vec3 = vec3;
+		window.vec4 = vec4;
 	}
 };
 
@@ -22,18 +22,22 @@ let globalize = () => {
 // then we can extend it here for clarity?
 
 module.exports = (function() {
+	// Modern Browsers perform better using native arrays rather than typed arrays
+	// It also (de)serializes more cleanly so...
+	glMatrix.setMatrixArrayType(Array);
+
 	let exports = {
 		glMatrix: glMatrix,
-		toRadian: glMatrix.glMatrix.toRadian,
-		equals: glMatrix.glMatrix.equals,
-		mat2: glMatrix.mat2,
-		mat3: glMatrix.mat3,
-		mat4: glMatrix.mat4,
-		quat: glMatrix.quat,
-		quat2: glMatrix.quat2,
-		vec2: glMatrix.vec2,
-		vec3: glMatrix.vec3,
-		vec4:  glMatrix.vec4
+		toRadian: glMatrix.toRadian,
+		equals: glMatrix.equals,
+		mat2: mat2,
+		mat3: mat3,
+		mat4: mat4,
+		quat: quat,
+		quat2: quat2,
+		vec2: vec2,
+		vec3: vec3,
+		vec4: vec4
 	};
 
 	exports.Ease = require('./ease');
@@ -41,16 +45,16 @@ module.exports = (function() {
 	// TODO: Add plane 'class' - it's a vec4 with 0-2 being the normal vector and 3 being the distance to the origin from the plane along the normal vector
 	// I.e. the dot product of the offset point?
 
-	let vec3X = exports.vec3X = glMatrix.vec3.fromValues(1,0,0);
-	let vec3Y = exports.vec3Y = glMatrix.vec3.fromValues(0,1,0);
-	let vec3Z = exports.vec3Z = glMatrix.vec3.fromValues(0,0,1);
-	exports.vec3Zero = glMatrix.vec3.fromValues(0,0,0);
-	exports.vec3One = glMatrix.vec3.fromValues(1,1,1);
+	let vec3X = exports.vec3X = vec3.fromValues(1,0,0);
+	let vec3Y = exports.vec3Y = vec3.fromValues(0,1,0);
+	let vec3Z = exports.vec3Z = vec3.fromValues(0,0,1);
+	exports.vec3Zero = vec3.fromValues(0,0,0);
+	exports.vec3One = vec3.fromValues(1,1,1);
 
 	exports.vec3Pool = (function(){
 		let stack = [];
 		for (let i = 0; i < 5; i++) {
-			stack.push(glMatrix.vec3.create());
+			stack.push(vec3.create());
 		}
 		
 		return {
@@ -59,7 +63,7 @@ module.exports = (function() {
 				if (stack.length > 0) {
 					return stack.pop();
 				}
-				return glMatrix.vec3.create();
+				return vec3.create();
 			}
 		}
 	})();
@@ -67,7 +71,7 @@ module.exports = (function() {
 	exports.quatPool = (function(){
 		let stack = [];
 		for (let i = 0; i < 5; i++) {
-			stack.push(glMatrix.quat.create());
+			stack.push(quat.create());
 		}
 		
 		return {
@@ -76,12 +80,12 @@ module.exports = (function() {
 				if (stack.length > 0) {
 					return stack.pop();
 				}
-				return glMatrix.quat.create();
+				return quat.create();
 			}
 		}
 	})();
 
-	let equals = glMatrix.glMatrix.equals;
+	let equals = glMatrix.equals;
 
 	let approximately = exports.approximately = (a, b, epsilon) => {
 		// Was using adpated version of https://floating-point-gui.de/errors/comparison/
@@ -141,14 +145,14 @@ module.exports = (function() {
 	// TODO: Tests
 
 	exports.vec3Slerp = (() => {
-		let an = glMatrix.vec3.create(), bn = glMatrix.vec3.create();
+		let an = vec3.create(), bn = vec3.create();
 		return (out, a, b, t) => {
-			glMatrix.vec3.normlize(an, a);
-			glMatrix.vec3.normlize(bn, b);
-			let dot = glMatrix.vec3.dot(an, bn);
+			vec3.normlize(an, a);
+			vec3.normlize(bn, b);
+			let dot = vec3.dot(an, bn);
 			if (approximately(Math.abs(dot), 1.0, angleDotEpison)) {
 				// lerp
-				glMatrix.vec3.lerp(out, a, b, t);
+				vec3.lerp(out, a, b, t);
 			} else {
 				// Slerp
 				// a * sin ( theta * (1 - t) / sin (theta)) + b * (sin(theta * t) / sin(theta)) where theta = acos(|a|.|b|)
@@ -164,28 +168,25 @@ module.exports = (function() {
 	})(); 
 
 	exports.vec3MoveTowards = (() => {
-		let delta = glMatrix.vec3.create();
+		let delta = vec3.create();
 		return (out, a, b, maxDelta) => {
-			glMatrix.vec3.sub(delta, b, a);
-			let sqrLen = glMatrix.vec3.sqrDist(a, b); 
+			vec3.sub(delta, b, a);
+			let sqrLen = vec3.sqrDist(a, b); 
 			let sqrMaxDelta = maxDelta * maxDelta;
 			if (sqrMaxDelta >= sqrLen) {
-				glMatrix.vec3.copy(out, b);
+				vec3.copy(out, b);
 			} else {
-				glMatrix.vec3.scaleAndAdd(a, delta, sqrMaxDelta / sqrLen)
+				vec3.scaleAndAdd(a, delta, sqrMaxDelta / sqrLen)
 			}
 		}; 
 	})();
 
 	exports.vec3RotateTowards = (() => {
-		let an = glMatrix.vec3.create();
-		let bn = glMatrix.vec3.create();
-		let cross = glMatrix.vec3.create();
-		let q = glMatrix.quat.create();
+		let an = vec3.create();
+		let bn = vec3.create();
+		let cross = vec3.create();
+		let q = quat.create();
 		return (out, a, b, maxRadiansDelta, maxMagnitudeDelta) => {
-			let vec3 = glMatrix.vec3;
-			let quat = glMatrix.quat;
-
 			let aLen = vec3.length(a);
 			let bLen = vec3.length(b);
 			vec3.normlize(an, a);
@@ -222,10 +223,9 @@ module.exports = (function() {
 	})();
 
 	exports.vec3SmoothDamp = (() => {
-		let delta = glMatrix.vec3.create();
-		let temp = glMatrix.vec3.create();
+		let delta = vec3.create();
+		let temp = vec3.create();
 		return (out, a, b, velocity, smoothTime, maxSpeed, elapsed) => { // Q: Should have outVelocity?
-			let vec3 = glMatrix.vec3;
 			if (vec3.equals(a, b)) {
 				vec3.copy(out, b);
 			} else {
@@ -266,8 +266,8 @@ module.exports = (function() {
 	exports.vec3ToString = (v) => { return "(" + v[0] + ", " + v[1] + ", " + v[2] + ")"; };
 
 	exports.quatEuler = (x, y, z) => {
-		let q = glMatrix.quat.create();
-		glMatrix.quat.fromEuler(q, x, y, z);
+		let q = quat.create();
+		quat.fromEuler(q, x, y, z);
 		return q;
 	};
 
@@ -277,17 +277,17 @@ module.exports = (function() {
 	};
 
 	exports.quatRotate = (function() {
-		let i = glMatrix.quat.create();
+		let i = quat.create();
 		return (out, q, rad, axis) => {
-			glMatrix.quat.setAxisAngle(i, axis, rad);
-			return glMatrix.quat.multiply(out, i, q);
+			quat.setAxisAngle(i, axis, rad);
+			return quat.multiply(out, i, q);
 		};
 	})();
 
 	exports.quatLocalAxes = (q, localX, localY, localZ) => {
-		glMatrix.vec3.transformQuat(localX, vec3X, q);
-		glMatrix.vec3.transformQuat(localY, vec3Y, q);
-		glMatrix.vec3.transformQuat(localZ, vec3Z, q);
+		vec3.transformQuat(localX, vec3X, q);
+		vec3.transformQuat(localY, vec3Y, q);
+		vec3.transformQuat(localZ, vec3Z, q);
 	};
 
 	// See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles

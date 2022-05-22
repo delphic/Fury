@@ -2,6 +2,7 @@
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
 let gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
+let activeTexture = null;
 
 exports.init = function(canvas, contextAttributes) {
 	gl = canvas.getContext('webgl2', contextAttributes);
@@ -23,6 +24,14 @@ exports.init = function(canvas, contextAttributes) {
 		TextureLocations.push(gl["TEXTURE" + i.toString()]);
 		i++;
 	}
+};
+
+exports.getContext = function() {
+	return gl;
+};
+
+exports.getContextLossExtension = function() {
+	return gl.getExtension("WEBGL_lose_context");
 };
 
 // TODO: This cshould be called setClearColor
@@ -76,8 +85,6 @@ exports.createShaderProgram = function(vertexShader, fragmentShader) {
 		throw new Error("Could not create shader program");
 	}
 	return program;
-	// TODO: Consider returning wrapper so that additional properties are not set on the gl object
-	// See #5. https://webglfundamentals.org/webgl/lessons/webgl-anti-patterns.html
 };
 
 exports.useShaderProgram = function(shaderProgram) {
@@ -86,6 +93,16 @@ exports.useShaderProgram = function(shaderProgram) {
 };
 
 // Buffers
+exports.DataType = {
+	"BYTE": 5120, // signed 8-bit integer
+	"SHORT": 5122, // signed 16-bit integer
+	"INT": 5124, // signed 32-bit integer
+	"UNSIGNED_BYTE": 5121, // unsigned 8-bit integer
+	"UNSIGNED_SHORT": 5123, // unsigned 16-bit integer
+	"UNSIGNED_INT": 5125, // unsigned 32-bit integer
+	"FLOAT": 5126, // 32-bit IEEE floating point number
+	"HALF_FLOAT": 5131, // 16-bit IEEE floating point number
+};
 
 exports.createBuffer = function(data, itemSize, indexed) {
 	let buffer = gl.createBuffer();
@@ -97,25 +114,25 @@ exports.createBuffer = function(data, itemSize, indexed) {
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(data), gl.STATIC_DRAW);
 	}
 	buffer.itemSize = itemSize;
-	buffer.numItems = data.length / itemSize;
+	buffer.numItems = Math.round(data.length / itemSize);
 	return buffer;
 };
 
-exports.createArrayBuffer = function(data, itemSize, numItems) {
+exports.createArrayBuffer = function(data, itemSize) {
 	let buffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 	buffer.itemSize = itemSize;
-	buffer.numItems = numItems;
+	buffer.numItems = Math.round(data.length / itemSize);
 	return buffer;
 };
 
-exports.createElementArrayBuffer = function(data, itemSize, numItems) {
+exports.createElementArrayBuffer = function(data, itemSize) {
 	let buffer = gl.createBuffer();
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
 	buffer.itemSize = itemSize;
-	buffer.numItems = numItems;
+	buffer.numItems = Math.round(data.length / itemSize);;
 	return buffer;
 };
 
@@ -123,42 +140,42 @@ exports.createElementArrayBuffer = function(data, itemSize, numItems) {
 
 let TextureLocations = exports.TextureLocations = [];
 
-let TextureQuality = exports.TextureQuality = {
-	Pixel: "pixel",			// Uses Mips and nearest pixel
-	Highest: "highest",		// Uses Mips & Interp (trilinear)
-	High: "high",			// Uses Mips & Interp (bilinear)
-	Medium: "medium",		// Linear Interp
-	Low: "low"				// Uses nearest pixel
+exports.FilterType = {
+	NEAREST: 9728,
+	LINEAR: 9729,
+	LINEAR_MIPMAP_NEAREST: 9985,
+	LINEAR_MIPMAP_LINEAR: 9987
 };
 
-exports.createTexture = function(source, quality, clamp, disableAniso) {
+exports.createTexture = function(source, clamp, flipY, mag, min, generateMipmap, enableAniso) {
 	let texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	
+	gl.bindTexture(gl.TEXTURE_2D, texture); // Binds into currently active texture location
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !!flipY);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 	// If we want to create mipmaps manually provide an array source and put them into
 	// different levels in texImage2D - you must provide all mipmap levels
 
-	setTextureQuality(gl.TEXTURE_2D, quality, disableAniso);
+	setTextureQuality(gl.TEXTURE_2D, mag, min, generateMipmap, enableAniso);
 
 	if (clamp) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
-	gl.bindTexture(gl.TEXTURE_2D, null);
+
+	gl.bindTexture(gl.TEXTURE_2D, activeTexture); // rebind the active texture
 	texture.glTextureType = gl.TEXTURE_2D;
 	return texture;
 };
 
 /// width and height are of an individual texture
-exports.createTextureArray = function(source, width, height, imageCount, quality, clamp) {
+exports.createTextureArray = function(source, width, height, imageCount, clamp, flipY, mag, min, generateMipmap, enableAniso) {
 	let texture = gl.createTexture();
-	// gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipY);
 	gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA, width, height, imageCount, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
 
-	setTextureQuality(gl.TEXTURE_2D_ARRAY, quality);
+	setTextureQuality(gl.TEXTURE_2D_ARRAY, mag, min, generateMipmap, enableAniso);
 
 	if (clamp) {
 		gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -170,45 +187,23 @@ exports.createTextureArray = function(source, width, height, imageCount, quality
 	return texture;
 };
 
-let setTextureQuality = function(glTextureType, quality, disableAniso) {
-	if (quality == TextureQuality.Pixel) {
-		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (!disableAniso && anisotropyExt) {
-			// Unfortunately you can't use MAG_FILTER NEAREST with MIN_FILTER MIPMAP when using the anisotropy extension
-			// you can without it however, so there is a trade off on crisp near pixels against blurry textures at severe angles
-			
-			// Could investigate using multiple samplers in a version 300 ES Shader and blending between them,
-			// or using multiple texture with different settings, potentially using dFdx and dFdy to determine / estimate MIPMAP level
-			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
-		}
+let setTextureQuality = function(glTextureType, mag, min, generateMipmap, enableAniso) {
+	if (!mag) mag = gl.NEAREST;
+	if (!min) min = gl.NEAREST; 
+	gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, mag);
+	gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, min);
+	if (enableAniso && anisotropyExt) {
+		gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+	}
+	if (generateMipmap) {
 		gl.generateMipmap(glTextureType);
-	} else if (quality === TextureQuality.Highest) {
-		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-		if (!disableAniso && anisotropyExt) {
-			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
-		}
-		gl.generateMipmap(glTextureType);
-	} else if (quality === TextureQuality.High) {
-		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-		if (!disableAniso && anisotropyExt) {
-			gl.texParameterf(glTextureType, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.round(maxAnisotropy/2));
-		}
-		gl.generateMipmap(glTextureType);
-	} else if (quality === TextureQuality.Medium) {
-		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	} else {
-		gl.texParameteri(glTextureType, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(glTextureType, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	}
 };
 
 exports.setTexture = function(location, texture) {
 	gl.activeTexture(TextureLocations[location]);
 	gl.bindTexture(texture.glTextureType, texture);
+	activeTexture = texture;
 };
 
 // Blending
@@ -289,8 +284,18 @@ exports.setAttribute = function(name, buffer) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, gl.FLOAT, false, 0, 0);
 };
+exports.setAttributeFloat = function(name, buffer, type) {
+	/* Supported types: gl.BYTE, gl.SHORT, gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT, gl.HALF_FLOAT: */
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	gl.vertexAttribPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, type, false, 0, 0);
+};
+exports.setAttributeInteger = function(name, buffer, type) {
+	/* Supported types: gl.BYTE, gl.UNSIGNED_BYTE, gl.SHORT, gl.UNSIGNED_SHORT, gl.INT, gl.UNSIGNED_INT */
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	gl.vertexAttribIPointer(currentShaderProgram.attributeLocations[name], buffer.itemSize, type, 0, 0);
+};
 
-exports.setIndexedAttribute = function(buffer) {	// Should arguably be renamed - there's isn't an index attribute
+exports.setIndexedAttribute = function(buffer) {
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
 };
 
@@ -306,6 +311,9 @@ exports.setUniformFloat2 = function(name, value1, value2) {
 exports.setUniformFloat3 = function(name, value1, value2, value3) {
 	gl.uniform3f(currentShaderProgram.uniformLocations[name], value1, value2, value3);
 };
+exports.setUniformFloat4 = function(name, value1, value2, value3, value4) {
+	gl.uniform4f(currentShaderProgram.uniformLocations[name], value1, value2, value3, value4);
+}
 exports.setUniformInteger = function(name, value) {
 	gl.uniform1i(currentShaderProgram.uniformLocations[name], value);
 };
