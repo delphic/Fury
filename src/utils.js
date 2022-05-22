@@ -2,6 +2,12 @@
 module.exports = (function(){
 	let exports = {};
 
+	exports.arrayCombine = (out, array) => {
+		for (let i = 0, l = array.length; i < l; i++) {
+			out.push(array[i]);
+		}
+	};
+
 	exports.createScaledImage = function(config) {
 		let canvas = document.createElement("canvas");
 		canvas.style = "display: none";

@@ -1,6 +1,7 @@
 const r = require('./renderer');
 const Bounds = require('./bounds');
 const vec3 = require('./maths').vec3;
+const Utils = require('./utils');
 
 module.exports = (function(){
 	let exports = {};
@@ -180,6 +181,21 @@ module.exports = (function(){
 			}
 		}
 		return mesh;
+	};
+
+	exports.combineConfig = function(meshes) {
+		let result = { vertices: [], normals: [], textureCoordinates: [], indices: [] };
+		for (let i = 0, l = meshes.length; i < l; i++) {
+			let mesh = meshes[i];
+			let indexOffset = result.vertices.length / 3;
+			Utils.arrayCombine(result.vertices, mesh.vertices);
+			Utils.arrayCombine(result.normals, mesh.normals);
+			Utils.arrayCombine(result.textureCoordinates, mesh.textureCoordinates);
+			for (let index = 0, n = mesh.indices.length; index < n; index++) {
+				result.indices.push(mesh.indices[index] + indexOffset);
+			}
+		}
+		return result;
 	};
 
 	return exports;
