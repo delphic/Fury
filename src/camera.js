@@ -132,14 +132,22 @@ module.exports = (function() {
 			return out;
 		},
 		viewportToWorld: function(out, viewPort, z) {
+			// Viewport measured from top-left
 			if(this.type == Type.Orthonormal) {
 				out[0] = (this.height * this.ratio) * (viewPort[0] - 0.5);
-				out[1] = this.height * (0.5 - viewPort[1]);	// measuring viewport from top-left this seems correct!
+				out[1] = this.height * (0.5 - viewPort[1]);	
 				out[2] = (z || 0);
 				vec3.transformQuat(out, out, this.rotation);
 				vec3.add(out, out, this.position);
 			} else {
-				throw new Error("viewportToWorld not implemented for perspective camera");
+				let zDist = z || this.near;
+				let planeHeight = 2 * zDist * Math.tan(0.5 * this.fov);
+				let planeWidth = planeHeight * this.ratio;
+				out[0] = planeWidth * (viewPort[0] - 0.5);
+				out[1] = planeHeight * (0.5 - viewPort[1]);
+				out[2] = -zDist;
+				vec3.transformQuat(out, out, this.rotation);
+				vec3.add(out, out, this.position);
 			}
 		}
 	};
