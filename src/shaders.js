@@ -47,6 +47,7 @@ module.exports = (function() {
 	let unlitTextured = {
 		vsSource: [
 			"attribute vec3 aVertexPosition;",
+			"attribute vec2 aTextureCoord;",
 	
 			"uniform mat4 uMVMatrix;",
 			"uniform mat4 uPMatrix;",
@@ -61,7 +62,7 @@ module.exports = (function() {
 			"precision mediump float;",
 	
 			"varying vec2 vTextureCoord;",
-			
+
 			"uniform sampler2D uSampler;",
 			"uniform vec4 uColor;",
 	
