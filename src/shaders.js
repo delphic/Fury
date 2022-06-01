@@ -43,7 +43,49 @@ module.exports = (function() {
 			}
 		}
 	};
+
+	let unlitTextured = {
+		vsSource: [
+			"attribute vec3 aVertexPosition;",
 	
+			"uniform mat4 uMVMatrix;",
+			"uniform mat4 uPMatrix;",
+	
+			"void main(void) {",
+				"gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
+			"}"
+		].join('\n'),
+		fsSource: [
+			"precision mediump float;",
+	
+			"uniform sampler2D uSampler;",
+			"uniform vec3 uColor;",
+	
+			"void main(void) {",
+				"gl_FragColor = texture2D(uSampler, vTextureCoord) * uColor;",
+			"}"
+		].join('\n'),
+		attributeNames: [ "aVertexPosition", ],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uColor" ],
+		pMatrixUniformName: "uPMatrix",
+		mvMatrixUniformName: "uMVMatrix",
+		bindMaterial: function(material) {
+			this.enableAttribute("aVertexPosition");
+			this.enableAttribute("aTextureCoord");
+			if (material.color) {
+				this.setUniformVector4("uColor", material.color);
+			} else {
+				this.setUniformFloat4("uColor", 1, 1, 1, 1);
+			}
+		},
+		bindBuffers: function(mesh) {
+			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
+			this.setAttribute("aTextureCoord", mesh.textureBuffer);
+			this.setIndexedAttribute(mesh.indexBuffer);
+		},
+		validateMaterial: function(material) { }
+	};
+
 	let sprite = {
 		vsSource: [
 		"attribute vec3 aVertexPosition;",
@@ -79,6 +121,8 @@ module.exports = (function() {
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
 		bindMaterial: function(material) {
+			this.enableAttribute("aVertexPosition");
+			this.enableAttribute("aTextureCoord");
 			this.setUniformVector2("uOffset", material.offset);
 			this.setUniformVector2("uScale", material.scale);
 			if (material.color) {
@@ -88,8 +132,6 @@ module.exports = (function() {
 			}
 		},
 		bindBuffers: function(mesh) {
-			this.enableAttribute("aVertexPosition");
-			this.enableAttribute("aTextureCoord");
 			this.setAttribute("aVertexPosition", mesh.vertexBuffer);
 			this.setAttribute("aTextureCoord", mesh.textureBuffer);
 			this.setIndexedAttribute(mesh.indexBuffer);
@@ -103,6 +145,7 @@ module.exports = (function() {
 	};
 
 	exports.createShaders = function() {
+		exports.UnlitTextured = Shader.create(unlitTextured);
 		exports.UnlitColor = Shader.create(unlitColor);
 		exports.Sprite = Shader.create(sprite);
 	};
