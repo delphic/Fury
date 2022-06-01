@@ -51,15 +51,19 @@ module.exports = (function() {
 			"uniform mat4 uMVMatrix;",
 			"uniform mat4 uPMatrix;",
 	
+			"varying vec2 vTextureCoord;",
 			"void main(void) {",
 				"gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);",
+				"vTextureCoord = aTextureCoord;",
 			"}"
 		].join('\n'),
 		fsSource: [
 			"precision mediump float;",
 	
+			"varying vec2 vTextureCoord;",
+			
 			"uniform sampler2D uSampler;",
-			"uniform vec3 uColor;",
+			"uniform vec4 uColor;",
 	
 			"void main(void) {",
 				"gl_FragColor = texture2D(uSampler, vTextureCoord) * uColor;",
