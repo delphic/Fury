@@ -70,8 +70,9 @@ module.exports = (function() {
 				"gl_FragColor = texture2D(uSampler, vTextureCoord) * uColor;",
 			"}"
 		].join('\n'),
-		attributeNames: [ "aVertexPosition", ],
-		uniformNames: [ "uMVMatrix", "uPMatrix", "uColor" ],
+		attributeNames: [ "aVertexPosition", "aTextureCoord" ],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler", "uColor" ],
+		textureUniformNames: [ "uSampler" ],
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
 		bindMaterial: function(material) {
