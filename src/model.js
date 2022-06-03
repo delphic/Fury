@@ -106,7 +106,7 @@ module.exports = (function() {
 		}
 	};
 
-	let buildAnimationData = (out, json, animationIndex, buffers, nodeList) => {
+	let buildAnimationData = (out, json, animationIndex, buffers) => {
 		let animation = json.animations[animationIndex];
 		let result = {};
 
@@ -137,7 +137,7 @@ module.exports = (function() {
 
 			result.channels[i] = {
 				type: channel.target.path,
-				transform: nodeList[channel.target.node].transform,
+				node: channel.target.node,
 				times: times,
 				values: values,
 				interpolation: sampler.interpolation
@@ -147,12 +147,13 @@ module.exports = (function() {
 		out[animation.name] = result;
 	};
 
-	let createSceneHierarchy = (out, json, index, parent) => {
+	let createSceneHierarchy = (json, index, parent) => {
 		let nodes = json.nodes;
 		let { name, mesh, children, translation, rotation, scale } = nodes[index];
 
 		let result = {};
 		
+		result.index = index;
 		result.name = name;
 		result.modelMeshIndex = mesh;
 		if (!isNaN(mesh)) {
@@ -174,7 +175,6 @@ module.exports = (function() {
 		if (children) {
 			for (let i = 0, l = children.length; i < l; i++) {
 				let childNode = createSceneHierarchy(
-					out,
 					json,
 					children[i],
 					result);
@@ -182,8 +182,6 @@ module.exports = (function() {
 				result.transform.children.push(childNode.transform);
 			}
 		}
-
-		out[index] = result;
 
 		return result;
 	};
@@ -206,7 +204,6 @@ module.exports = (function() {
 
 			let model = { meshData: [], images: [], materialData: [], textureData: [] };
 			let arrayBuffers = [];
-			let nodeList = [];
 
 			let assetsLoading = 0;
 			let onAssetLoadComplete = () => {
@@ -220,7 +217,7 @@ module.exports = (function() {
 					if (json.animations && json.animations.length) {
 						model.animations = {};
 						for (let i = 0, l = json.animations.length; i < l; i++) {
-							buildAnimationData(model.animations, json, i, arrayBuffers, nodeList);
+							buildAnimationData(model.animations, json, i, arrayBuffers);
 						}
 					}
 					callback(model);
@@ -244,7 +241,7 @@ module.exports = (function() {
 			if (json.scenes && json.scenes.length) {
 				let scene = json.scenes[json.scene]; // Only one scene currently supported
 				let nodeIndex = scene.nodes[0]; // Expect single scene node
-				model.hierarchy = createSceneHierarchy(nodeList, json, nodeIndex);
+				model.hierarchy = createSceneHierarchy(json, nodeIndex);
 			}
 
 			if (json.materials && json.materials.length) {
