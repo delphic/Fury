@@ -50,6 +50,11 @@ module.exports = (function(){
 		setOffset(material.offset, atlasIndex, atlas.width, atlas.height);
 	};
 
+	exports.setMaterialFrame = (material, atlas, frameIndex) => {
+		if (!material.offset) { material.offset = [0,0]; }
+		setOffset(material.offset, frameIndex, atlas.width, atlas.height);
+	};
+
 	exports.createTilePrefab = (config) => {
 		let { atlas, tile, color, alpha, centered } = config;
 		let { width, height } = atlas;
