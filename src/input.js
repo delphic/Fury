@@ -194,8 +194,8 @@ module.exports = (function() {
 	};
 
 	let handleMouseMove = function(event) {
-		MousePosition[0] = event.pageX;
-		MousePosition[1] = event.pageY;
+		MousePosition[0] = event.offsetX;
+		MousePosition[1] = event.offsetY;
 		MouseDelta[0] += event.movementX;
 		MouseDelta[1] += event.movementY;
 	};
