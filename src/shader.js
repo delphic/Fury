@@ -59,8 +59,6 @@ module.exports = (function() {
 		shader.nMatrixUniformName = config.nMatrixUniformName;
 		shader.mMatrixUniformName = config.mMatrixUniformName;
 
-		// TODO: decide how to deal with non-standard uniforms
-
 		return shader;
 	};
 

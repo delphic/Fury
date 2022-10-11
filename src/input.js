@@ -111,26 +111,13 @@ module.exports = (function() {
 		}
 	}
 
-	exports.getAxis = function(plusKey, minusKey, smoothTime, ease) {
+	exports.getAxis = function(plusKey, minusKey) {
 		let result = 0;
-		let now = Date.now();
 		if (keyPressed(plusKey)) {
-			let pressedTime = now - keyDownTime(plusKey);
-			let r = Maths.clamp01(pressedTime / (smoothTime * 1000));
-			if (ease) {
-				result += ease(r);
-			} else {
-				result += r;
-			}
+			result += 1;
 		} 
 		if (keyPressed(minusKey)) {
-			let pressedTime = now - keyDownTime(minusKey);
-			let r = Maths.clamp01(pressedTime / (smoothTime * 1000));
-			if (ease) {
-				result -= ease(r);
-			} else {
-				result -= r;
-			}
+			result -= 1;
 		}
 		return result;
 	};

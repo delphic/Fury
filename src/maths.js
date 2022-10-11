@@ -226,7 +226,6 @@ module.exports = (function() {
 		let delta = vec3.create();
 		let temp = vec3.create();
 		return (out, a, b, velocity, smoothTime, maxSpeed, elapsed) => { // Q: Should have outVelocity?
-			let vec3 = vec3;
 			if (vec3.equals(a, b)) {
 				vec3.copy(out, b);
 			} else {

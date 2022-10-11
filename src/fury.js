@@ -22,9 +22,11 @@ module.exports = (function() {
 	Fury.Shader = require('./shader');
 	Fury.Shaders = require('./shaders');
 	Fury.TextMesh = require('./textmesh');
+	Fury.Texture = require('./texture');
 	Fury.TileMap = require('./tilemap');
 	Fury.Transform = require('./transform');
 	Fury.Utils = require('./utils');
+	Fury.WorkerPool = require('./workerPool');
 
 	Fury.init = function(parameters) {
 		let disableShaderPreload = false;
