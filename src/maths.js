@@ -176,7 +176,7 @@ module.exports = (function() {
 			if (sqrMaxDelta >= sqrLen) {
 				vec3.copy(out, b);
 			} else {
-				vec3.scaleAndAdd(a, delta, sqrMaxDelta / sqrLen)
+				vec3.scaleAndAdd(out, a, delta, maxDelta / Math.sqrt(sqrLen));
 			}
 		}; 
 	})();
