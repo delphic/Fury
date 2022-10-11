@@ -54,9 +54,7 @@ module.exports = (function(){
 		return tileWidth;
 	};
 
-	exports.create = (config) => {
-		let { text, scene, atlas, position, alignment, color, alignmentStyle } = config;
-
+	exports.create = ({ text, scene, atlas, position, alignment, color, alignmentStyle }) => {
 		if (alignmentStyle === undefined || alignmentStyle === null) {
 			alignmentStyle = exports.alignmentStyle;
 		}
