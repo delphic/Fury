@@ -95,7 +95,7 @@ module.exports = (function(){
 				} else {
 					offset = calculateWidth(text) / 2;
 				}
-			} else if (alignment == alignment.right) {
+			} else if (alignment == Alignment.right) {
 				offset = calculateWidth(text);
 			}
 			if (offset && alignmentStyle == AlignmentStyle.integer) {
