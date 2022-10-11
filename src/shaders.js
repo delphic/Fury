@@ -116,13 +116,15 @@ module.exports = (function() {
 		"uniform sampler2D uSampler;",
 	
 		"uniform vec4 uColor;",
+		"uniform vec4 uMixColor;",
 	
 		"void main(void) {",
-			"gl_FragColor = texture2D(uSampler, vec2(uOffset.x + (uScale.x * vTextureCoord.s), uOffset.y + (uScale.y * vTextureCoord.t))) * uColor;",
+			"vec4 color = texture2D(uSampler, vec2(uOffset.x + (uScale.x * vTextureCoord.s), uOffset.y + (uScale.y * vTextureCoord.t))) * uColor;",
+			"gl_FragColor = mix(color, vec4(uMixColor.rgb, color.a), uMixColor.a);",
 		"}"].join('\n'),
 	
 		attributeNames: [ "aVertexPosition", "aTextureCoord" ],
-		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler", "uOffset", "uScale", "uColor" ],
+		uniformNames: [ "uMVMatrix", "uPMatrix", "uSampler", "uOffset", "uScale", "uColor", "uMixColor" ],
 		textureUniformNames: [ "uSampler" ],
 		pMatrixUniformName: "uPMatrix",
 		mvMatrixUniformName: "uMVMatrix",
@@ -135,6 +137,11 @@ module.exports = (function() {
 				this.setUniformVector4("uColor", material.color);
 			} else {
 				this.setUniformFloat4("uColor", 1, 1, 1, 1);
+			}
+			if (material.mixColor) {
+				this.setUniformVector4("uMixColor", material.mixColor);
+			} else {
+				this.setUniformFloat4("uMixColor", 1, 1, 1, 0);
 			}
 		},
 		bindBuffers: function(mesh) {
