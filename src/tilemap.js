@@ -10,9 +10,7 @@ const { vec3 } = require('./maths');
 module.exports = (function(){
 	let exports = {};
 
-	exports.create = (config) => {
-		let { scene, width: w, height: h, position: pos, atlas, defaultTile } = config;
-
+	exports.create = ({ scene, width: w, height: h, position: pos, atlas, defaultTile }) => {
 		let tileMap = {};
 		tileMap.width = w;
 		tileMap.height =  h;
