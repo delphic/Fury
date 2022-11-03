@@ -46,6 +46,7 @@ module.exports = (function() {
 			switch (state) {
 				case State.Paused:
 					state = State.Running;
+					lastTime = Date.now();
 					Input.handleFrameFinished(); // clear any input that happened since pause
 					window.requestAnimationFrame(loop);
 					break;
