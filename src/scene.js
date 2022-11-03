@@ -463,6 +463,10 @@ module.exports = (function() {
 				r.setUniformMatrix3(shader.nMatrixUniformName, nMatrix);
 			}
 
+			if (shader.bindInstance) {
+				shader.bindInstance.call(r, object);
+			}
+
 			r.draw(mesh.renderMode, mesh.indexed ? mesh.indexBuffer.numItems : mesh.vertexBuffer.numItems, mesh.indexed, 0);
 		};
 

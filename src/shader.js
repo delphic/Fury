@@ -50,6 +50,10 @@ module.exports = (function() {
 		}
 		shader.bindBuffers = config.bindBuffers;
 
+		if (config.bindInstance && typeof(config.bindInstance) === 'function') {
+			shader.bindInstance = config.bindInstance;
+		}
+
 		if (config.validateMaterial && typeof(config.validateMaterial) === 'function') {
 			shader.validateMaterial = config.validateMaterial;
 		}
@@ -60,6 +64,12 @@ module.exports = (function() {
 		shader.mMatrixUniformName = config.mMatrixUniformName;
 
 		return shader;
+	};
+
+	exports.copy = function(shader) {
+		let clone = Object.assign({}, shader);
+		clone.id = null;
+		return clone;
 	};
 
 	return exports;
