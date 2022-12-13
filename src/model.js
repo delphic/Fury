@@ -221,7 +221,7 @@ module.exports = (function() {
 		return transform;
 	};
 
-	exports.instantiate = (model, scene, resources) => {
+	exports.instantiate = (model, scene, position, rotation, resources) => {
 		if (!resources) {
 			resources = model.resources;
 		}
@@ -233,10 +233,27 @@ module.exports = (function() {
 		instance.sceneObjects = [];
 		instance.transforms = [];
 		instance.transform = instantiateNode(model.hierarchy, instance, resources, scene, null);
+		if (position) {
+			vec3.copy(instance.transform.position, position);
+		}
+		if (rotation) {
+			quat.copy(instance.transform.rotation, rotation);
+		}
+		instance.remove = (scene) => {
+			for (let i = 0, l = instance.sceneObjects.length; i < l; i++) {
+				scene.remove(instance.sceneObjects[i]);
+			}
+		};
 		return instance;
 	};
 
-	exports.createResources = (out, model, { shader, texturelessShader = null, quality }) => {
+	exports.createResources = (out, model, { 
+		shader,
+		texturelessShader = null,
+		quality,
+		texturedMaterialProperties = null,
+		untexturedMaterialProperties = null
+	}) => {
 		out.textures = [];
 		for (let i = 0, l = model.textureData.length; i < l; i++) {
 			let imageIndex = model.textureData[i].imageIndex;
@@ -254,11 +271,13 @@ module.exports = (function() {
 			if (textureIndex >= 0) {
 				out.materials[i] = Material.create({ 
 					shader: shader,
-					texture: out.textures[textureIndex]
+					texture: out.textures[textureIndex],
+					properties: texturedMaterialProperties
 				});
 			} else {
 				out.materials[i] = Material.create({
-					shader: texturelessShader ? texturelessShader : shader
+					shader: texturelessShader ? texturelessShader : shader,
+					properties: untexturedMaterialProperties
 				});
 			}
 		}
@@ -275,7 +294,9 @@ module.exports = (function() {
 	// Includes a cut down set of information on materialData and textureData arrays 
 	// however these are not ready to be used directly with Fury.Material and Fury.Texture
 	// and must be manipulated further, see exports.createResources
-	exports.load = (uri, callback) => {
+	// if resourceProperties object is provided detailing how to create the necessary resources
+	// load will automatically create them and attach them to the model under model.resources
+	exports.load = (uri, callback, resourceProperties) => {
 		// TODO: Check file extension, only gltf currently supported
 		// https://github.com/KhronosGroup/glTF -> https://github.com/KhronosGroup/glTF/tree/master/specification/2.0
 		// https://github.com/KhronosGroup/glTF/blob/main/specification/2.0/figures/gltfOverview-2.0.0b.png
@@ -302,6 +323,12 @@ module.exports = (function() {
 							buildAnimationData(model.animations, json, i, arrayBuffers);
 						}
 					}
+
+					if (resourceProperties) {
+						model.resources = {};
+						exports.createResources(model.resources, model, resourceProperties);
+					}
+
 					callback(model);
 				}
 			};
