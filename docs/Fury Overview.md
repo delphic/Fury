@@ -32,8 +32,6 @@ Focus fast JavaScript, low GC (e.g. parameter objects only on init functions (or
 * Ambient Occlusion
 * Skinning and Animation Support
 
-Can use [Building the Game](https://github.com/toji/building-the-game) as a guide for development of features already implemented by toji.
-
 ### Extensions:
 * Render to texture
 * Text rendering in WebGL
@@ -57,10 +55,11 @@ _Primary focus is on the renderer_. Physics, Input and Sound helpers will be add
 * Lighting demo
 * Toon shading demo
 * HTML overlay demo
-* Particles demo
-* Animation demo
+* ✓ Particles demo
+* ✓ Model loading & animation demo
 * ✓ [MineCraft style game](https://delphic.me.uk/vorld-archipelago) - walk around on the generated terrain
 * Texture blending demo - single mesh / patchwork mesh terrain with multiple textures
+* Skinned mesh & animation demo
 
 We'll create separate demo for each set of features, essentially integration tests.
 
