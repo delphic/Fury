@@ -46,5 +46,24 @@ module.exports = (function(){
 		};
 	};
 
+	exports.createUIQuadMeshConfig = function(w, h) {
+		return {
+			positions: [ 
+				w, h, 0.0,
+				0, h, 0.0, 
+				w, 0, 0.0,
+				0, 0, 0.0 ],
+			uvs: [
+				1.0, 1.0,
+				0.0, 1.0,
+				1.0, 0.0,
+				0.0, 0.0 ],
+			indices: [
+				0, 1, 2, 2, 1, 3
+			],
+			renderMode: RenderMode.Triangles
+		};
+	};
+
 	return exports;
 })();

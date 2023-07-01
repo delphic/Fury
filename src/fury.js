@@ -13,6 +13,7 @@ module.exports = (function() {
 	Fury.Maths = require('./maths');
 	Fury.Mesh = require('./mesh');
 	Fury.Model = require('./model');
+	Fury.NineSlice = require('./nineSlice');
 	Fury.Physics = require('./physics');
 	Fury.Prefab = require('./prefab');
 	Fury.Primitives = require('./primitives');
