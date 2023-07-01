@@ -67,19 +67,38 @@ module.exports = (function(){
 		let mesh = {};
 
 		mesh.bounds = Bounds.create({ min: vec3.create(), max: vec3.create() });
+		mesh.boundingRadius = 0;
 
+		update(mesh, config, true);
+
+		return mesh;
+	};
+
+	let update = exports.update = function(mesh, config, firstBuild) {
 		if (config) {
-			let { renderMode = r.RenderMode.Triangles, boundingRadius = 0 } = config;
-			mesh.renderMode = renderMode;
-			mesh.boundingRadius = boundingRadius;
-
-			let { vertices, textureCoordinates, normals, indices, customAttributes } = config;
-			if (vertices) {
-				calculateBounds(mesh, vertices);
-				mesh.vertexBuffer = createBuffer(vertices, 3);
+			if (config.renderMode !== undefined) {
+				mesh.renderMode = config.renderMode;
+			} else if (mesh.renderMode === undefined) {
+				mesh.renderMode = r.RenderMode.Triangles;
 			}
-			if (textureCoordinates) {
-				mesh.textureBuffer = createBuffer(textureCoordinates, 2);
+
+			let { positions, uvs, normals, indices, customAttributes } = config;
+
+			// Backwards compatibility with old config naming
+			if (!positions && config.vertices) {
+				positions = config.vertices;
+			}
+			if (!uvs && config.textureCoordinates) {
+				uvs = config.textureCoordinates;
+			}
+
+			if (positions) {
+				calculateBounds(mesh, positions);
+				mesh.vertexBuffer = createBuffer(positions, 3);
+			}
+
+			if (uvs) {
+				mesh.textureBuffer = createBuffer(uvs, 2);
 			}
 			if (normals) {
 				mesh.normalBuffer = createBuffer(normals, 3);
@@ -94,7 +113,7 @@ module.exports = (function(){
 			if (customAttributes && customAttributes.length) {
 				for (let i = 0, l = customAttributes.length; i < l; i++) {
 					let { name, source, size } = customAttributes[i];
-					if (!mesh[name]) {
+					if (!firstBuild || !mesh[name]) {
 						let data = config[source];
 						if (data.buffer) {
 							mesh[name] = r.createArrayBuffer(data, size);
@@ -107,7 +126,6 @@ module.exports = (function(){
 				}
 			}
 		}
-		return mesh;
 	};
 
 	exports.combineConfig = function(meshes) {
