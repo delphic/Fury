@@ -34,7 +34,7 @@ exports.getContextLossExtension = function() {
 	return gl.getExtension("WEBGL_lose_context");
 };
 
-// TODO: This cshould be called setClearColor
+// TODO: This should be called setClearColor
 exports.clearColor = function(r, g, b, a) {
 	gl.clearColor(r, g, b, a);
 };

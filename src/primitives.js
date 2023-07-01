@@ -5,7 +5,7 @@ module.exports = (function(){
 
 	exports.createQuadMeshConfig = (w, h) => {
 		return {
-			vertices: [ 
+			positions: [ 
 				w, h, 0.0,
 				0, h, 0.0, 
 				w, 0, 0.0,
@@ -15,7 +15,7 @@ module.exports = (function(){
 				0.0, 0.0, 1.0,
 				0.0, 0.0, 1.0,
 				0.0, 0.0, 1.0 ],
-			textureCoordinates: [
+			uvs: [
 				1.0, 1.0,
 				0.0, 1.0,
 				1.0, 0.0,
@@ -27,7 +27,7 @@ module.exports = (function(){
 	exports.createCenteredQuadMeshConfig = (w, h) => {
 		let sx = w/2, sy = h/2;
 		return {
-			vertices: [ 
+			positions: [ 
 				sx, sy, 0.0,
 				-sx, sy, 0.0, 
 				sx, -sy, 0.0,
@@ -37,7 +37,7 @@ module.exports = (function(){
 				0.0, 0.0, 1.0,
 				0.0, 0.0, 1.0,
 				0.0, 0.0, 1.0 ],
-			textureCoordinates: [
+			uvs: [
 				1.0, 1.0,
 				0.0, 1.0,
 				1.0, 0.0,

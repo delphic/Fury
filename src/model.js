@@ -72,14 +72,14 @@ module.exports = (function() {
 
 		// TODO: pick typedarray type from accessors[index].componentType (5126 => Float32, 5123 => Int16 - see renderer.DataType)
 		// TODO: Get size from data from accessors[index].type rather than hardcoding
-		meshData.vertices = new Float32Array(buffers[positionBufferView.buffer], positionBufferView.byteOffset, vertexCount * 3);
+		meshData.positions = new Float32Array(buffers[positionBufferView.buffer], positionBufferView.byteOffset, vertexCount * 3);
 
 		if (normalsIndex !== undefined) {
 			meshData.normals = new Float32Array(buffers[normalsBufferView.buffer], normalsBufferView.byteOffset, normalsCount * 3);
 		}
 
 		if (uvIndex !== undefined) {
-			meshData.textureCoordinates = new Float32Array(buffers[uvBufferView.buffer], uvBufferView.byteOffset, uvCount * 2);
+			meshData.uvs = new Float32Array(buffers[uvBufferView.buffer], uvBufferView.byteOffset, uvCount * 2);
 		}
 
 		meshData.indices = new Int16Array(buffers[indicesBufferView.buffer], indicesBufferView.byteOffset, indexCount);
