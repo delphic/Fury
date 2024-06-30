@@ -1,7 +1,9 @@
 // This module is essentially a GL Context Facade
 // There are - of necessity - a few hidden logical dependencies in this class
 // mostly with the render functions, binding buffers before calling a function draw
-let gl, currentShaderProgram, anisotropyExt, maxAnisotropy;
+/** @type {WebGL2RenderingContext} */
+let gl;
+let currentShaderProgram, anisotropyExt, maxAnisotropy;
 let activeTexture = null;
 
 exports.init = function(canvas, contextAttributes) {
@@ -187,6 +189,23 @@ exports.createTextureArray = function(source, width, height, imageCount, clamp, 
 	return texture;
 };
 
+exports.createTextureCube = function(sources) {
+	let texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+	gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sources[0]);
+	gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sources[1]);
+	gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sources[2]);
+	gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sources[3]);
+	gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sources[4]);
+	gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sources[5]);
+	// todo: maybe reuse "setTextureQuality"
+	gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+	texture.glTextureType = gl.TEXTURE_CUBE_MAP;
+	return texture;
+};
+
 let setTextureQuality = function(glTextureType, mag, min, generateMipmap, enableAniso) {
 	if (!mag) mag = gl.NEAREST;
 	if (!min) min = gl.NEAREST; 
@@ -205,6 +224,17 @@ exports.setTexture = function(location, texture) {
 	gl.bindTexture(texture.glTextureType, texture);
 	activeTexture = texture;
 };
+
+exports.DepthEquation = {
+	LessThanOrEqual: "LEQUAL",
+	LessThan: "LESS",
+	GreaterThanOrEqual: "GEQUAL",
+	GreaterThan: "GREATER",
+}
+
+exports.setDepthFunction = function(depthEquation) {
+	gl.depthFunc(gl[depthEquation]);
+}
 
 // Blending
 exports.BlendEquation = {
