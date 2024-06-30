@@ -464,13 +464,19 @@ module.exports = (function() {
 
 			object.transform.updateMatrix();
 			if (shader.mMatrixUniformName) {
-				// TODO: Arguably should send either MV Matrix or M and V Matrices
+				// TODO: Should send either MV Matrix or M and V Matrices
+				// m could also be considered "world" matrix
 				r.setUniformMatrix4(shader.mMatrixUniformName, object.transform.matrix);
 			}
+
+			// TODO: always doing a mvMatrix when the camera matrix is not changing is 
+			// unnecessary CPU work, should update shaders to implement the above suggsetion
 			mat4.multiply(mvMatrix, cameraMatrix, object.transform.matrix);
 			r.setUniformMatrix4(shader.mvMatrixUniformName, mvMatrix);
 
 			if (shader.nMatrixUniformName) {
+				// BUG?: Pretty sure this is not correct, should be the other way around
+				// TODO: Test (presumably via lighting)
 				mat3.normalFromMat4(mvMatrix, nMatrix);
 				r.setUniformMatrix3(shader.nMatrixUniformName, nMatrix);
 			}
