@@ -313,10 +313,20 @@ exports.initUniform = function(shaderProgram, name) {
 };
 
 exports.enableAttribute = function(name) {
-	gl.enableVertexAttribArray(currentShaderProgram.attributeLocations[name]);
+	let index = currentShaderProgram.attributeLocations[name];
+	if (index >= 0) {
+		gl.enableVertexAttribArray(index);
+	} else {
+		console.warn("Attribute '" + name + "' does not have a valid attribute location to enable");
+	}
 };
 exports.disableAttribute = function(name) {
-	gl.disableVertexAttribArray(currentShaderProgram.attributeLocations[name]);
+	let index = currentShaderProgram.attributeLocations[name];
+	if (index >= 0) {
+		gl.disableVertexAttribArray(currentShaderProgram.attributeLocations[name]);
+	} else {
+		console.warn("Attribute '" + name + "' does not have a valid attribute location to disable");
+	}
 };
 exports.setAttribute = function(name, buffer) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
