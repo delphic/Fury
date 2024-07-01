@@ -65,7 +65,7 @@ module.exports = (function(){
 		};
 	};
 
-	exports.createCubeMeshConfig = (w, h, d) => {
+	exports.createCubiodMeshConfig = (w, h, d) => {
 		let x = w / 2, y = h / 2, z = d / 2;
 		return {
 			positions: [
