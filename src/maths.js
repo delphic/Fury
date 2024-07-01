@@ -44,6 +44,7 @@ module.exports = (function() {
 
 	// TODO: Add plane 'class' - it's a vec4 with 0-2 being the normal vector and 3 being the distance to the origin from the plane along the normal vector
 	// I.e. the dot product of the offset point?
+	// Look at MapLoader demo it has an implementation, though it needs updating to encourage use of "out" parameters
 
 	let vec3X = exports.vec3X = vec3.fromValues(1,0,0);
 	let vec3Y = exports.vec3Y = vec3.fromValues(0,1,0);

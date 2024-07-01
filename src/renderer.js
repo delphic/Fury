@@ -10,7 +10,7 @@ let activeTexture = null;
 
 exports.init = function(canvas, contextAttributes) {
 	gl = canvas.getContext('webgl2', contextAttributes);
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);	// TODO: Make configurable
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);	// TODO: expose as method
 	gl.enable(gl.CULL_FACE);	// TODO: expose as method
 

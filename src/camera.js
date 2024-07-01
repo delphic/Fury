@@ -155,12 +155,13 @@ module.exports = (function() {
 	exports.create = function(config) {
 		let camera = Object.create(prototype);
 
-		let { type = Type.Perspective, near, far, ratio = 1.0, clear = true } = config;
+		let { type = Type.Perspective, near, far, ratio = 1.0, clear = true, clearColor } = config;
 		camera.type = type;
 		camera.near = near;
 		camera.far = far;
 		camera.ratio = ratio;
 		camera.clear = clear;
+		camera.clearColor = clearColor;
 
 		switch (type) {
 			case Type.Perspective:
@@ -187,8 +188,6 @@ module.exports = (function() {
 		for (let i = 0; i < 8; i++) {
 			camera.points[i] = vec3.create();
 		}
-
-		// TODO: Add Clear Color
 
 		// TODO: Arguably post-processing effects and target could/should be on the camera, the other option is on the scene
 

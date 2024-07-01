@@ -40,7 +40,6 @@ module.exports = (function() {
 		let mainCameraName = "main";
 		// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
 		let pMatrix = mat4.create(), mvMatrix = mat4.create(), nMatrix = mat3.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
-		
 
 		let scene = {};
 		scene.id = (nextSceneId++).toString();
@@ -282,7 +281,7 @@ module.exports = (function() {
 
 			pMatrixRebound = false;
 			vMatrixRebound = false;
-			alphaRenderObjects.length = 0; 
+			alphaRenderObjects.length = 0;
 
 			// TODO: Scene Graph
 			// Batched first by Shader
@@ -293,6 +292,9 @@ module.exports = (function() {
 
 			// This batching by shader / material / mesh may need to be combined with scene management techniques
 			if (camera.clear) {
+				if (camera.clearColor) {
+					r.clearColor(camera.clearColor[0], camera.clearColor[1], camera.clearColor[2], camera.clearColor[3]);
+				}
 				r.clear();
 			} else if (camera.clearDepth) {
 				r.clearDepth();
