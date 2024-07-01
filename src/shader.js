@@ -62,7 +62,7 @@ module.exports = (function() {
 		shader.mvMatrixUniformName = config.mvMatrixUniformName;
 		shader.nMatrixUniformName = config.nMatrixUniformName;
 		shader.mMatrixUniformName = config.mMatrixUniformName;
-		shader.vMatrixUniformName = config.nMatrixUniformName;
+		shader.vMatrixUniformName = config.vMatrixUniformName;
 
 		if (!shader.pMatrixUniformName && config.uniformNames.includes("pMatrix")) {
 			shader.pMatrixUniformName = "pMatrix";
