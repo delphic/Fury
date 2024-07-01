@@ -45,6 +45,23 @@ module.exports = (function(){
 			renderMode: RenderMode.TriangleStrip
 		};
 	};
+	
+	exports.createSpriteQuadMeshConfig = (w, h) => {
+		let sx = w/2, sy = h/2;
+		return {
+			positions: [ 
+				sx, sy, 0.0,
+				-sx, sy, 0.0, 
+				sx, -sy, 0.0,
+				-sx, -sy, 0.0 ],
+			uvs: [
+				1.0, 1.0,
+				0.0, 1.0,
+				1.0, 0.0,
+				0.0, 0.0 ],
+			renderMode: RenderMode.TriangleStrip
+		};
+	};
 
 	exports.createUIQuadMeshConfig = function(w, h) {
 		return {
@@ -64,6 +81,8 @@ module.exports = (function(){
 			renderMode: RenderMode.Triangles
 		};
 	};
+	// todo: It feels like a better config or builder pattern could bring all these quads methods together
+	// i.e. "includeNormals", "indexed" and "origin" : bottomLeft, centered, custom etc
 
 	exports.createCubiodMeshConfig = (w, h, d) => {
 		let x = w / 2, y = h / 2, z = d / 2;
