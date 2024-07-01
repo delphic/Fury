@@ -58,10 +58,27 @@ module.exports = (function() {
 			shader.validateMaterial = config.validateMaterial;
 		}
 
-		shader.pMatrixUniformName = config.pMatrixUniformName || "pMatrix";
-		shader.mvMatrixUniformName = config.mvMatrixUniformName || "mvMatrix";
+		shader.pMatrixUniformName = config.pMatrixUniformName;
+		shader.mvMatrixUniformName = config.mvMatrixUniformName;
 		shader.nMatrixUniformName = config.nMatrixUniformName;
 		shader.mMatrixUniformName = config.mMatrixUniformName;
+		shader.vMatrixUniformName = config.nMatrixUniformName;
+
+		if (!shader.pMatrixUniformName && config.uniformNames.includes("pMatrix")) {
+			shader.pMatrixUniformName = "pMatrix";
+		}
+
+		if (!shader.mvMatrixUniformName && config.uniformNames.includes("mvMatrix")) {
+			shader.mvMatrixUniformName = "mvMatrix";
+		}
+
+		if (!shader.mMatrixUniformName && config.uniformNames.includes("mMatrix")) {
+			shader.mMatrixUniformName = "mMatrix";
+		}
+
+		if (!shader.vMatrixUniformName && config.uniformNames.includes("vMatrix")) {
+			shader.vMatrixUniformName = "vMatrix";
+		}
 
 		return shader;
 	};
