@@ -1,6 +1,15 @@
-// This is a centralised point for importing glMatrix
-// Also provides a helper for globalizing for ease of use
-let { glMatrix, mat2, mat3, mat4, quat, quat2, vec2, vec3, vec4  } = require('../libs/gl-matrix');
+// Maths modules are a CommonJS port of glMatrix v3.4.0
+// with added extensions and a helper to globalize for ease of use
+// when importing Fury as a standalone script.
+let common = require('./maths/common.js');
+let mat2 = require('./maths/mat2.js');
+let mat3 = require('./maths/mat3.js');
+let mat4 = require('./maths/mat4.js');
+let quat = require('./maths/quat.js');
+let quat2 = require('./maths/quat2.js');
+let vec2 = require('./maths/vec2.js');
+let vec3 = require('./maths/vec3.js');
+let vec4 = require('./maths/vec4.js');
 
 let globalize = () => {
 	// Lets create some globals!
@@ -16,20 +25,10 @@ let globalize = () => {
 	}
 };
 
-// Use of object freeze has funnily enough frozen these objects
-// if we wish to extend we'll need to update our fork of glMatrix (done)
-// make the changes and then build - I *think* we just want to remove the freezes?
-// then we can extend it here for clarity?
-
 module.exports = (function() {
-	// Modern Browsers perform better using native arrays rather than typed arrays
-	// It also (de)serializes more cleanly so...
-	glMatrix.setMatrixArrayType(Array);
-
 	let exports = {
-		glMatrix: glMatrix,
-		toRadian: glMatrix.toRadian,
-		equals: glMatrix.equals,
+		toRadian: common.toRadian,
+		equals: common.equals,
 		mat2: mat2,
 		mat3: mat3,
 		mat4: mat4,
@@ -37,14 +36,16 @@ module.exports = (function() {
 		quat2: quat2,
 		vec2: vec2,
 		vec3: vec3,
-		vec4: vec4
+		vec4: vec4,
 	};
 
-	exports.Ease = require('./ease');
+	exports.Ease = require('./maths/ease');
 
 	// TODO: Add plane 'class' - it's a vec4 with 0-2 being the normal vector and 3 being the distance to the origin from the plane along the normal vector
 	// I.e. the dot product of the offset point?
 	// Look at MapLoader demo it has an implementation, though it needs updating to encourage use of "out" parameters
+
+	// todo: move extensions into their respective modules
 
 	let vec3X = exports.vec3X = vec3.fromValues(1,0,0);
 	let vec3Y = exports.vec3Y = vec3.fromValues(0,1,0);
@@ -86,7 +87,7 @@ module.exports = (function() {
 		}
 	})();
 
-	let equals = glMatrix.equals;
+	let equals = common.equals;
 
 	let approximately = exports.approximately = (a, b, epsilon) => {
 		// Was using adpated version of https://floating-point-gui.de/errors/comparison/
