@@ -623,3 +623,38 @@ exports.forEach = (function() {
 		return a;
 	};
 })();
+
+/**
+ * vec2 pool for minimising garbage allocation 
+ */
+exports.Pool = (function(){
+	let stack = [];
+	for (let i = 0; i < 5; i++) {
+		stack.push(exports.create());
+	}
+	
+	return {
+		/**
+		 * return a borrowed vec2 to the pool
+		 * @param {vec2}
+		 */
+		return: (v) => { stack.push(exports.zero(v)); },
+		/**
+		 * request a vec2 from the pool
+		 * @returns {vec2}
+		 */
+		request: () => {
+			if (stack.length > 0) {
+				return stack.pop();
+			}
+			return exports.create();
+		}
+	}
+})();
+
+exports.ZERO = Object.freeze(exports.create());
+exports.ONE = Object.freeze(exports.fromValues(1,1));
+exports.X = Object.freeze(exports.fromValues(1,0));
+exports.Y = Object.freeze(exports.fromValues(0,1));
+exports.NEG_X = Object.freeze(exports.fromValues(-1,0));
+exports.NEG_Y = Object.freeze(exports.fromValues(0,-1));

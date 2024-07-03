@@ -45,48 +45,6 @@ module.exports = (function() {
 	// I.e. the dot product of the offset point?
 	// Look at MapLoader demo it has an implementation, though it needs updating to encourage use of "out" parameters
 
-	// todo: move extensions into their respective modules
-
-	let vec3X = exports.vec3X = vec3.fromValues(1,0,0);
-	let vec3Y = exports.vec3Y = vec3.fromValues(0,1,0);
-	let vec3Z = exports.vec3Z = vec3.fromValues(0,0,1);
-	exports.vec3Zero = vec3.fromValues(0,0,0);
-	exports.vec3One = vec3.fromValues(1,1,1);
-
-	exports.vec3Pool = (function(){
-		let stack = [];
-		for (let i = 0; i < 5; i++) {
-			stack.push(vec3.create());
-		}
-		
-		return {
-			return: (v) => { stack.push(v); },
-			request: () => {
-				if (stack.length > 0) {
-					return stack.pop();
-				}
-				return vec3.create();
-			}
-		}
-	})();
-
-	exports.quatPool = (function(){
-		let stack = [];
-		for (let i = 0; i < 5; i++) {
-			stack.push(quat.create());
-		}
-		
-		return {
-			return: (v) => { stack.push(v); },
-			request: () => {
-				if (stack.length > 0) {
-					return stack.pop();
-				}
-				return quat.create();
-			}
-		}
-	})();
-
 	let equals = common.equals;
 
 	let approximately = exports.approximately = (a, b, epsilon) => {
@@ -108,7 +66,15 @@ module.exports = (function() {
 		return x * x * (3 - 2 * x); 
 	};
 
-	let moveTowards = exports.moveTowards = (a, b, maxDelta) => {
+	/**
+	 * Moves number value towards b from a limited by a maximum value
+	 * 
+	 * @param {Number} a 
+	 * @param {Number} b 
+	 * @param {Number} maxDelta 
+	 * @returns {Number}
+	 */
+	exports.moveTowards = (a, b, maxDelta) => {
 		let delta = b - a;
 		return maxDelta >= Math.abs(delta) ? b : a + Math.sign(delta) * maxDelta; 
 	};
@@ -141,63 +107,35 @@ module.exports = (function() {
 		return result;
 	};
 
-	const angleDotEpison = 0.000001;  // If the dot product 
+	const ANGLE_DOT_EPSILON = 0.000001;
 
-	// vec3 extensions adapated from https://graemepottsfolio.wordpress.com/2015/11/26/vectors-programming/
-	// TODO: Tests
+	// RotateTowards extension has to be here to avoid cyclic dependency between quat and vec3
 
-	exports.vec3Slerp = (() => {
-		let an = vec3.create(), bn = vec3.create();
-		return (out, a, b, t) => {
-			vec3.normlize(an, a);
-			vec3.normlize(bn, b);
-			let dot = vec3.dot(an, bn);
-			if (approximately(Math.abs(dot), 1.0, angleDotEpison)) {
-				// lerp
-				vec3.lerp(out, a, b, t);
-			} else {
-				// Slerp
-				// a * sin ( theta * (1 - t) / sin (theta)) + b * (sin(theta * t) / sin(theta)) where theta = acos(|a|.|b|)
-				let theta = Math.acos(dot);
-				let sinTheta = Math.sin(theta);
-				let ap = Math.sin(theta * (1.0 - t)) / sinTheta;
-				let bp = Math.sin(theta * t ) / sinTheta;
-				out[0] = a[0] * ap + b[0] * bp;
-				out[1] = a[1] * ap + b[1] * bp;
-				out[2] = a[2] * ap + b[2] * bp;
-			}
-		};
-	})(); 
-
-	exports.vec3MoveTowards = (() => {
-		let delta = vec3.create();
-		return (out, a, b, maxDelta) => {
-			vec3.sub(delta, b, a);
-			let sqrLen = vec3.sqrDist(a, b); 
-			let sqrMaxDelta = maxDelta * maxDelta;
-			if (sqrMaxDelta >= sqrLen) {
-				vec3.copy(out, b);
-			} else {
-				vec3.scaleAndAdd(out, a, delta, maxDelta / Math.sqrt(sqrLen));
-			}
-		}; 
-	})();
-
-	exports.vec3RotateTowards = (() => {
+	/**
+	 * Rotate a vec3 towards another with a specificed maximum change
+	 * in magnitude and a maximum change in angle 
+	 * 
+	 * @param {vec3} out
+	 * @param {vec3} a the vector to rotate from
+	 * @param {vec3} b the vector to rotate towards
+	 * @param {Number} maxRadiansDelta the maximum allowed difference in angle in Radians
+	 * @param {Number} maxMagnitudeDelta the maximum allowed difference in magnitude
+	 */
+	vec3.rotateTowards = (() => {
 		let an = vec3.create();
 		let bn = vec3.create();
 		let cross = vec3.create();
-		let q = quat.create();
+		let q = quat.create(); 
 		return (out, a, b, maxRadiansDelta, maxMagnitudeDelta) => {
 			let aLen = vec3.length(a);
 			let bLen = vec3.length(b);
 			vec3.normlize(an, a);
 			vec3.normlize(bn, b);
-
+	
 			// check for magnitude overshoot via move towards
-			let targetLen = moveTowards(aLen, bLen, maxMagnitudeDelta);
+			let targetLen = exports.moveTowards(aLen, bLen, maxMagnitudeDelta);
 			let dot = vec3.dot(an, bn);
-			if (approximately(Math.abs(dot), 1.0, angleDotEpison)) {  // Q: What about when pointing in opposite directions?
+			if (approximately(Math.abs(dot), 1.0, ANGLE_DOT_EPSILON)) {  // Q: What about when pointing in opposite directions?
 				// if pointing same direction just change magnitude
 				vec3.copy(out, an);
 				vec3.scale(out, targetLen);
@@ -224,74 +162,6 @@ module.exports = (function() {
 		};
 	})();
 
-	exports.vec3SmoothDamp = (() => {
-		let delta = vec3.create();
-		let temp = vec3.create();
-		return (out, a, b, velocity, smoothTime, maxSpeed, elapsed) => { // Q: Should have outVelocity?
-			if (vec3.equals(a, b)) {
-				vec3.copy(out, b);
-			} else {
-				// Derivation: https://graemepottsfolio.wordpress.com/2016/01/11/game-programming-math-libraries/
-				smoothTime = Math.max(0.0001, smoothTime); // minimum smooth time of 0.0001
-				let omega = 2.0 / smoothTime;
-				let x = omega * elapsed;
-				let exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.245 * x * x * x);
-				vec3.sub(delta, a, b);
-				let length = vec3.length(delta);
-				let maxDelta = maxSpeed * smoothTime;
-
-				let deltaX = Math.min(length, maxDelta);
-				vec3.scale(delta, delta, deltaX / length);
-
-				// temp = (velocity + omega * delta) * elapsed
-				vec3.scaleAndAdd(temp, velocity, delta, omega);
-				vec3.scale(temp, temp, elapsed);
-
-				// velocity = (velocity - omega * temp) * exp
-				vec3.scaleAndAdd(velocity, velocity, temp, -omega);
-				vec3.scale(velocity, velocity, exp);
-
-				// out = a - delta + (delta + temp) * exp;
-				vec3.sub(out, a, delta);
-				vec3.scaleAndAdd(out, out, delta, exp);
-				vec3.scaleAndAdd(out, out, temp, exp);
-
-				// Ensure we don't overshoot
-				if (vec3.sqrDist(b, a) <= vec3.sqrDist(out, a)) {
-					vec3.copy(out, b);
-					vec3.zero(velocity);
-				}
-			}
-		};
-	})();
-
-	exports.vec3ToString = (v) => { return "(" + v[0] + ", " + v[1] + ", " + v[2] + ")"; };
-
-	exports.quatEuler = (x, y, z) => {
-		let q = quat.create();
-		quat.fromEuler(q, x, y, z);
-		return q;
-	};
-
-	exports.quatIsIdentity = (q) => {
-		// Is the provided quaterion identity
-		return (equals(q[0], 0) && equals(q[1], 0) && equals(q[2], 0) && equals(q[3], 1));
-	};
-
-	exports.quatRotate = (function() {
-		let i = quat.create();
-		return (out, q, rad, axis) => {
-			quat.setAxisAngle(i, axis, rad);
-			return quat.multiply(out, i, q);
-		};
-	})();
-
-	exports.quatLocalAxes = (q, localX, localY, localZ) => {
-		vec3.transformQuat(localX, vec3X, q);
-		vec3.transformQuat(localY, vec3Y, q);
-		vec3.transformQuat(localZ, vec3Z, q);
-	};
-
 	// See https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 	// Note: They define roll as rotation around x axis, pitch around y axis, and yaw around z-axis
 	// I do not agree, roll is around z-axis, pitch around x-axis, and yaw around y-axis.
@@ -299,7 +169,8 @@ module.exports = (function() {
 
 	// I attempted to swap and rearrange some of the formula so pitch could be -pi/2 to pi/2 range
 	// and yaw would be -pi to pi but naively swapping the formula according to the apparent pattern did not work
-	// c.f. 7dfps player class for hacky work around - TODO: Fix these
+	// c.f. 7dfps player class for hacky work around 
+	// TODO: Fix these
 	exports.calculatePitch = (q) => {
 		// x-axis rotation
 		let w = q[3], x = q[0], y = q[1], z = q[2];

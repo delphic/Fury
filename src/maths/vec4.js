@@ -668,3 +668,33 @@ exports.forEach = (function() {
 		return a;
 	};
 })();
+
+/**
+ * vec4 pool for minimising garbage allocation 
+ */
+exports.Pool = (function(){
+	let stack = [];
+	for (let i = 0; i < 5; i++) {
+		stack.push(exports.create());
+	}
+	
+	return {
+		/**
+		 * return a borrowed vec4 to the pool
+		 * @param {vec4}
+		 */
+		return: (v) => { stack.push(exports.zero(v)); },
+		/**
+		 * request a vec4 from the pool
+		 * @returns {vec4}
+		 */
+		request: () => {
+			if (stack.length > 0) {
+				return stack.pop();
+			}
+			return exports.create();
+		}
+	}
+})();
+
+exports.ZERO = Object.freeze(exports.create());

@@ -2188,3 +2188,33 @@ exports.mul = exports.multiply;
  * @function
  */
 exports.sub = exports.subtract;
+
+/**
+ * mat4 pool for minimising garbage allocation 
+ */
+exports.Pool = (function(){
+	let stack = [];
+	for (let i = 0; i < 5; i++) {
+		stack.push(exports.create());
+	}
+	
+	return {
+		/**
+		 * return a borrowed mat4 to the pool
+		 * @param {mat4}
+		 */
+		return: (m) => { stack.push(exports.identity(m)); },
+		/**
+		 * request a mat4 from the pool
+		 * @returns {mat4}
+		 */
+		request: () => {
+			if (stack.length > 0) {
+				return stack.pop();
+			}
+			return exports.create();
+		}
+	}
+})();
+
+exports.IDENTITY = Object.freeze(exports.create());

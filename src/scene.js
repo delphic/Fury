@@ -116,7 +116,7 @@ module.exports = (function() {
 
 		let createObjectBounds = function(object, mesh, rotation) {
 			// If object is static and not rotated, create object AABB from mesh bounds
-			if (!forceSphereCulling && object.static && (!rotation || Maths.quatIsIdentity(rotation))) {
+			if (!forceSphereCulling && object.static && (!rotation || Maths.quat.isIdentity(rotation))) {
 				// TODO: Allow for calculation of AABB of rotated meshes
 				let center = vec3.clone(mesh.bounds.center);
 				vec3.add(center, center, object.transform.position);

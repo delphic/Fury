@@ -1,4 +1,4 @@
-const { ANGLE_ORDER, ARRAY_TYPE, EPSILON, RANDOM } = require("./common.js");
+const { ANGLE_ORDER, ARRAY_TYPE, EPSILON, RANDOM, equals } = require("./common.js");
 const mat3 = require("./mat3.js");
 const vec3 = require("./vec3.js");
 const vec4 = require("./vec4.js");
@@ -451,6 +451,21 @@ exports.fromMat3 = function(out, m) {
 };
 
 /**
+ * Creates a new quaternion from the given euler angle x, y, z, with default angle order
+ *
+ * @param {Number} x Angle to rotate around X axis in degrees.
+ * @param {Number} y Angle to rotate around Y axis in degrees.
+ * @param {Number} z Angle to rotate around Z axis in degrees.
+ * @returns {quat} out
+ * @function
+ */
+exports.euler = function(x, y, z) {
+	let q = quat.create();
+	quat.fromEuler(q, x, y, z);
+	return q;
+};
+
+/**
  * Creates a quaternion from the given euler angle x, y, z using the provided intrinsic order for the conversion.
  *
  * @param {quat} out the receiving quaternion
@@ -786,3 +801,73 @@ exports.setAxes = (function () {
 		return normalize(out, fromMat3(out, matr));
 	};
 })();
+
+/**
+ * quat pool for minimising garbage allocation 
+ */
+exports.Pool = (function(){
+	let stack = [];
+	for (let i = 0; i < 5; i++) {
+		stack.push(exports.create());
+	}
+	
+	return {
+		/**
+		 * return a borrowed quat to the pool
+		 * @param {quat}
+		 */
+		return: (q) => { stack.push(exports.identity(q)); },
+		/**
+		 * request a quat from the pool
+		 * @returns {quat}
+		 */
+		request: () => {
+			if (stack.length > 0) {
+				return stack.pop();
+			}
+			return exports.create();
+		}
+	}
+})();
+
+/**
+ * Tests if the provided quaternion is approximately equal to the identity quaternion
+ * 
+ * @param {quat} q the quaternion to test 
+ * @returns {Boolean} true if the quaternion is approximately an identity quaternion
+ */
+exports.isIdentity = (q) => {
+	return (equals(q[0], 0) && equals(q[1], 0) && equals(q[2], 0) && equals(q[3], 1));
+};
+
+/**
+ * Rotate a quaternion using axis angle
+ * 
+ * @param {quat} out the receiving quaternion
+ * @param {quat} q the quaternion to rotate
+ * @param {Number} rad the number of radians to rotate the quaternion by
+ * @param {vec3} axis the axis around which to rotate the quaternion
+ */
+exports.rotate = (function() {
+	let i = exports.create();
+	return (out, q, rad, axis) => {
+		exports.setAxisAngle(i, axis, rad);
+		return exports.multiply(out, i, q);
+	};
+})();
+
+/**
+ * Generate a set of local cartesian axes from a quaternion rotation
+ * 
+ * @param {quat} q the quaternion to generate the local axes from 
+ * @param {vec3} localX the receiving vector for the local x axis 
+ * @param {vec3} localY the receiving vector for the local y axis
+ * @param {vec3} localZ  the receiving vector for the local z axis
+ */
+exports.localAxes = (q, localX, localY, localZ) => {
+	vec3.transformQuat(localX, vec3.X, q);
+	vec3.transformQuat(localY, vec3.Y, q);
+	vec3.transformQuat(localZ, vec3.Z, q);
+};
+
+exports.IDENTITY = Object.freeze(exports.create());

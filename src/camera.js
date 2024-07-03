@@ -25,7 +25,7 @@ module.exports = (function() {
 		// TODO: Review depth and frustrum to make sure they deal with look in -z correctly
 		calculateFrustum: function() {
 			// TODO: Update to work for orthonormal projection as well
-			Maths.quatLocalAxes(this.rotation, localX, localY, localZ);
+			Maths.quat.localAxes(this.rotation, localX, localY, localZ);
 
 			// Calculate Planes
 			// NOTE: Relies on the fact camera looks in -ve z direction
@@ -43,24 +43,24 @@ module.exports = (function() {
 			this.planes[1][3] = -vec3.dot(this.planes[1], vec3Cache);
 			// Left
 			quat.identity(q);
-			Maths.quatRotate(q, q, 0.5 * this.ratio * this.fov, localY);	// Rotation is anti-clockwise apparently
+			Maths.quat.rotate(q, q, 0.5 * this.ratio * this.fov, localY);	// Rotation is anti-clockwise apparently
 			vec3.transformQuat(this.planes[2], localX, q);
 			this.planes[2][3] = -vec3.dot(this.planes[2], this.position);
 			// Right
 			quat.identity(q);
-			Maths.quatRotate(q, q, -0.5 * this.ratio * this.fov, localY);
+			Maths.quat.rotate(q, q, -0.5 * this.ratio * this.fov, localY);
 			vec3.negate(vec3Cache, localX);
 			vec3.transformQuat(this.planes[3], vec3Cache, q);
 			this.planes[3][3] = -vec3.dot(this.planes[3], this.position);
 			// Top
 			quat.identity(q);
-			Maths.quatRotate(q, q, 0.5 * this.fov, localX);
+			Maths.quat.rotate(q, q, 0.5 * this.fov, localX);
 			vec3.negate(vec3Cache, localY);
 			vec3.transformQuat(this.planes[4], vec3Cache, q);
 			this.planes[4][3] = -vec3.dot(this.planes[4], this.position);
 			// Bottom
 			quat.identity(q);
-			Maths.quatRotate(q, q, -0.5 * this.fov, localX);
+			Maths.quat.rotate(q, q, -0.5 * this.fov, localX);
 			vec3.transformQuat(this.planes[5], localY, q);
 			this.planes[5][3] = -vec3.dot(this.planes[5], this.position);
 
@@ -116,7 +116,7 @@ module.exports = (function() {
 			return 2*(q1*q3 + q0*q2)*(l0 - p0) + 2*(q2*q3 - q0*q1)*(l1 - p1) + (1 - 2*q1*q1 - 2*q2*q2)*(l2 - p2);
 		},
 		getLookDirection: function(out) {
-			vec3.transformQuat(out, Maths.vec3Z, this.rotation);
+			vec3.transformQuat(out, Maths.vec3.Z, this.rotation);
 			vec3.negate(out, out); // Camera faces in -z
 		},
 		getProjectionMatrix: function(out) {

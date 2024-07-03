@@ -438,3 +438,33 @@ exports.mul = exports.multiply;
  * @function
  */
 exports.sub = exports.subtract;
+
+/**
+ * mat2 pool for minimising garbage allocation 
+ */
+exports.Pool = (function(){
+	let stack = [];
+	for (let i = 0; i < 5; i++) {
+		stack.push(exports.create());
+	}
+	
+	return {
+		/**
+		 * return a borrowed mat2 to the pool
+		 * @param {mat2}
+		 */
+		return: (v) => { stack.push(exports.identity(v)); },
+		/**
+		 * request a mat2 from the pool
+		 * @returns {mat2}
+		 */
+		request: () => {
+			if (stack.length > 0) {
+				return stack.pop();
+			}
+			return exports.create();
+		}
+	}
+})();
+
+exports.IDENTITY = Object.freeze(exports.create());

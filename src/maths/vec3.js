@@ -822,3 +822,97 @@ exports.forEach = (function () {
 		return a;
 	};
 })();
+
+/**
+ * vec3 pool for minimising garbage allocation 
+ */
+exports.Pool = (function(){
+	let stack = [];
+	for (let i = 0; i < 5; i++) {
+		stack.push(exports.create());
+	}
+	
+	return {
+		/**
+		 * return a borrowed vec3 to the pool
+		 * @param {vec3}
+		 */
+		return: (v) => { stack.push(exports.zero(v)); },
+		/**
+		 * request a vec3 from the pool
+		 * @returns {vec3}
+		 */
+		request: () => {
+			if (stack.length > 0) {
+				return stack.pop();
+			}
+			return exports.create();
+		}
+	}
+})();
+
+// vec3 extensions adapated from https://graemepottsfolio.wordpress.com/2015/11/26/vectors-programming/
+
+exports.moveTowards = (() => {
+	let delta = exports.create();
+	return (out, a, b, maxDelta) => {
+		exports.subtract(delta, b, a);
+		let sqrLen = exports.squaredDistance(a, b); 
+		let sqrMaxDelta = maxDelta * maxDelta;
+		if (sqrMaxDelta >= sqrLen) {
+			exports.copy(out, b);
+		} else {
+			exports.scaleAndAdd(out, a, delta, maxDelta / Math.sqrt(sqrLen));
+		}
+	}; 
+})();
+
+exports.smoothDamp = (() => {
+	let delta = exports.create();
+	let temp = exports.create();
+	return (out, a, b, velocity, smoothTime, maxSpeed, elapsed) => { // Q: Should have outVelocity?
+		if (exports.equals(a, b)) {
+			exports.copy(out, b);
+		} else {
+			// Derivation: https://graemepottsfolio.wordpress.com/2016/01/11/game-programming-math-libraries/
+			smoothTime = Math.max(0.0001, smoothTime); // minimum smooth time of 0.0001
+			let omega = 2.0 / smoothTime;
+			let x = omega * elapsed;
+			let exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.245 * x * x * x);
+			exports.subtract(delta, a, b);
+			let length = exports.length(delta);
+			let maxDelta = maxSpeed * smoothTime;
+
+			let deltaX = Math.min(length, maxDelta);
+			exports.scale(delta, delta, deltaX / length);
+
+			// temp = (velocity + omega * delta) * elapsed
+			exports.scaleAndAdd(temp, velocity, delta, omega);
+			exports.scale(temp, temp, elapsed);
+
+			// velocity = (velocity - omega * temp) * exp
+			exports.scaleAndAdd(velocity, velocity, temp, -omega);
+			exports.scale(velocity, velocity, exp);
+
+			// out = a - delta + (delta + temp) * exp;
+			exports.sub(out, a, delta);
+			exports.scaleAndAdd(out, out, delta, exp);
+			exports.scaleAndAdd(out, out, temp, exp);
+
+			// Ensure we don't overshoot
+			if (exports.sqrDist(b, a) <= exports.sqrDist(out, a)) {
+				exports.copy(out, b);
+				exports.zero(velocity);
+			}
+		}
+	};
+})();
+
+exports.ZERO = Object.freeze(exports.create());
+exports.ONE = Object.freeze(exports.fromValues(1,1,1));
+exports.X = Object.freeze(exports.fromValues(1,0,0));
+exports.Y = Object.freeze(exports.fromValues(0,1,0));
+exports.Z = Object.freeze(exports.fromValues(0,0,1));
+exports.NEG_X = Object.freeze(exports.fromValues(-1,0,0));
+exports.NEG_Y = Object.freeze(exports.fromValues(0,-1,0));
+exports.NEG_Z = Object.freeze(exports.fromValues(0,0,-1));
