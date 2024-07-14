@@ -31,8 +31,37 @@ module.exports = (function() {
 	// to check objects are used or reference count them - will need to track created scenes
 
 	// glState Tracking - shared across scenes
-	let currentShaderId, currentMaterialId, currentMeshId, pMatrixRebound = false, vMatrixRebound = false;
+	let currentShaderId, currentMaterialId, currentMeshId;
 	let nextTextureLocation = 0, currentTextureBindings = {}, currentTextureLocations = [];	// keyed on texture.id to binding location, keyed on binding location to texture.id
+
+	let bindMaterialTextureLocations = function(material) {
+		for (let i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
+			let uniformName = material.shader.textureUniformNames[i];
+			let texture = material.textures[uniformName];
+			if (texture) {
+				textures.add(texture);
+				bindTextureToLocation(texture);
+			}
+
+		}
+	};
+
+	let bindTextureToLocation = function(texture) {
+		if (currentTextureBindings[texture.id] === undefined) {
+			if (currentTextureLocations.length < r.TextureLocations.length) {
+				r.setTexture(currentTextureLocations.length, texture);
+				currentTextureBindings[texture.id] = currentTextureLocations.length;
+				currentTextureLocations.push(texture.id);
+			} else {
+				// replace an existing texture
+				delete currentTextureBindings[currentTextureLocations[nextTextureLocation]];
+				r.setTexture(nextTextureLocation, texture);
+				currentTextureBindings[texture.id] = nextTextureLocation;
+				currentTextureLocations[nextTextureLocation] = texture.id;
+				nextTextureLocation = (nextTextureLocation+1) % r.TextureLocations.length;
+			}
+		}
+	};
 
 	exports.create = function({ camera, enableFrustumCulling, forceSphereCulling }) {
 		let cameras = {};
@@ -40,6 +69,7 @@ module.exports = (function() {
 		let mainCameraName = "main";
 		// mvMatrix may need to be a stack in future (although a stack which avoids unnecessary mat4.creates)
 		let pMatrix = mat4.create(), mvMatrix = mat4.create(), nMatrix = mat3.create(), cameraMatrix = mat4.create(), cameraOffset = vec3.create(), inverseCameraRotation = quat.create();
+		let pMatrixRebound = false, vMatrixRebound = false;
 
 		let scene = {};
 		scene.id = (nextSceneId++).toString();
@@ -58,35 +88,6 @@ module.exports = (function() {
 		depths.set = (o, depth) => {
 			let id = o.sceneId !== undefined ? o.sceneId : o.id;
 			depths[id] = depth;
-		};
-
-		let addTexturesToScene = function(material) {
-			for (let i = 0, l = material.shader.textureUniformNames.length; i < l; i++) {
-				let uniformName = material.shader.textureUniformNames[i];
-				let texture = material.textures[uniformName];
-				if (texture) {
-					textures.add(texture);
-					bindTextureToLocation(texture);
-				}
-
-			}
-		};
-
-		let bindTextureToLocation = function(texture) {
-			if (currentTextureBindings[texture.id] === undefined) {
-				if (currentTextureLocations.length < r.TextureLocations.length) {
-					r.setTexture(currentTextureLocations.length, texture);
-					currentTextureBindings[texture.id] = currentTextureLocations.length;
-					currentTextureLocations.push(texture.id);
-				} else {
-					// replace an existing texture
-					delete currentTextureBindings[currentTextureLocations[nextTextureLocation]];
-					r.setTexture(nextTextureLocation, texture);
-					currentTextureBindings[texture.id] = nextTextureLocation;
-					currentTextureLocations[nextTextureLocation] = texture.id;
-					nextTextureLocation = (nextTextureLocation+1) % r.TextureLocations.length;
-				}
-			}
 		};
 
 		let addToAlphaList = function(object, depth) {
@@ -159,7 +160,7 @@ module.exports = (function() {
 			object.materialId = materials.add(object.material);
 			object.shaderId = shaders.add(object.material.shader); 
 			object.material.shaderId = object.shaderId;
-			addTexturesToScene(object.material);
+			bindMaterialTextureLocations(object.material);
 
 			if (config.transform) {
 				object.transform = config.transform;
@@ -227,7 +228,7 @@ module.exports = (function() {
 				prefab.materialId = materials.add(prefab.material);
 				prefab.shaderId = shaders.add(prefab.material.shader);
 				prefab.material.shaderId = prefab.shaderId;
-				addTexturesToScene(prefab.material);
+				bindMaterialTextureLocations(prefab.material);
 				prefabs[name] = prefab;
 				prefabs.keys.push(name);
 			} else {
