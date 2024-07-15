@@ -10,7 +10,7 @@ Open Source - we're doing this for fun.
 
 Using ES5+ and standards focused - i.e using WebGL2 and Web Audio API without fall backs.
 
-A single vector implementation across rendering, physics and game logic - [glMatrix](https://github.com/toji/gl-matrix).
+A single vector implementation across rendering, physics and game logic - a fork of [glMatrix](https://github.com/toji/gl-matrix) v3.4.0.
 
 Using a Common JS and browserify, allowing either direct inclusion or build single file.
 
@@ -37,13 +37,11 @@ Focus fast JavaScript, low GC (e.g. parameter objects only on init functions (or
 * Text rendering in WebGL
 
 ## Physics, Input & Sound
-_Primary focus is on the renderer_. Physics, Input and Sound helpers will be added as optional modules, will assess as needed by demos / use.
+_Primary focus is on the renderer_. Physics, Input and Sound helpers can be added per project, will assess as needed by demos / use.
 
 [Web Audio API](http://www.html5rocks.com/en/tutorials/webaudio/intro/)
 
 [W3C Gamepad Working Draft](http://www.w3.org/TR/gamepad/)
-
-(Use of libraries is acceptable if they don't violate the guiding principles of this project, e.g. [GamePad.js](https://github.com/sgraham/gamepad.js/)).
 
 ## Demos
 [View Completed Demos](https://delphic.me.uk/fury/demos/)
@@ -75,12 +73,12 @@ Do not create new objects during a frame unless completely unavoidable (then ref
 
 Try to keep object and module members public and rely on people using their head (i.e. don't enforce copy vector values, they should do that themselves). Whilst this might result in more errors, it gives greater flexibility and much more straight forward code.
 
-Avoid the new keyword where-ever possible, use literals, module format is designed accordingly.
+Initially written to prefer using literals over the new keyword, module format is designed accordingly. However when using VSCode - ES5 classes bring improved auto-complete, the benefits of which outweight keeping to Douglas Crockford style, and as such will use ES5 classes within CommonJS modules going forward.
 
 Readable variable names, everywhere, no short-hands / abbreviations, avoid jargon where possible. Only indices are allowed to be single letter.
-* Only exceptions are: variables which are used extremely often; e.g. the webGraphicsLibraryContext -> 'gl', and abbreviations which are _extremely_ well known jargon, e.g. 'fov'
+* Only exceptions are: variables which are used extremely often; e.g. the webGraphicsLibraryContext -> 'gl', using our renderer facade over the context -> 'r', and abbreviations which are _extremely_ well known jargon, e.g. 'fov'
 
-No prefixes, that includes private variables with an underscore. If it has an exports assignment or is part of a literal declaration it's public, if not, it's not. Also no prefixing of type, if you want to give the type put the word at the end of the variable name.
+No prefixes, that includes private variables with an underscore. If it has an exports assignment or is part of a literal declaration it's public, if not, it's not. Also no prefixing of type, if you want to include the type in the name use a full word suffix.
 
 ## Example Module Format
 
@@ -107,6 +105,7 @@ module.exports = function() {
 
 		return object;
 	};
+
 	return exports;
 }();
 ```
