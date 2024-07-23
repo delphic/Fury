@@ -43,6 +43,9 @@ module.exports = (function(){
 	};
 
 	let createBuffer = function(data, size, indexed) {
+		if (data.length > 65535) {
+			console.warn("buffer contains more than 16-bit max number of points, rendering may be truncated");
+		}
 		if (data.buffer) {
 			if (!indexed) {
 				return r.createArrayBuffer(data, size);
