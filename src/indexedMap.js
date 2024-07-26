@@ -6,6 +6,12 @@ module.exports = (function(){
 	// also want references that do not go out of date when 
 	// you remove an item (which is hopefully rarely).
 
+	// Can this be replaced with Map?
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
+	// An issue is the lack of a sort functionw without creating a new map, which is used 
+	// when adding new objects to sceneObjects (in scene.add in the scene module) to group objects
+	// by their material.
+
 	// Please note, again for purposes of speed and ease of use 
 	// this structure adds the key of the item to the id property on items added
 	// this eases checking for duplicates and if you have the only reference

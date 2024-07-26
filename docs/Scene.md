@@ -6,11 +6,15 @@ A camera is required when creating a scene instance.
 
 Objects are added to a scene by providing a `Mesh` and `Material` instance, and created scene object receives a `Transform` property if one is not provided.
 
+The keys property of the stored scene objects - which determines the order they will be enumerated - is sorted by the material id of the object when a new object is added to the scene.
+
 If the `static` flag is passed when adding the object, AABB bounds are calculated, which - if culling is enabled - are used with frustum culling, otherwise a sphere shape of the mesh's bounding radius is used.
 
 The instance method `render` then draws the scene to the WebGL canvas, as such it interfaces with the `Shader` module to automatically calculate and bind the necessary model, normal, view and projection matrices required by the shader definition, using the currently configured camera with the transform on each object. It also calls the necessary clear functions as specified by the current camera.
 
-It calls the shader definition's `bindMesh`, `bindMaterial`, and `bindInstance` functions, passing the renderer as `this`, as required by the order in which objects were added to the scene. **NOTE**: it does not currently order the added objects to minimise rebinds, but it does avoid unnecessary rebinds with the provided order.
+It calls the shader definition's `bindMesh`, `bindMaterial`, and `bindInstance` functions, passing the renderer as `this`, as required by the order in which they are enumerated. 
+
+**NOTE**: whilst the enumeration order of object is sorted by material to partially reduce rebinds, it does not currently order the added objects to maximally minimise rebinds. Additionally if the material on the object is altered after addition, the enumeration order is not. 
 
 The scene also automatically orders any objects using a material with a truthy `alpha` property based on depth so that they are blended correctly, rendering them after all scene objects which do not use a material with alpha blending.
 
@@ -41,7 +45,7 @@ However it should be noted that `TileMap` and `TextMesh` both currently depend o
 
 Transform hierarchies are naively recalculated for each object, which can potentially result in duplicate calculations.
 
-Objects are rendered in the order they are added to the scene rather than being batched by mesh, material or textures used.
+Objects are rendered in the order grouped by material when they are added to the scene rather than being batched by mesh, material or textures used.
 
 All textures are rebound on switching shader program, this is not strictly necessary and could result an improvement in performance without implementing the above.
 
