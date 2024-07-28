@@ -239,6 +239,48 @@ exports.scale = function(out, a, b) {
 };
 
 /**
+ * Scales a vec3 by a scale number in X and Y axes only
+ * @param {vec3} out the receiving vector 
+ * @param {ReadonlyVec3} a the vector to scale 
+ * @param {Number} b amount to scale the vector by 
+ * @returns {vec3} out 
+ */
+exports.scaleXY = function(out, a, b) {
+	out[0] = a[0] * b;
+	out[1] = a[1] * b;
+	out[2] = a[2];
+	return out;
+};
+
+/**
+ * Scales a vec3 by a scale number in X and Z axes only
+ * @param {vec3} out the receiving vector 
+ * @param {ReadonlyVec3} a the vector to scale 
+ * @param {Number} b amount to scale the vector by 
+ * @returns {vec3} out 
+ */
+exports.scaleXZ = function(out, a, b) {
+	out[0] = a[0] * b;
+	out[1] = a[1];
+	out[2] = a[2] * b;
+	return out;
+};
+
+/**
+ * Scales a vec3 by a scale number in Y and Z axes only
+ * @param {vec3} out the receiving vector 
+ * @param {ReadonlyVec3} a the vector to scale 
+ * @param {Number} b amount to scale the vector by 
+ * @returns {vec3} out 
+ */
+exports.scaleYZ = function(out, a, b) {
+	out[0] = a[0];
+	out[1] = a[1] * b;
+	out[2] = a[2] * b;
+	return out;
+};
+
+/**
  * Adds two vec3's after scaling the second operand by a scalar value
  *
  * @param {vec3} out the receiving vector
