@@ -29,15 +29,16 @@ module.exports = (function() {
 	let exports = {
 		toRadian: common.toRadian,
 		equals: common.equals,
-		mat2: mat2,
-		mat3: mat3,
-		mat4: mat4,
-		quat: quat,
-		quat2: quat2,
-		vec2: vec2,
-		vec3: vec3,
-		vec4: vec4,
 	};
+
+	exports.mat2 = require('./maths/mat2.js');
+	exports.mat3 = require('./maths/mat3.js');
+	exports.mat4 = require('./maths/mat4.js');
+	exports.quat = require('./maths/quat.js');
+	exports.quat2 = require('./maths/quat2.js');
+	exports.vec2 = require('./maths/vec2.js');
+	exports.vec3 = require('./maths/vec3.js');
+	exports.vec4 = require('./maths/vec4.js');
 
 	exports.Ease = require('./maths/ease');
 
