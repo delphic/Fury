@@ -74,6 +74,15 @@ module.exports = (function(){
 			settings.enableAnisotropicFiltering);
 	};
 
+	exports.load = (uri, config, callback) => {
+		let image = new Image();
+		image.onload = function() {
+			texture = exports.create(config);
+			callback(texture);
+		}
+		image.src = uri;
+	};
+
 	exports.createTextureArray = (config) => {
 		let {
 			source,
