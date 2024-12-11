@@ -88,14 +88,14 @@ module.exports = (function(){
 	};
 
 	exports.pointInCircle = (out, radius = 1) => {
-		let r = radius * Math.sqrt(Random.value());
-		let theta = Random.value() * 2 * Math.PI;
+		let r = radius * Math.sqrt(rand());
+		let theta = rand() * 2 * Math.PI;
 		out[0] = r * Math.cos(theta);
 		out[1] = r * Math.sin(theta);
 	};
 
 	exports.pointOnCircle = (out, radius = 1) => {
-		let theta = Random.value() * 2 * Math.PI;
+		let theta = rand() * 2 * Math.PI;
 		out[0] = radius * Math.cos(theta);
 		out[1] = radius * Math.sin(theta);
 	};
