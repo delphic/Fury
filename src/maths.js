@@ -27,6 +27,7 @@ let globalize = () => {
 
 module.exports = (function() {
 	let exports = {
+		toDegree: common.toDegree,
 		toRadian: common.toRadian,
 		equals: common.equals,
 	};
