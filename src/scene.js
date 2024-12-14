@@ -307,7 +307,7 @@ module.exports = (function() {
 			for (let i = 0, l = renderObjects.keys.length; i < l; i++) {
 				// TODO: Detect if resorting is necessary (check +1 and -1 in array against sort function)
 				renderObject = renderObjects[renderObjects.keys[i]];
-				if (scene.enableFrustumCulling) {
+				if (scene.enableFrustumCulling && renderObject.active) {
 					culled = isCulledByFrustrum(camera, renderObject);
 				}
 				if (!culled && renderObject.active) {
@@ -328,7 +328,7 @@ module.exports = (function() {
 					let instances = prefab.instances;
 					for (let j = 0, n = instances.keys.length; j < n; j++) {
 						let instance = instances[instances.keys[j]];
-						if (scene.enableFrustumCulling) {
+						if (scene.enableFrustumCulling && instance.active) {
 							culled = isCulledByFrustrum(camera, instance);
 						}
 						if (!culled && instance.active) {
