@@ -75,8 +75,10 @@ module.exports = (function(){
 	};
 
 	exports.load = (uri, config, callback) => {
+		config = config || {};
 		let image = new Image();
 		image.onload = function() {
+			config.source = image;
 			texture = exports.create(config);
 			callback(texture);
 		}
