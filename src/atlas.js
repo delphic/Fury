@@ -65,6 +65,11 @@ module.exports = (function(){
 			let meshConfig = centered ? atlas.centerdMeshConfig : atlas.meshConfig;
 
 			let materialConfig = Object.create(atlas.materialConfig);
+			// Each prefab needs it's own properties object so that properties can be manipulated indepedently
+			materialConfig.properties = Object.assign({}, atlas.materialConfig.properties);
+			// Each prefab needs it's own offset for the same reason (however we leave scale as we don't expect that to vary)
+			materialConfig.properties.offset = [ 0, 0 ];
+
 			if (alpha !== undefined) {
 				materialConfig.properties.alpha = alpha;
 			}
@@ -72,9 +77,9 @@ module.exports = (function(){
 				materialConfig.properties.color = color;
 			} else {
 				// This shouldn't be necessary, however it is
-				materialConfig.properties.color = Maths.vec4.fromValues(1,1,1,1);
+				materialConfig.properties.color = [ 1,1,1,1 ];
 			}
-			setMaterialConfigOffset(materialConfig, atlasIndex, width, height);
+			setOffset(materialConfig.properties.offset, atlasIndex, width, height);
 
 			Prefab.create({
 				name: prefabName, 
