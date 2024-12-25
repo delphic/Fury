@@ -1,5 +1,5 @@
 {
-	"name": "fury",
+	"name": "fury-js",
 	"version": "0.1.1",
 	"description": "WebGL Game Engine",
 	"author": "delphic",
@@ -7,7 +7,6 @@
 	"homepage": "https://delphic.me.uk/fury/",
 	"main": "src/fury.js",
 	"dependencies": {},
-	"private": true,
 	"devDependencies": {
 		"eslint": "^8.2.0"
 	}
