@@ -20,4 +20,4 @@ That is a JavaScript file which can be imported as a script tag and sets a `Fury
 
 Use Common JS with `src/fury.js` to include Fury in a more modern manner.
 
-If using npm add `"fury": "delphic/fury"` to your package.json dependencies.
+If using npm add `fury-js` to your package.json dependencies.

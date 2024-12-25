@@ -5,6 +5,11 @@
 	"author": "delphic",
 	"license": "MIT",
 	"homepage": "https://delphic.me.uk/fury/",
+	"keywords": [
+		"WebGL",
+		"WebGL2",
+		"GameEngine"
+	],
 	"main": "src/fury.js",
 	"dependencies": {},
 	"devDependencies": {
