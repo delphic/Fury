@@ -1,45 +1,29 @@
 // Maths modules are a CommonJS port of glMatrix v3.4.0
-// with added extensions and a helper to globalize for ease of use
-// when importing Fury as a standalone script.
-let common = require('./maths/common.js');
-let mat2 = require('./maths/mat2.js');
-let mat3 = require('./maths/mat3.js');
-let mat4 = require('./maths/mat4.js');
-let quat = require('./maths/quat.js');
-let quat2 = require('./maths/quat2.js');
-let vec2 = require('./maths/vec2.js');
-let vec3 = require('./maths/vec3.js');
-let vec4 = require('./maths/vec4.js');
-
-let globalize = () => {
-	// Lets create some globals!
-	if (window) {
-		window.mat2 = mat2;
-		window.mat3 = mat3;
-		window.mat4 = mat4;
-		window.quat = quat;
-		window.quat2 = quat2;
-		window.vec2 = vec2;
-		window.vec3 = vec3;
-		window.vec4 = vec4;
-	}
-};
+const common = require('./maths/common');
+const mat2 = require('./maths/mat2');
+const mat3 = require('./maths/mat3');
+const mat4 = require('./maths/mat4');
+const quat = require('./maths/quat');
+const quat2 = require('./maths/quat2');
+const vec2 = require('./maths/vec2');
+const vec3 = require('./maths/vec3');
+const vec4 = require('./maths/vec4');
 
 module.exports = (function() {
-	let exports = {
-		toDegree: common.toDegree,
-		toRadian: common.toRadian,
-		equals: common.equals,
-	};
+	let exports = {};
 
-	exports.mat2 = require('./maths/mat2.js');
-	exports.mat3 = require('./maths/mat3.js');
-	exports.mat4 = require('./maths/mat4.js');
-	exports.quat = require('./maths/quat.js');
-	exports.quat2 = require('./maths/quat2.js');
-	exports.vec2 = require('./maths/vec2.js');
-	exports.vec3 = require('./maths/vec3.js');
-	exports.vec4 = require('./maths/vec4.js');
+	exports.toDegree = common.toDegree;
+	exports.toRadian = common.toRadian;
+	exports.equals = common.equals;
+
+	exports.mat2 = mat2;
+	exports.mat3 = mat3;
+	exports.mat4 = mat4;
+	exports.quat = quat;
+	exports.quat2 = quat2;
+	exports.vec2 = vec2;
+	exports.vec3 = vec3;
+	exports.vec4 = vec4;
 
 	exports.Ease = require('./maths/ease');
 
@@ -194,8 +178,6 @@ module.exports = (function() {
 		// This seems to occasionally return PI or -PI instead of 0
 		// It does seem to be related to crossing boundaries but it's not entirely predictable
 	};
-
-	exports.globalize = globalize;
 
 	return exports;
 })();
