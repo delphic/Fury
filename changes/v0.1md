@@ -1,0 +1,56 @@
+# v0.1
+
+## v0.1.0
+
+## Breaking Changes
+
+Changed Mesh config position array property name from `vertices` to `positions`
+
+Changed Mesh config texture coordinates array property name from `textureCoordinates` to `uvs`
+
+# v0.1.1
+
+## Breaking Changes
+Moved glMatrix extensions onto their respective modules:
+* Maths.vec3X -> Maths.vec3.X
+* Maths.vec3Y -> Maths.vec3.Y
+* Maths.vec3Z -> Maths.vec3.Z
+* Maths.vec3Zero -> Maths.vec3.ZERO
+* Maths.vec3One -> Maths.vec3.ONE
+* Maths.vec3Pool -> Maths.vec3.Pool
+* Maths.vec3Slerp -> Maths.vec3.Slerp
+* Maths.vec3MoveTowards -> Maths.vec3.moveTowards
+* Maths.vec3RotateTowards -> Maths.vec3.rotateTowards
+* Maths.vec3SmoothDamp -> Maths.vec3.smoothDamp
+* Maths.vec3ToString -> Maths.vec3.str
+* Maths.quatEuler -> Maths.quat.euler
+* Maths.quatIsIdentity -> Maths.quat.isIdentity
+* Maths.quatRotate -> Maths.quat.rotate
+* Maths.quatLocalAxes -> Maths.quat.localAxes
+* Maths.quatPool -> Maths.quat.Pool 
+
+## Updates
+Updated vec3 and quat Pools to set vector to zero and quaternion to identity on returning to pool.
+Potentially breaking if reference is used after returning.
+
+# v0.1.2
+
+Updated package name to `fury-js`
+
+Added Sphere.raycast method
+Added Texture.load utility method to directly load image from a URI and return created change
+Added Random.pointInCircle and Random.pointOnCircle functions
+Added world position rotation and scale methods to Transform
+
+Fixed issue with atlas material properties not being independent causing bugs across scene clears
+
+## v0.1.3
+
+Moved `Maths.globalize` as extension only when using Fury as 'old school' standalone library
+Marginally improved auto-complete for Maths module by moving all exports as individual assignments
+
+## v0.1.4
+
+Updated pointer lock request to request raw input
+Removed dev dependency on eslint
+Brought changes for all v0.1.X into one file

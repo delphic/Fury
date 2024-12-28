@@ -1,6 +1,6 @@
 {
 	"name": "fury-js",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"description": "WebGL Game Engine",
 	"author": "delphic",
 	"license": "MIT",
@@ -11,8 +11,5 @@
 		"GameEngine"
 	],
 	"main": "src/fury.js",
-	"dependencies": {},
-	"devDependencies": {
-		"eslint": "^8.2.0"
-	}
+	"dependencies": {}
 }
