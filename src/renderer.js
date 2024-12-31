@@ -214,6 +214,37 @@ exports.createTextureCube = function(sources) {
 	return texture;
 };
 
+exports.createDataTexture = function() {
+	let texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	texture.glTextureType = gl.TEXTURE_2D;
+
+	if (activeTexture && activeTexture.glTextureType == gl.TEXTURE_2D) {
+		// rebind the active texture
+		gl.bindTexture(activeTexture.glTextureType, activeTexture);
+	}
+	
+	return texture;
+};
+
+exports.updateDataTexture = function(texture, source, width, height, internalFormat, type) {
+	if (!internalFormat) {
+		internalFormat = gl.RGBA32F;
+	}
+	if (!type) {
+		type = gl.FLOAT;
+	}
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA, type, source);
+
+	if (activeTexture && activeTexture.glTextureType == gl.TEXTURE_2D) {
+		// rebind the active texture
+		gl.bindTexture(activeTexture.glTextureType, activeTexture);
+	}
+};
+
 let setTextureQuality = function(glTextureType, mag, min, generateMipmap, enableAniso) {
 	if (!mag) mag = gl.NEAREST;
 	if (!min) min = gl.NEAREST; 
